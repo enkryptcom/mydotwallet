@@ -9,6 +9,8 @@
 
       <enkrypt-banner v-if="showLeftBanner" :is-left="true" />
     </div>
+
+    <a href="#" class="app-menu__more">More</a>
   </div>
 </template>
 
@@ -59,6 +61,7 @@ const showLeftBanner = computed(() => {
     box-sizing: border-box;
     padding-left: 96px;
     padding-right: 24px;
+    position: relative;
     .sizing();
 
     .screen-lg({
@@ -90,6 +93,29 @@ const showLeftBanner = computed(() => {
     .enkrypt-banner {
       margin-top: 44px;
     }
+  }
+
+  &__more {
+    position: absolute;
+    bottom: 57px;
+    left: 96px;
+    .body1__Meduim();
+    .transition(color, 0.3s);
+    color: @secondaryLabel;
+    text-decoration: none;
+    display: block;
+
+    &:hover {
+      color: @primaryLabel;
+    }
+
+    &:active {
+      color: @tertiaryLabel;
+    }
+
+    .screen-lg({
+      left: 24px;
+    });
   }
 }
 </style>

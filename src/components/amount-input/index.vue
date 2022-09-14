@@ -14,12 +14,17 @@
         type="text"
         class="amount-input__input"
         placeholder="0 DOT"
-        :size="size"
+        :style="{ width: size + 'ch' }"
       />
       <span v-show="props.value != '0'" @click="focus">{{ token.symbol }}</span>
     </div>
 
-    <p class="amount-input__fiat">{{ $filters.currencyFormat(3.1, "USD") }}</p>
+    <p v-if="props.value == '0'" class="amount-input__fiat">
+      {{ $filters.currencyFormat(0, "USD") }}
+    </p>
+    <p v-else class="amount-input__fiat">
+      ~{{ $filters.currencyFormat(3.1, "USD") }}
+    </p>
   </div>
 </template>
 
@@ -56,7 +61,7 @@ const textValue = computed({
 });
 
 const size = computed(() => {
-  return textValue.value.length == 0 ? 4 : textValue.value.length;
+  return textValue.value.length == 0 ? 70 : textValue.value.length;
 });
 
 const focus = () => {
@@ -107,6 +112,7 @@ const focus = () => {
     outline: none;
     padding: 0;
     margin-bottom: 4px;
+    max-width: 100%;
 
     &::placeholder {
       color: @tertiaryLabel;

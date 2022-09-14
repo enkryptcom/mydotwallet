@@ -7,7 +7,6 @@
           <select-list
             :select="network"
             :items="selectNetworkItems"
-            :is-minify="true"
             :is-list-image="true"
             @update:select="selectNetworkAction"
           />

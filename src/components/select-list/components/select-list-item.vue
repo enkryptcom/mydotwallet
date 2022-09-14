@@ -5,7 +5,7 @@
     @click="select"
   >
     <img v-if="isSelected || isListImage" :src="item.image" />
-    <span>{{ item.name }}</span>
+    <span :class="{ first: isSelected }">{{ item.name }}</span>
     <arrow-down v-if="isSelected" />
   </a>
 </template>
@@ -80,10 +80,14 @@ const select = () => {
   }
 
   span {
-    .body1__Meduim();
+    .body1__Regular();
     color: @primaryLabel;
     display: block;
     margin-right: 8px;
+
+    &.first {
+      .body1__Meduim();
+    }
   }
 }
 </style>
