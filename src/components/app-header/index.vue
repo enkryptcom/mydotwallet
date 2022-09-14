@@ -10,11 +10,7 @@
             :is-list-image="true"
             @update:select="selectNetworkAction"
           />
-          <select-list
-            :select="connectState"
-            :items="selectConnectItems"
-            @update:select="selectItem"
-          />
+          <wallet-select />
         </div>
       </div>
     </div>
@@ -25,6 +21,7 @@
 import { onMounted, ref, onUnmounted } from "vue";
 import Logo from "@/icons/common/logo.vue";
 import SelectList from "@/components/select-list/index.vue";
+import WalletSelect from "@/components/wallet-select/index.vue";
 import {
   selectConnect,
   selectConnectItems,

@@ -17,7 +17,6 @@ export const selectConnectItems: SelectItem[] = [
   {
     id: 2,
     name: "Disconnect",
-    image: require("@/assets/pic/app-pic.png"),
   },
 ];
 
