@@ -1,0 +1,271 @@
+/**
+ * Variables
+ **/
+
+@font: 'Space Grotesk', sans-serif;
+@fontMono: 'Space Mono', monospace;
+
+@accent: #E6007A;
+@accentHover: #DC0074;
+@accentPressed: #C80069;
+@black: #1D1D1F;
+@white: #FFFFFF;
+@error: #FF3B30;
+@error01: rgba(255, 59, 48, 0.1);
+@success: #34C759;
+@orange: #FF6D00;
+@secure: #333333;
+@dark: #1D1D1F;
+@lighter: #7262FF;
+@gray01: rgba(0, 0, 0, 0.1);
+@gray016: rgba(0, 0, 0, 0.16);
+@gray02: rgba(0, 0, 0, 0.2);
+@gray032: rgba(0, 0, 0, 0.32);
+@gray004: rgba(0, 0, 0, 0.04);
+@gray002: rgba(0, 0, 0, 0.02);
+
+@primaryLabel: rgba(0, 0, 0, 0.96);
+@secondaryLabel: rgba(0, 0, 0, 0.56);;
+@tertiaryLabel: rgba(0, 0, 0, 0.32);
+
+@primaryBg: #FAF9F9;
+@bannerBg: #230A27;
+
+@borderRadius: 5px;
+@shadow100: 0px 12px 100px -8px rgba(0, 0, 0, 0.12);
+@shadow16: 0px 8px 16px rgba(0, 0, 0, 0.1);
+@shadowIcon: inset 0px 0px 1px rgba(0, 0, 0, 0.16);
+@shadow20: 0px 0px 1px rgba(0, 0, 0, 0.24), 0px 8px 20px rgba(0, 0, 0, 0.12);
+
+ /****
+  * Mixins
+  ****/
+
+.body1__Bold {
+    font-style: normal;
+    font-weight: 700;
+    font-size: 16px;
+    line-height: 22px;
+}
+
+
+.body1__Meduim {
+    font-style: normal;
+    font-weight: 500;
+    font-size: 16px;
+    line-height: 22px;
+}
+
+.body1__Regular {
+    font-style: normal;
+    font-weight: 400;
+    font-size: 16px;
+    line-height: 22px;
+}
+
+.body2__Regular {
+    font-style: normal;
+    font-weight: 400;
+    font-size: 14px;
+    line-height: 20px;    
+    letter-spacing: 0.25px;
+}
+
+.body2__Medium {
+    font-style: normal;
+    font-weight: 500;
+    font-size: 14px;
+    line-height: 20px;    
+    letter-spacing: 0.25px;
+}
+
+.headline4__Bold {
+    font-style: normal;
+    font-weight: 700;
+    font-size: 34px;
+    line-height: 40px;;
+}
+
+.headline4__Regular {
+    font-style: normal;
+    font-weight: 400;
+    font-size: 34px;
+    line-height: 40px;
+}
+
+.headline5__Bold {
+    font-style: normal;
+    font-weight: 700;
+    font-size: 24px;
+    line-height: 32px;
+}
+
+.headline6__Bold {
+    font-style: normal;
+    font-weight: 700;
+    font-size: 20px;
+    line-height: 28px;
+    letter-spacing: 0.15px;
+}
+
+.caption__Regular {
+    font-style: normal;
+    font-weight: 400;
+    font-size: 12px;
+    line-height: 16px;    
+    letter-spacing: 0.5px;
+}
+
+.mono__text {
+    font-family: @fontMono;
+    font-style: normal;
+    font-weight: 400;
+    font-size: 14px;
+    line-height: 120%;    
+    letter-spacing: -0.078px;
+}
+
+.relative {
+    position: relative;
+}
+ 
+ .sizing() {
+     -moz-box-sizing: border-box;
+     box-sizing: border-box;
+ }
+ 
+ .border-radius(@radius: @borderRadius) {
+     -webkit-border-radius: @radius;
+     border-radius: @radius;
+ }
+ 
+ .size(@width, @height: @width) {
+     width:  @width;
+     height: @height;
+ }
+ 
+ .relativePos(@top, @left:@top) {
+     position: relative;
+     top: @top;
+     left: @left;
+ }
+ 
+ .pseudo() {
+     content: '';
+     display: block;
+     position: absolute;
+ }
+ 
+ .menu-icon() {
+     content: '';
+     display: block;
+     position: absolute;
+     left: 15px;
+     top: 13px;
+ }
+ 
+ .hover-opacity(@opacity: 0.75) {
+     cursor: pointer;
+ 
+     &:hover {
+         opacity: @opacity;
+     }
+ }
+ 
+ .transition(@property: all, @time: 0.3s) {
+     -webkit-transition: @property @time ease-in-out;
+             transition: @property @time ease-in-out;
+ }
+ 
+ .transition-transform(@time: 0.3s) {
+     -webkit-transition: @time cubic-bezier(0.25, 0.10, 0.25, 1);
+     -moz-transition: @time cubic-bezier(0.25, 0.10, 0.25, 1);
+     -o-transition: @time cubic-bezier(0.25, 0.10, 0.25, 1);
+     transition: @time cubic-bezier(0.25, 0.10, 0.25, 1);
+ }
+ 
+ .transform(@propvalue) {
+     -webkit-transform: @propvalue;
+         -ms-transform: @propvalue;
+             transform: @propvalue;
+ }
+ 
+ .rotate(@degree) {
+     -webkit-transform: rotate(@degree);
+         -ms-transform: rotate(@degree);
+             transform: rotate(@degree);
+ }
+ 
+ .scale(@scale) {
+     -webkit-transform: scale(@scale);
+         -ms-transform: scale(@scale);
+             transform: scale(@scale);
+ }
+ 
+ .transform-origin(@x, @y) {
+     -webkit-transform-origin: @x @y;
+         -ms-transform-origin: @x @y;
+             transform-origin: @x @y;
+ }
+ 
+ .placeholder(@color){
+ 
+ }
+ 
+ /* =============================================================================
+    Screen size variables
+    ========================================================================== */
+ 
+ @screen-xl: 1200px;
+ @screen-lg: 1199px;
+ @screen-md: 992px;
+ @screen-sm: 767px;
+ @screen-xs: 576px;
+ @screen-m: 414px;
+
+ /* =============================================================================
+    Media queries for different screen sizes
+    ========================================================================== */
+ 
+ // XL
+ .screen-xl(@rules) {
+    @media (max-width: @screen-xl) { @rules(); }
+}
+
+ // LG
+ .screen-lg(@rules) {
+     @media (max-width: @screen-lg) { @rules(); }
+ }
+ 
+ // MD
+ .screen-md(@rules) {
+     @media (max-width: @screen-md) { @rules(); }
+ }
+
+// MD
+.screen-sm(@rules) {
+    @media (max-width: @screen-sm) { @rules(); }
+}
+
+// XS
+.screen-xs(@rules) {
+    @media (max-width: @screen-xs) { @rules(); }
+}
+
+// M
+.screen-m(@rules) {
+    @media (max-width: @screen-m) { @rules(); }
+}
+
+ // Retina
+ .screen-retina(@rules) {
+    @media
+    only screen and (-webkit-min-device-pixel-ratio: 2),
+    only screen and (   min--moz-device-pixel-ratio: 2),
+    only screen and (     -o-min-device-pixel-ratio: 2/1),
+    only screen and (        min-device-pixel-ratio: 2),
+    only screen and (                min-resolution: 192dpi),
+    only screen and (                min-resolution: 2dppx) { 
+        @rules();
+    }
+}
