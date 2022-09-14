@@ -22,16 +22,10 @@ import { onMounted, ref, onUnmounted } from "vue";
 import Logo from "@/icons/common/logo.vue";
 import SelectList from "@/components/select-list/index.vue";
 import WalletSelect from "@/components/wallet-select/index.vue";
-import {
-  selectConnect,
-  selectConnectItems,
-  selectNetwork,
-  selectNetworkItems,
-} from "@/types/mock";
+import { selectNetwork, selectNetworkItems } from "@/types/mock";
 import { SelectItem } from "@/types/select-list";
 
 const isScroll = ref<boolean>(false);
-const connectState = ref<SelectItem>(selectConnect);
 const network = ref<SelectItem>(selectNetwork);
 
 onMounted(() => {
@@ -49,9 +43,6 @@ const onScroll = () => {
   }
 };
 
-const selectItem = (item: SelectItem) => {
-  connectState.value = item;
-};
 const selectNetworkAction = (item: SelectItem) => {
   network.value = item;
 };
