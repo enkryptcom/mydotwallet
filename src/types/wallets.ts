@@ -3,6 +3,7 @@ import { WalletItem } from "./wallet-list";
 export const walletConnect: WalletItem = {
   id: 1,
   name: "Connect",
+  image: require("@/assets/pic/turn-on.svg"),
 };
 
 export const walletConnectItems: WalletItem[] = [
@@ -37,5 +38,6 @@ export const walletConnectItems: WalletItem[] = [
   {
     id: 1,
     name: "Disconnect",
+    image: require("@/assets/pic/turn-on.svg"),
   },
 ];

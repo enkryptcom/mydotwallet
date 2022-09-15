@@ -12,7 +12,7 @@ import { ref } from "vue";
 import { walletConnect, walletConnectItems } from "@/types/wallets";
 import SelectList from "@/components/select-list/index.vue";
 import { SelectItem } from "@/types/select-list";
-import { store } from "../../store";
+import { store } from "@/store";
 import {
   InjectedExtension,
   InjectedWindow,
