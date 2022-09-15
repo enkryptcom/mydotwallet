@@ -18,6 +18,7 @@ import {
   InjectedWindow,
 } from "@polkadot/extension-inject/types";
 import { WalletItem } from "@/types/wallet-list";
+import createIcon from "@/libs/polkadot-identicon";
 
 const walletSelected = ref<SelectItem>(walletConnect);
 
@@ -61,6 +62,7 @@ const connectToWallet = async (wallet: WalletItem) => {
       id: index,
       name: item.name || `Account ${index + 1}`,
       address: item.address,
+      image: createIcon(item.address),
       balance: Math.random() * 100,
       isLedger: false,
     }));
