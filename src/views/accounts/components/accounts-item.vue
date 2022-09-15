@@ -7,7 +7,7 @@
     <div class="row justify-content-beetwen align-items-center">
       <div class="col-8">
         <div class="accounts-item__info">
-          <img :src="account.image" alt="" />
+          <img :src="createIcon(account.address)" alt="" />
           <div class="accounts-item__info-block">
             <h3>
               {{ account.name }}<span v-if="account.isLedger">Ledger</span>
@@ -104,6 +104,7 @@ import { PropType, ref } from "vue";
 import BaseButton from "@/components/base-button/index.vue";
 import Expand from "@/icons/common/expand.vue";
 import { Account } from "@/types/account";
+import createIcon from "@/libs/polkadot-identicon";
 
 const isOpen = ref<boolean>(false);
 

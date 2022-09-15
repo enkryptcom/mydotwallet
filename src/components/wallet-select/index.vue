@@ -57,7 +57,13 @@ const connectToWallet = async (wallet: WalletItem) => {
 
     store.signer = extension.signer;
     store.extension = extension;
-    store.accounts = accounts.map((item) => item.address);
+    store.accounts = accounts.map((item, index) => ({
+      id: index,
+      name: item.name || `Account ${index + 1}`,
+      address: item.address,
+      balance: Math.random() * 100,
+      isLedger: false,
+    }));
 
     return accounts;
   } catch (e) {

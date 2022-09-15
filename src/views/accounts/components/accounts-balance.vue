@@ -4,10 +4,10 @@
       <div class="col-8">
         <h4 class="accounts-balance__title">Total Balance</h4>
         <h2 class="accounts-balance__amount">
-          {{ $filters.cryptoCurrencyFormat(1580.943) }} <span>dot</span>
+          {{ $filters.cryptoCurrencyFormat(totalBalance) }} <span>dot</span>
         </h2>
         <p class="accounts-balance__fiat">
-          {{ $filters.currencyFormat(14354.24, "USD") }}
+          {{ $filters.currencyFormat(totalUsdValue, "USD") }}
         </p>
       </div>
       <div class="col-4 row justify-content-end">
@@ -20,6 +20,22 @@
 
 <script setup lang="ts">
 import BaseButton from "@/components/base-button/index.vue";
+import { store } from "@/store";
+import { ref, watch } from "vue";
+
+const totalBalance = ref<number>(0);
+const totalUsdValue = ref<number>(0);
+
+watch(
+  () => store.accounts,
+  (accounts) => {
+    totalBalance.value = accounts.reduce((previous, current) => {
+      return previous + current.balance;
+    }, 0);
+    // TODO get price of tokens so we can calculate usd value
+    totalUsdValue.value = totalBalance.value * 10;
+  }
+);
 </script>
 
 <style lang="less" scoped>
