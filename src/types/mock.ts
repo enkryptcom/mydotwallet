@@ -1,6 +1,7 @@
-import { SelectItem } from "@/types/select-list";
+import { SelectItem, NetworkSelectItem } from "@/types/select-list";
 import { Account } from "@/types/account";
 import { Token } from "@/types/token";
+import { Network } from "@/types/network";
 
 export const selectConnect: SelectItem = {
   id: 1,
@@ -20,20 +21,20 @@ export const selectConnectItems: SelectItem[] = [
   },
 ];
 
-export const selectNetwork: SelectItem = {
-  id: 1,
+export const selectNetwork: NetworkSelectItem = {
+  id: Network.Polkadot,
   name: "Polkadot",
   image: require("@/assets/pic/polkadot.network.png"),
 };
 
-export const selectNetworkItems: SelectItem[] = [
+export const selectNetworkItems: NetworkSelectItem[] = [
   {
-    id: 1,
+    id: Network.Polkadot,
     name: "Polkadot",
     image: require("@/assets/pic/polkadot.network.png"),
   },
   {
-    id: 2,
+    id: Network.Kusama,
     name: "Kusama",
     image: require("@/assets/pic/kusama.network.png"),
   },

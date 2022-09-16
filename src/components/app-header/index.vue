@@ -23,7 +23,8 @@ import Logo from "@/icons/common/logo.vue";
 import SelectList from "@/components/select-list/index.vue";
 import WalletSelect from "@/components/wallet-select/index.vue";
 import { selectNetwork, selectNetworkItems } from "@/types/mock";
-import { SelectItem } from "@/types/select-list";
+import { SelectItem, NetworkSelectItem } from "@/types/select-list";
+import { selectedNetwork, apiPromise } from "@/stores";
 
 const isScroll = ref<boolean>(false);
 const network = ref<SelectItem>(selectNetwork);
@@ -43,8 +44,11 @@ const onScroll = () => {
   }
 };
 
-const selectNetworkAction = (item: SelectItem) => {
+const selectNetworkAction = async (item: NetworkSelectItem) => {
+  const api = await apiPromise.value;
+  await api.disconnect();
   network.value = item;
+  selectedNetwork.value = item.id;
 };
 </script>
 

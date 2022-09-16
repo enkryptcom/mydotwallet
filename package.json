@@ -12,6 +12,8 @@
     "publish": "git push origin `git subtree split --prefix dist main`:gh-pages --force"
   },
   "dependencies": {
+    "@polkadot/api": "^9.3.3",
+    "@substrate/connect": "^0.7.13",
     "@vueuse/core": "^9.1.1",
     "moment": "^2.29.4",
     "vue": "^3.2.37",
