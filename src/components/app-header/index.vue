@@ -31,7 +31,8 @@ import {
   selectNetwork,
   selectNetworkItems,
 } from "@/types/mock";
-import { SelectItem } from "@/types/select-list";
+import { SelectItem, NetworkSelectItem } from "@/types/select-list";
+import { selectedNetwork, apiPromise } from "@/stores";
 
 const isScroll = ref<boolean>(false);
 const connectState = ref<SelectItem>(selectConnect);
@@ -55,8 +56,11 @@ const onScroll = () => {
 const selectItem = (item: SelectItem) => {
   connectState.value = item;
 };
-const selectNetworkAction = (item: SelectItem) => {
+const selectNetworkAction = async (item: NetworkSelectItem) => {
+  const api = await apiPromise.value;
+  await api.disconnect();
   network.value = item;
+  selectedNetwork.value = item.id;
 };
 </script>
 
