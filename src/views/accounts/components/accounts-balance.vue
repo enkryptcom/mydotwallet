@@ -20,22 +20,19 @@
 
 <script setup lang="ts">
 import BaseButton from "@/components/base-button/index.vue";
-import { store } from "@/store";
+import { accounts } from "@/stores";
 import { ref, watch } from "vue";
 
 const totalBalance = ref<number>(0);
 const totalUsdValue = ref<number>(0);
 
-watch(
-  () => store.accounts,
-  (accounts) => {
-    totalBalance.value = accounts.reduce((previous, current) => {
-      return previous + current.balance;
-    }, 0);
-    // TODO get price of tokens so we can calculate usd value
-    totalUsdValue.value = totalBalance.value * 10;
-  }
-);
+watch(accounts, () => {
+  totalBalance.value = accounts.value.reduce((previous, current) => {
+    return previous + current.balance;
+  }, 0);
+  // TODO get price of tokens so we can calculate usd value
+  totalUsdValue.value = totalBalance.value * 10;
+});
 </script>
 
 <style lang="less" scoped>

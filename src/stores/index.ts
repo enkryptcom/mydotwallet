@@ -1,6 +1,9 @@
 import { ref, computed } from "vue";
 import { Network } from "@/types/network";
 import { ApiPromise, WsProvider } from "@polkadot/api";
+import { InjectedExtension } from "@polkadot/extension-inject/types";
+import type { Signer } from "@polkadot/api/types";
+import { Account } from "@/types/account";
 
 const POLKADOT_ENDPOINTS = [
   "wss://rpc.polkadot.io",
@@ -23,3 +26,9 @@ export const apiPromise = computed(() => {
 
   return ApiPromise.create({ provider }).then((api) => api);
 });
+
+export const accounts = ref<Account[]>([]);
+
+export const extension = ref<InjectedExtension | undefined>(undefined);
+
+export const signer = ref<Signer | undefined>(undefined);

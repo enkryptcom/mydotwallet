@@ -12,7 +12,7 @@ import { ref } from "vue";
 import { walletConnect, walletConnectItems } from "@/types/wallets";
 import SelectList from "@/components/select-list/index.vue";
 import { SelectItem } from "@/types/select-list";
-import { store } from "@/store";
+import { accounts, extension, signer } from "@/stores";
 import {
   InjectedExtension,
   InjectedWindow,
@@ -26,15 +26,20 @@ const selectItem = async (item: SelectItem) => {
   // If disconnecting
   if (item.id === 1) {
     walletSelected.value = walletConnect;
-    store.signer = undefined;
-    store.extension = undefined;
-    store.accounts = [];
+    signer.value = undefined;
+    extension.value = undefined;
+    accounts.value = [];
   } else {
     // If connecting
-    const accounts = await connectToWallet(item);
-    console.log("Accounts found: ", accounts, store);
-    if (accounts) {
-      walletSelected.value = item;
+    try {
+      const accounts = await connectToWallet(item);
+      if (accounts) {
+        walletSelected.value = item;
+      } else {
+        console.error("No accounts found");
+      }
+    } catch (err) {
+      console.error("Couldn't connect to wallet", err);
     }
   }
 };
@@ -44,34 +49,29 @@ const connectToWallet = async (wallet: WalletItem) => {
     return;
   }
 
-  try {
-    const injectedWindow = window as Window & InjectedWindow;
-    const injectedExtension =
-      injectedWindow?.injectedWeb3?.[wallet.extensionName];
-    const rawExtension = await injectedExtension.enable("mydotwallet");
-    const extension: InjectedExtension = {
-      ...rawExtension,
-      name: wallet.extensionName,
-      version: injectedExtension.version,
-    };
-    const accounts = await extension.accounts.get();
+  const injectedWindow = window as Window & InjectedWindow;
+  const injectedExtension =
+    injectedWindow?.injectedWeb3?.[wallet.extensionName];
+  const rawExtension = await injectedExtension.enable("mydotwallet");
+  const foundExtension: InjectedExtension = {
+    ...rawExtension,
+    name: wallet.extensionName,
+    version: injectedExtension.version,
+  };
+  const foundAccounts = await foundExtension.accounts.get();
 
-    store.signer = extension.signer;
-    store.extension = extension;
-    store.accounts = accounts.map((item, index) => ({
-      id: index,
-      name: item.name || `Account ${index + 1}`,
-      address: item.address,
-      image: createIcon(item.address),
-      balance: Math.random() * 100,
-      isLedger: false,
-    }));
+  signer.value = foundExtension.signer;
+  extension.value = foundExtension;
+  accounts.value = foundAccounts.map((item, index) => ({
+    id: index,
+    name: item.name || `Account ${index + 1}`,
+    address: item.address,
+    image: createIcon(item.address),
+    balance: Math.random() * 100,
+    isLedger: false,
+  }));
 
-    return accounts;
-  } catch (e) {
-    console.error(e);
-    return;
-  }
+  return accounts;
 };
 </script>
 
