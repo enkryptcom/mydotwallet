@@ -12,13 +12,26 @@
             <h3>
               {{ account.name }}<span v-if="account.isLedger">Ledger</span>
             </h3>
-            <p>{{ $filters.replaceWithEllipsis(account.address, 6, 6) }}</p>
+            <p>
+              {{
+                $filters.replaceWithEllipsis(
+                  $filters.formatAddress(account.address),
+                  6,
+                  6
+                )
+              }}
+            </p>
           </div>
         </div>
       </div>
       <div class="col-4 row justify-content-end align-items-center">
         <h3 class="accounts-item__balance">
-          {{ $filters.cryptoCurrencyFormat(account.balance) }} <span>dot</span>
+          {{
+            balance === undefined
+              ? "--"
+              : $filters.cryptoCurrencyFormat(balance)
+          }}
+          <span>{{ token?.symbol || "dot" }}</span>
         </h3>
         <expand class="accounts-item__arrow" :class="{ open: isOpen }" />
       </div>
@@ -104,6 +117,7 @@ import { PropType, ref } from "vue";
 import BaseButton from "@/components/base-button/index.vue";
 import Expand from "@/icons/common/expand.vue";
 import { Account } from "@/types/account";
+import { Token } from "@/types/token";
 
 const isOpen = ref<boolean>(false);
 
@@ -115,6 +129,14 @@ defineProps({
   isLast: {
     type: Boolean,
     default: false,
+  },
+  balance: {
+    type: Number,
+    default: undefined,
+  },
+  token: {
+    type: Object as PropType<Token>,
+    default: undefined,
   },
 });
 

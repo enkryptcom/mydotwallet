@@ -4,6 +4,7 @@ import { ApiPromise, WsProvider } from "@polkadot/api";
 import { InjectedExtension } from "@polkadot/extension-inject/types";
 import type { Signer } from "@polkadot/api/types";
 import { Account } from "@/types/account";
+import { Token } from "@/types/token";
 
 const POLKADOT_ENDPOINTS = [
   "wss://rpc.polkadot.io",
@@ -29,6 +30,14 @@ export const apiPromise = computed(() => {
 
 export const accounts = ref<Account[]>([]);
 
-export const extension = ref<InjectedExtension | undefined>(undefined);
+export const nativeBalances = ref<number[]>([]);
 
-export const signer = ref<Signer | undefined>(undefined);
+export const ss58Format = ref<number>();
+
+export const nativeToken = ref<Token>();
+
+export const isBalancesLoading = ref<boolean>(false);
+
+export const extension = ref<InjectedExtension>();
+
+export const signer = ref<Signer>();

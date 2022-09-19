@@ -1,4 +1,6 @@
 import moment from "moment";
+import { encodeAddress } from "@polkadot/keyring";
+import { ss58Format } from "@/stores";
 
 export const replaceWithEllipsis = (
   value: string,
@@ -46,4 +48,7 @@ export const formatDuration = (
     return `${h.padStart(2, "0")}:${m.padStart(2, "0")}:${s.padStart(2, "0")}`;
 
   return `${m.padStart(2, "0")}:${s.padStart(2, "0")}`;
+};
+export const formatAddress = (address: string, ss58?: number): string => {
+  return encodeAddress(address, ss58 || ss58Format.value || 0);
 };

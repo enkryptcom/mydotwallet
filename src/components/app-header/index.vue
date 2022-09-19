@@ -18,19 +18,21 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, ref, onUnmounted } from "vue";
+import { onMounted, ref, onUnmounted, watch } from "vue";
 import Logo from "@/icons/common/logo.vue";
 import SelectList from "@/components/select-list/index.vue";
 import WalletSelect from "@/components/wallet-select/index.vue";
 import { selectNetwork, selectNetworkItems } from "@/types/mock";
 import { SelectItem, NetworkSelectItem } from "@/types/select-list";
-import { selectedNetwork, apiPromise } from "@/stores";
+import { nativeToken, selectedNetwork, ss58Format, apiPromise } from "@/stores";
+import { getToken } from "@/types/tokens";
 
 const isScroll = ref<boolean>(false);
 const network = ref<SelectItem>(selectNetwork);
 
 onMounted(() => {
   window.addEventListener("scroll", onScroll);
+  loadChainProperties();
 });
 onUnmounted(() => {
   window.removeEventListener("scroll", onScroll);
@@ -50,6 +52,16 @@ const selectNetworkAction = async (item: NetworkSelectItem) => {
   network.value = item;
   selectedNetwork.value = item.id;
 };
+
+const loadChainProperties = async () => {
+  const api = await apiPromise.value;
+  nativeToken.value = getToken(api.registry.chainTokens[0]);
+  ss58Format.value = api.registry.chainSS58;
+};
+
+watch(apiPromise, () => {
+  loadChainProperties();
+});
 </script>
 
 <style lang="less" scoped>
