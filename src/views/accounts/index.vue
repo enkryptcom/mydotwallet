@@ -16,7 +16,7 @@ import WhiteWrapper from "@/components/white-wrapper/index.vue";
 import EnkryptBanner from "@/components/enkrypt-banner/index.vue";
 import AccountsBalance from "./components/accounts-balance.vue";
 import AccountsItem from "./components/accounts-item.vue";
-import { accounts } from "@/types/mock";
+import { accounts } from "@/stores";
 </script>
 
 <style lang="less" scoped>

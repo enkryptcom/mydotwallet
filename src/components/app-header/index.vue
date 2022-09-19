@@ -10,11 +10,7 @@
             :is-list-image="true"
             @update:select="selectNetworkAction"
           />
-          <select-list
-            :select="connectState"
-            :items="selectConnectItems"
-            @update:select="selectItem"
-          />
+          <wallet-select />
         </div>
       </div>
     </div>
@@ -25,16 +21,12 @@
 import { onMounted, ref, onUnmounted } from "vue";
 import Logo from "@/icons/common/logo.vue";
 import SelectList from "@/components/select-list/index.vue";
-import {
-  selectConnect,
-  selectConnectItems,
-  selectNetwork,
-  selectNetworkItems,
-} from "@/types/mock";
-import { SelectItem } from "@/types/select-list";
+import WalletSelect from "@/components/wallet-select/index.vue";
+import { selectNetwork, selectNetworkItems } from "@/types/mock";
+import { SelectItem, NetworkSelectItem } from "@/types/select-list";
+import { selectedNetwork, apiPromise } from "@/stores";
 
 const isScroll = ref<boolean>(false);
-const connectState = ref<SelectItem>(selectConnect);
 const network = ref<SelectItem>(selectNetwork);
 
 onMounted(() => {
@@ -52,11 +44,11 @@ const onScroll = () => {
   }
 };
 
-const selectItem = (item: SelectItem) => {
-  connectState.value = item;
-};
-const selectNetworkAction = (item: SelectItem) => {
+const selectNetworkAction = async (item: NetworkSelectItem) => {
+  const api = await apiPromise.value;
+  await api.disconnect();
   network.value = item;
+  selectedNetwork.value = item.id;
 };
 </script>
 
