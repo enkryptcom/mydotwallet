@@ -1,6 +1,5 @@
 import { SelectItem, NetworkSelectItem } from "@/types/select-list";
 import { Account } from "@/types/account";
-import { Token } from "@/types/token";
 import { Network } from "@/types/network";
 
 export const selectConnect: SelectItem = {
@@ -46,7 +45,6 @@ export const accounts: Account[] = [
     name: "Account #1",
     image: require("@/assets/pic/account1.png"),
     address: "15pSLMoW287q4jYKBRsKr6bydqwR8xrZpAmxGFyUZBB4m73P",
-    balance: 0,
     isLedger: false,
   },
   {
@@ -54,7 +52,6 @@ export const accounts: Account[] = [
     name: "Main account",
     image: require("@/assets/pic/account2.png"),
     address: "1qnJN7FViy3HZaxZK9tGAA71zxHSBeUweirKqCaox4t8GT7",
-    balance: 1565.478,
     isLedger: true,
   },
   {
@@ -62,7 +59,6 @@ export const accounts: Account[] = [
     name: "My account nickname",
     image: require("@/assets/pic/account2.png"),
     address: "1qnJN7FViy3HZaxZK9tGAA71zxHSBeUweirKqCaox4t8GT7",
-    balance: 10,
     isLedger: true,
   },
 ];
@@ -73,7 +69,6 @@ export const recent: Account[] = [
     name: "Alex",
     image: require("@/assets/pic/account1.png"),
     address: "15pSLMoW287q4jYKBRsKr6bydqwR8xrZpAmxGFyUZBB4m73P",
-    balance: 0,
     isLedger: false,
   },
   {
@@ -81,7 +76,6 @@ export const recent: Account[] = [
     name: "",
     image: require("@/assets/pic/account2.png"),
     address: "15pSLMoW287q4jYKBRsKr6bydqwR8xrZpAmxGFyUZBB4m73P",
-    balance: 0,
     isLedger: true,
   },
   {
@@ -89,7 +83,6 @@ export const recent: Account[] = [
     name: "Ledger",
     image: require("@/assets/pic/account1.png"),
     address: "1c8vCnfzHCjZRUTYsFQF53nzPsW6yHd8vJPnmMXocPCtvvp",
-    balance: 10,
     isLedger: true,
   },
   {
@@ -97,7 +90,6 @@ export const recent: Account[] = [
     name: "",
     image: require("@/assets/pic/account2.png"),
     address: "15pSLMoW287q4jYKBRsKr6bydqwR8xrZpAmxGFyUZBB4m73P",
-    balance: 0,
     isLedger: true,
   },
   {
@@ -105,15 +97,6 @@ export const recent: Account[] = [
     name: "",
     image: require("@/assets/pic/account1.png"),
     address: "1c8vCnfzHCjZRUTYsFQF53nzPsW6yHd8vJPnmMXocPCtvvp",
-    balance: 10,
     isLedger: true,
   },
 ];
-
-export const dot: Token = {
-  id: 1,
-  name: "Polkadot",
-  image: require("@/assets/pic/polkadot.token.svg"),
-  symbol: "dot",
-  price: 10.2,
-};

@@ -19,6 +19,8 @@ import {
 } from "@polkadot/extension-inject/types";
 import { WalletItem } from "@/types/wallet-list";
 import createIcon from "@/libs/polkadot-identicon";
+import { encodeAddress } from "@polkadot/keyring";
+import { formatAddress } from "@/utils/filters";
 
 const walletSelected = ref<SelectItem>(walletConnect);
 
@@ -62,14 +64,16 @@ const connectToWallet = async (wallet: WalletItem) => {
 
   signer.value = foundExtension.signer;
   extension.value = foundExtension;
-  accounts.value = foundAccounts.map((item, index) => ({
-    id: index,
-    name: item.name || `Account ${index + 1}`,
-    address: item.address,
-    image: createIcon(item.address),
-    balance: Math.random() * 100,
-    isLedger: false,
-  }));
+
+  accounts.value = foundAccounts
+    .filter((item) => item.type !== "ethereum")
+    .map((item, index) => ({
+      id: index,
+      name: item.name || `Account ${index + 1}`,
+      address: formatAddress(item.address),
+      image: createIcon(item.address),
+      isLedger: false,
+    }));
 
   return accounts;
 };

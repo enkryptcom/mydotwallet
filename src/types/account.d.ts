@@ -3,6 +3,5 @@ export interface Account {
   name: string;
   image: string;
   address: string;
-  balance: number;
   isLedger: boolean;
 }

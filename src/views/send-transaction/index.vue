@@ -40,11 +40,12 @@ import FeeInfo from "@/components/fee-info/index.vue";
 import ButtonsBlock from "@/components/buttons-block/index.vue";
 import BaseButton from "@/components/base-button/index.vue";
 import SendError from "./components/send-error.vue";
-import { accounts, dot, recent } from "@/types/mock";
+import { accounts, recent } from "@/types/mock";
 import { Account } from "@/types/account";
 import { Token } from "@/types/token";
 import { ref, computed } from "vue";
 import { useRouter } from "vue-router";
+import { dot } from "@/types/tokens";
 
 const router = useRouter();
 

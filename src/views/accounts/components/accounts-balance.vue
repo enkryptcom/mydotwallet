@@ -4,7 +4,8 @@
       <div class="col-8">
         <h4 class="accounts-balance__title">Total Balance</h4>
         <h2 class="accounts-balance__amount">
-          {{ $filters.cryptoCurrencyFormat(totalBalance) }} <span>dot</span>
+          {{ $filters.cryptoCurrencyFormat(balance) }}
+          <span>{{ token?.symbol || "dot" }}</span>
         </h2>
         <p class="accounts-balance__fiat">
           {{ $filters.currencyFormat(totalUsdValue, "USD") }}
@@ -20,18 +21,23 @@
 
 <script setup lang="ts">
 import BaseButton from "@/components/base-button/index.vue";
-import { accounts } from "@/stores";
-import { ref, watch } from "vue";
+import { computed, PropType } from "vue";
+import { Token } from "@/types/token";
 
-const totalBalance = ref<number>(0);
-const totalUsdValue = ref<number>(0);
+const props = defineProps({
+  balance: {
+    type: Number,
+    default: 0,
+  },
+  token: {
+    type: Object as PropType<Token>,
+    default: undefined,
+  },
+});
 
-watch(accounts, () => {
-  totalBalance.value = accounts.value.reduce((previous, current) => {
-    return previous + current.balance;
-  }, 0);
+const totalUsdValue = computed(() => {
   // TODO get price of tokens so we can calculate usd value
-  totalUsdValue.value = totalBalance.value * 10;
+  return props.balance * (props.token?.price || 0);
 });
 </script>
 

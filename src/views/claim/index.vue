@@ -37,9 +37,10 @@ import ButtonsBlock from "@/components/buttons-block/index.vue";
 import BaseButton from "@/components/base-button/index.vue";
 import { Account } from "@/types/account";
 import { Token } from "@/types/token";
-import { recent, dot } from "@/types/mock";
+import { recent } from "@/types/mock";
 import { ref } from "vue";
 import { useRouter } from "vue-router";
+import { dot } from "@/types/tokens";
 
 const router = useRouter();
 
