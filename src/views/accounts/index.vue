@@ -6,7 +6,7 @@
       v-for="(item, index) in accounts"
       :key="index"
       :account="item"
-      :balance="nativeBalances[index]"
+      :balance="nativeBalances[item.address]"
       :token="nativeToken"
       :is-last="index == accounts.length - 1"
     ></accounts-item>
@@ -27,7 +27,7 @@ watch([accounts, apiPromise], () => {
 });
 
 const totalBalance = computed(() => {
-  return nativeBalances.value.reduce(
+  return Object.values(nativeBalances.value).reduce(
     (previous, current) => previous + (current || 0),
     0
   );

@@ -12,21 +12,20 @@ export const useGetBalances = async () => {
     isBalancesLoading.value = true;
     const api = await apiPromise.value;
 
-    const activeBalancePromises = accounts.value.map((acc) => {
-      return api.query.system.account<AccountInfoWithRefCount>(acc.address);
-    });
-    const result = await Promise.all(activeBalancePromises);
+    const addresses = accounts.value.map((acc) => acc.address);
 
-    nativeBalances.value = result.map((item) => {
-      return Number(
+    const result =
+      await api.query.system.account.multi<AccountInfoWithRefCount>(addresses);
+
+    result.forEach((item, index) => {
+      nativeBalances.value[addresses[index]] = Number(
         fromBase(item.data.free.toString(), api.registry.chainDecimals[0])
       );
     });
-
     isBalancesLoading.value = false;
   } catch (err) {
     isBalancesLoading.value = false;
-    nativeBalances.value = [];
+    nativeBalances.value = {};
     console.error(err);
   }
 };
