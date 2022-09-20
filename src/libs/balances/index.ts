@@ -7,7 +7,7 @@ import {
 import { AccountInfoWithRefCount } from "@polkadot/types/interfaces";
 import { fromBase } from "../utils/units";
 
-export const useGetBalances = async () => {
+export const useGetNativeBalances = async () => {
   try {
     isBalancesLoading.value = true;
     const api = await apiPromise.value;

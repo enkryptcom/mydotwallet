@@ -19,11 +19,11 @@ import EnkryptBanner from "@/components/enkrypt-banner/index.vue";
 import AccountsBalance from "./components/accounts-balance.vue";
 import AccountsItem from "./components/accounts-item.vue";
 import { accounts, apiPromise, nativeBalances, nativeToken } from "@/stores";
-import { useGetBalances } from "@/libs/balances";
+import { useGetNativeBalances } from "@/libs/balances";
 import { computed, watch } from "vue";
 
 watch([accounts, apiPromise], () => {
-  useGetBalances();
+  useGetNativeBalances();
 });
 
 const totalBalance = computed(() => {
