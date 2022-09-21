@@ -61,9 +61,7 @@
           <div class="col-3 row justify-content-end">
             <h3>
               {{
-                $filters.cryptoCurrencyFormatString(
-                  valuesBreakdown.available.balance
-                )
+                $filters.cryptoCurrencyFormat(valuesBreakdown.available.balance)
               }}
               <span>{{ token?.symbol || "dot" }}</span>
             </h3>
@@ -74,41 +72,25 @@
           </div>
         </div>
       </div>
-      <!-- <div class="accounts-item__detail-info">
+      <div
+        v-if="valuesBreakdown.staked.balance"
+        class="accounts-item__detail-info"
+      >
         <div class="row justify-content-beetwen align-items-center">
           <div class="col-3 row justify-content-start">
             <h4>Staked</h4>
           </div>
           <div class="col-3 row justify-content-end">
-            <p>{{ $filters.currencyFormat(7945.95, "USD") }}</p>
-          </div>
-          <div class="col-3 row justify-content-end">
-            <h3>{{ $filters.cryptoCurrencyFormat(1000) }} <span>dot</span></h3>
-          </div>
-          <div class="col-3 row justify-content-end"></div>
-        </div>
-      </div> -->
-      <div
-        v-if="valuesBreakdown.locked.balance"
-        class="accounts-item__detail-info"
-      >
-        <div class="row justify-content-beetwen align-items-center">
-          <div class="col-3 row justify-content-start">
-            <h4>Locked</h4>
-          </div>
-          <div class="col-3 row justify-content-end">
             <p>
               {{
-                $filters.currencyFormat(valuesBreakdown.locked.usdValue, "USD")
+                $filters.currencyFormat(valuesBreakdown.staked.usdValue, "USD")
               }}
             </p>
           </div>
           <div class="col-3 row justify-content-end">
             <h3>
               {{
-                $filters.cryptoCurrencyFormatString(
-                  valuesBreakdown.locked.balance
-                )
+                $filters.cryptoCurrencyFormat(valuesBreakdown.staked.balance)
               }}
               <span>{{ token?.symbol || "dot" }}</span>
             </h3>
@@ -134,9 +116,7 @@
           <div class="col-3 row justify-content-end">
             <h3>
               {{
-                $filters.cryptoCurrencyFormatString(
-                  valuesBreakdown.bonded.balance
-                )
+                $filters.cryptoCurrencyFormat(valuesBreakdown.bonded.balance)
               }}
               <span>{{ token?.symbol || "dot" }}</span>
             </h3>
@@ -164,9 +144,7 @@
           <div class="col-3 row justify-content-end">
             <h3>
               {{
-                $filters.cryptoCurrencyFormatString(
-                  valuesBreakdown.vested.balance
-                )
+                $filters.cryptoCurrencyFormat(valuesBreakdown.vested.balance)
               }}
               <span>{{ token?.symbol || "dot" }}</span>
             </h3>
@@ -215,7 +193,7 @@ const toggle = () => {
 
 const valuesBreakdown = computed(() => {
   const numAvailable = Number(props.balance?.available || 0);
-  const numLocked = Number(props.balance?.locked || 0);
+  const numStaked = Number(props.balance?.staked || 0);
   const numBonded = Number(props.balance?.bonded || 0);
   const numVested = Number(props.balance?.vested || 0);
 
@@ -224,9 +202,9 @@ const valuesBreakdown = computed(() => {
       balance: numAvailable,
       usdValue: numAvailable * (props.token?.price || 0),
     },
-    locked: {
-      balance: numLocked,
-      usdValue: numLocked * (props.token?.price || 0),
+    staked: {
+      balance: numStaked,
+      usdValue: numStaked * (props.token?.price || 0),
     },
     bonded: {
       balance: numBonded,

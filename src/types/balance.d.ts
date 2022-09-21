@@ -5,7 +5,8 @@ export interface Balance {
   reserved: string;
   vested: string;
   total: string;
-  bonded: string;
+  staked: string;
   redeemable: string;
   unbounding: string;
+  bonded: string;
 }

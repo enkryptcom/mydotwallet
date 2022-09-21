@@ -30,6 +30,25 @@ export const useGetNativeBalances = async () => {
     const unboundProgress = await api.derive.session.progress();
 
     addresses.forEach((item, index) => {
+      const unboundingCalc =
+        !stakingResult[index].unlocking || !unboundProgress
+          ? BN_ZERO
+          : (stakingResult[index].unlocking as DeriveUnlocking[])
+              .filter(
+                ({ remainingEras, value }) =>
+                  value.gt(BN_ZERO) && remainingEras.gt(BN_ZERO)
+              )
+              .map((unlock): [any, BN, BN] => [
+                unlock,
+                unlock.remainingEras,
+                unlock.remainingEras
+                  .sub(BN_ONE)
+                  .imul(unboundProgress.eraLength)
+                  .iadd(unboundProgress.eraLength)
+                  .isub(unboundProgress.eraProgress),
+              ])
+              .reduce((total, [{ value }]) => total.iadd(value), new BN(0));
+
       nativeBalances.value[accounts.value[index].address] = {
         free: fromBase(
           balanceResult[index].freeBalance.toString(),
@@ -57,7 +76,7 @@ export const useGetNativeBalances = async () => {
             .toString(),
           api.registry.chainDecimals[0]
         ),
-        bonded:
+        staked:
           stakingResult[index] &&
           stakingResult[index].stakingLedger &&
           stakingResult[index].stakingLedger.active &&
@@ -71,28 +90,16 @@ export const useGetNativeBalances = async () => {
           stakingResult[index].redeemable?.toString() || "0",
           api.registry.chainDecimals[0]
         ),
-        unbounding:
-          !stakingResult[index].unlocking || !unboundProgress
-            ? "0"
-            : fromBase(
-                (stakingResult[index].unlocking as DeriveUnlocking[])
-                  .filter(
-                    ({ remainingEras, value }) =>
-                      value.gt(BN_ZERO) && remainingEras.gt(BN_ZERO)
-                  )
-                  .map((unlock): [any, BN, BN] => [
-                    unlock,
-                    unlock.remainingEras,
-                    unlock.remainingEras
-                      .sub(BN_ONE)
-                      .imul(unboundProgress.eraLength)
-                      .iadd(unboundProgress.eraLength)
-                      .isub(unboundProgress.eraProgress),
-                  ])
-                  .reduce((total, [{ value }]) => total.iadd(value), new BN(0))
-                  .toString(),
-                api.registry.chainDecimals[0]
-              ),
+        unbounding: fromBase(
+          unboundingCalc.toString(),
+          api.registry.chainDecimals[0]
+        ),
+        bonded: fromBase(
+          unboundingCalc
+            .add(stakingResult[index].redeemable || BN_ZERO)
+            .toString(),
+          api.registry.chainDecimals[0]
+        ),
       };
     });
 
