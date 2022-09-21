@@ -28,7 +28,7 @@ watch([accounts, apiPromise], () => {
 
 const totalBalance = computed(() => {
   return Object.values(nativeBalances.value).reduce(
-    (previous, current) => previous + (current || 0),
+    (previous, current) => previous + Number(current?.total || 0),
     0
   );
 });

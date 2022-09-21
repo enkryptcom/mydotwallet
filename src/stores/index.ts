@@ -5,6 +5,7 @@ import { InjectedExtension } from "@polkadot/extension-inject/types";
 import type { Signer } from "@polkadot/api/types";
 import { Account } from "@/types/account";
 import { dot, ksm } from "@/types/tokens";
+import { Balance } from "@/types/balance";
 
 const POLKADOT_ENDPOINTS = [
   "wss://rpc.polkadot.io",
@@ -30,7 +31,7 @@ export const apiPromise = computed(() => {
 
 export const accounts = ref<Account[]>([]);
 
-export const nativeBalances = ref<Record<string, number>>({});
+export const nativeBalances = ref<Record<string, Balance>>({});
 
 export const ss58Format = computed(() => {
   switch (selectedNetwork.value) {

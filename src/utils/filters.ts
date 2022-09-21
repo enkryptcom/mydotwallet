@@ -34,6 +34,15 @@ export const cryptoCurrencyFormat = (value: number): string => {
   });
   return formatter.format(value);
 };
+export const cryptoCurrencyFormatString = (value: string): string => {
+  if (typeof value !== "string") {
+    return value;
+  }
+  const formatter = new Intl.NumberFormat("en-US", {
+    style: "decimal",
+  });
+  return formatter.format(Number(value));
+};
 export const formatDuration = (
   duration: moment.Duration,
   date: number

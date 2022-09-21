@@ -21,6 +21,7 @@
     "web3-utils": "^1.8.0"
   },
   "devDependencies": {
+    "@polkadot/api-derive": "^9.4.1",
     "@polkadot/extension-inject": "^0.44.6",
     "@polkadot/keyring": "^10.1.8",
     "@polkadot/types": "^9.4.1",

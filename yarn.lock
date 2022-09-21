@@ -1135,7 +1135,7 @@
     "@polkadot/util" "^10.1.8"
     rxjs "^7.5.6"
 
-"@polkadot/api-derive@9.4.1":
+"@polkadot/api-derive@9.4.1", "@polkadot/api-derive@^9.4.1":
   version "9.4.1"
   resolved "https://registry.yarnpkg.com/@polkadot/api-derive/-/api-derive-9.4.1.tgz#f02f43bc561ec680102531029b2d788f05214eac"
   integrity sha512-RgQtiVi+u2fxxleVZ1dxu7FPdj3YMGbwpaBDc9fr2/ys6Jna5myN1ZsGlO7LzUrGGzug1t8HwHmsy9Ssnlod7w==

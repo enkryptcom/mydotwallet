@@ -29,7 +29,7 @@
           {{
             balance === undefined
               ? "--"
-              : $filters.cryptoCurrencyFormat(balance)
+              : $filters.cryptoCurrencyFormatString(balance.total)
           }}
           <span>{{ token?.symbol || "dot" }}</span>
         </h3>
@@ -49,11 +49,23 @@
             <h4>Available</h4>
           </div>
           <div class="col-3 row justify-content-end">
-            <p>{{ $filters.currencyFormat(3745.24, "USD") }}</p>
+            <p>
+              {{
+                $filters.currencyFormat(
+                  valuesBreakdown.available.usdValue,
+                  "USD"
+                )
+              }}
+            </p>
           </div>
           <div class="col-3 row justify-content-end">
             <h3>
-              {{ $filters.cryptoCurrencyFormat(180.943) }} <span>dot</span>
+              {{
+                $filters.cryptoCurrencyFormatString(
+                  valuesBreakdown.available.balance
+                )
+              }}
+              <span>{{ token?.symbol || "dot" }}</span>
             </h3>
           </div>
           <div class="col-3 row justify-content-end">
@@ -62,7 +74,7 @@
           </div>
         </div>
       </div>
-      <div class="accounts-item__detail-info">
+      <!-- <div class="accounts-item__detail-info">
         <div class="row justify-content-beetwen align-items-center">
           <div class="col-3 row justify-content-start">
             <h4>Staked</h4>
@@ -75,33 +87,89 @@
           </div>
           <div class="col-3 row justify-content-end"></div>
         </div>
+      </div> -->
+      <div
+        v-if="valuesBreakdown.locked.balance"
+        class="accounts-item__detail-info"
+      >
+        <div class="row justify-content-beetwen align-items-center">
+          <div class="col-3 row justify-content-start">
+            <h4>Locked</h4>
+          </div>
+          <div class="col-3 row justify-content-end">
+            <p>
+              {{
+                $filters.currencyFormat(valuesBreakdown.locked.usdValue, "USD")
+              }}
+            </p>
+          </div>
+          <div class="col-3 row justify-content-end">
+            <h3>
+              {{
+                $filters.cryptoCurrencyFormatString(
+                  valuesBreakdown.locked.balance
+                )
+              }}
+              <span>{{ token?.symbol || "dot" }}</span>
+            </h3>
+          </div>
+          <div class="col-3 row justify-content-end"></div>
+        </div>
       </div>
-      <div class="accounts-item__detail-info">
+      <div
+        v-if="valuesBreakdown.bonded.balance"
+        class="accounts-item__detail-info"
+      >
         <div class="row justify-content-beetwen align-items-center">
           <div class="col-3 row justify-content-start">
             <h4>Bonded</h4>
           </div>
           <div class="col-3 row justify-content-end">
-            <p>{{ $filters.currencyFormat(1344.28, "USD") }}</p>
+            <p>
+              {{
+                $filters.currencyFormat(valuesBreakdown.bonded.usdValue, "USD")
+              }}
+            </p>
           </div>
           <div class="col-3 row justify-content-end">
-            <h3>{{ $filters.cryptoCurrencyFormat(168) }} <span>dot</span></h3>
+            <h3>
+              {{
+                $filters.cryptoCurrencyFormatString(
+                  valuesBreakdown.bonded.balance
+                )
+              }}
+              <span>{{ token?.symbol || "dot" }}</span>
+            </h3>
           </div>
           <div class="col-3 row justify-content-end">
             <base-button title="Unbond" :stroke="true" :small="true" />
           </div>
         </div>
       </div>
-      <div class="accounts-item__detail-info">
+      <div
+        v-if="valuesBreakdown.vested.balance"
+        class="accounts-item__detail-info"
+      >
         <div class="row justify-content-beetwen align-items-center">
           <div class="col-3 row justify-content-start">
             <h4>Vested</h4>
           </div>
           <div class="col-3 row justify-content-end">
-            <p>{{ $filters.currencyFormat(678.32, "USD") }}</p>
+            <p>
+              {{
+                $filters.currencyFormat(valuesBreakdown.vested.usdValue, "USD")
+              }}
+            </p>
           </div>
           <div class="col-3 row justify-content-end">
-            <h3>{{ $filters.cryptoCurrencyFormat(82) }} <span>dot</span></h3>
+            <h3>
+              {{
+                $filters.cryptoCurrencyFormatString(
+                  valuesBreakdown.vested.balance
+                )
+              }}
+              <span>{{ token?.symbol || "dot" }}</span>
+            </h3>
           </div>
           <div class="col-3 row justify-content-end">
             <span class="accounts-item__detail-info-ends">Ends in 45d 15h</span>
@@ -113,15 +181,16 @@
 </template>
 
 <script setup lang="ts">
-import { PropType, ref } from "vue";
+import { computed, PropType, ref } from "vue";
 import BaseButton from "@/components/base-button/index.vue";
 import Expand from "@/icons/common/expand.vue";
 import { Account } from "@/types/account";
 import { Token } from "@/types/token";
+import { Balance } from "@/types/balance";
 
 const isOpen = ref<boolean>(false);
 
-defineProps({
+const props = defineProps({
   account: {
     type: Object as PropType<Account>,
     default: () => ({}),
@@ -131,7 +200,7 @@ defineProps({
     default: false,
   },
   balance: {
-    type: Number,
+    type: Object as PropType<Balance>,
     default: undefined,
   },
   token: {
@@ -143,6 +212,32 @@ defineProps({
 const toggle = () => {
   isOpen.value = !isOpen.value;
 };
+
+const valuesBreakdown = computed(() => {
+  const numAvailable = Number(props.balance?.available || 0);
+  const numLocked = Number(props.balance?.locked || 0);
+  const numBonded = Number(props.balance?.bonded || 0);
+  const numVested = Number(props.balance?.vested || 0);
+
+  return {
+    available: {
+      balance: numAvailable,
+      usdValue: numAvailable * (props.token?.price || 0),
+    },
+    locked: {
+      balance: numLocked,
+      usdValue: numLocked * (props.token?.price || 0),
+    },
+    bonded: {
+      balance: numBonded,
+      usdValue: numBonded * (props.token?.price || 0),
+    },
+    vested: {
+      balance: numVested,
+      usdValue: numVested * (props.token?.price || 0),
+    },
+  };
+});
 </script>
 
 <style lang="less" scoped>
