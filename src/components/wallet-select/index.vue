@@ -74,7 +74,7 @@ const connectToWallet = async (wallet: WalletItem) => {
       isLedger: false,
     }));
 
-  return accounts;
+  return accounts.value;
 };
 </script>
 

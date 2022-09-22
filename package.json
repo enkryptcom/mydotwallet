@@ -12,6 +12,7 @@
     "publish": "git push origin `git subtree split --prefix dist main`:gh-pages --force"
   },
   "dependencies": {
+    "@chenfengyuan/vue-countdown": "2",
     "@polkadot/api": "^9.4.1",
     "@substrate/connect": "^0.7.13",
     "@vueuse/core": "^9.1.1",

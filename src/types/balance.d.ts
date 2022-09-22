@@ -4,6 +4,8 @@ export interface Balance {
   locked: string;
   reserved: string;
   vested: string;
+  vestingEndBlock: number;
+  vestingEndMillisecondsLeft: number;
   total: string;
   staked: string;
   redeemable: string;

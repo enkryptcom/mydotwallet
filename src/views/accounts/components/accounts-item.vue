@@ -150,7 +150,22 @@
             </h3>
           </div>
           <div class="col-3 row justify-content-end">
-            <span class="accounts-item__detail-info-ends">Ends in 45d 15h</span>
+            <span
+              v-if="balance && balance.vestingEndMillisecondsLeft"
+              class="accounts-item__detail-info-ends"
+            >
+              <vue-countdown
+                v-slot="{ days, hours, minutes }"
+                :interval="60000"
+                :time="balance.vestingEndMillisecondsLeft"
+              >
+                Ends in{{
+                  `${days ? ` ${days}d` : ""}${
+                    hours ? ` ${hours}h` : ""
+                  } ${minutes}m`
+                }}
+              </vue-countdown>
+            </span>
           </div>
         </div>
       </div>
@@ -165,6 +180,7 @@ import Expand from "@/icons/common/expand.vue";
 import { Account } from "@/types/account";
 import { Token } from "@/types/token";
 import { Balance } from "@/types/balance";
+import VueCountdown from "@chenfengyuan/vue-countdown";
 
 const isOpen = ref<boolean>(false);
 

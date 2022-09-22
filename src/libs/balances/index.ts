@@ -29,7 +29,24 @@ export const useGetNativeBalances = async () => {
 
     const unboundProgress = await api.derive.session.progress();
 
-    addresses.forEach((item, index) => {
+    const expectedBlockTime = Number(
+      api.consts?.babe?.expectedBlockTime?.toString() || 6000
+    );
+    const lastBlock = await api.rpc.chain.getHeader();
+    const lastBlockNumber = lastBlock.number.toNumber();
+
+    addresses.forEach((_, index) => {
+      // Calculate vesting end
+      const vestingEndBlock = balanceResult[index].vesting.reduce(
+        (prev, current) => {
+          return current.endBlock.toNumber() > prev
+            ? current.endBlock.toNumber()
+            : prev;
+        },
+        0
+      );
+      const timeToEnd = (vestingEndBlock - lastBlockNumber) * expectedBlockTime;
+      // Calculate unbounding amount
       const unboundingCalc =
         !stakingResult[index].unlocking || !unboundProgress
           ? BN_ZERO
@@ -49,6 +66,7 @@ export const useGetNativeBalances = async () => {
               ])
               .reduce((total, [{ value }]) => total.iadd(value), new BN(0));
 
+      // Set balance values to store
       nativeBalances.value[accounts.value[index].address] = {
         free: fromBase(
           balanceResult[index].freeBalance.toString(),
@@ -70,6 +88,10 @@ export const useGetNativeBalances = async () => {
           balanceResult[index].vestedBalance.toString(),
           api.registry.chainDecimals[0]
         ),
+        vestingEndBlock:
+          vestingEndBlock > lastBlockNumber ? vestingEndBlock : 0,
+        vestingEndMillisecondsLeft:
+          vestingEndBlock > lastBlockNumber ? timeToEnd : 0,
         total: fromBase(
           balanceResult[index].freeBalance
             .add(balanceResult[index].reservedBalance)
