@@ -2,10 +2,11 @@
   <div class="amount-input" :class="{ error: isError }">
     <img :src="token.image" class="amount-input__icon" />
     <base-button
+      :stroke="true"
       class="amount-input__max"
       title="Max"
-      :stroke="true"
       :small="true"
+      @click="setMaxValue"
     />
     <div class="amount-input__wrapper">
       <input
@@ -51,9 +52,17 @@ const props = defineProps({
       return "";
     },
   },
+  maxValue: {
+    type: String,
+    default: "0",
+  },
 });
 
 const emit = defineEmits(["update:amount"]);
+
+const setMaxValue = () => {
+  emit("update:amount", props.maxValue);
+};
 
 const textValue = computed({
   get: () => (props.value != "0" ? props.value.replace(/[^0-9.-]+/g, "") : ""),

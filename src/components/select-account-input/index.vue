@@ -1,14 +1,14 @@
 <template>
   <div class="select-account-input">
     <a ref="toggle" class="select-account-input__info" @click="toggleAccounts">
-      <img v-if="account.image" :src="account.image" />
+      <img v-if="account?.image" :src="account.image" />
       <div v-else class="select-account-input__info-icon"></div>
       <div class="select-account-input__info-name">
         <h5 class="select-account-input__title">{{ title }}</h5>
         <p>
-          {{ account.name }}
+          {{ account?.name }}
           <span>
-            {{ $filters.replaceWithEllipsis(account.address, 6, 6) }}
+            {{ $filters.replaceWithEllipsis(account?.address, 6, 6) }}
           </span>
           <span v-if="isAmount">
             {{ $filters.cryptoCurrencyFormat(15.9) }} <span>dot</span>
