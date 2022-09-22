@@ -12,9 +12,39 @@
     <div class="stake__calculate">
       <div class="stake__calculate-header">
         <h4>Calculate investments</h4>
+        <info-tooltip :text="periodInfo" />
+      </div>
+      <div class="row justify-content-start">
+        <div class="col-6">
+          <stake-amount-input
+            :token="token"
+            :value="String(amount)"
+            @update:amount="inputAmount"
+          />
+        </div>
+        <div class="col-6">
+          <div class="stake__calculate-items">
+            <div class="stake__calculate-block">
+              <h6>Estimated Returns</h6>
+              <h5>
+                {{ $filters.cryptoCurrencyFormat(140.738) }} <span>dot</span>
+              </h5>
+              <p>~$980.37</p>
+            </div>
+            <div class="stake__calculate-block">
+              <h6>Estimated Yield</h6>
+              <h5>14.27%</h5>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
-    <buttons-block>
+    <buttons-block :is-space="true">
+      <div class="stake__lock">
+        <Switch />
+        <p>Lock rewards for compounding?</p>
+        <info-tooltip :text="rewardsInfo" />
+      </div>
       <base-button title="Start staking" :action="nextAction" :send="true" />
     </buttons-block>
   </white-wrapper>
@@ -26,12 +56,29 @@ import ButtonsBlock from "@/components/buttons-block/index.vue";
 import BaseButton from "@/components/base-button/index.vue";
 import StakeStartImage from "@/icons/stake/stake-start-image.vue";
 import MoreLink from "@/components/more-link/index.vue";
+import Switch from "@/components/switch/index.vue";
+import InfoTooltip from "@/components/info-tooltip/index.vue";
+import StakeAmountInput from "./components/stake-amount-input.vue";
 import { useRouter } from "vue-router";
+import { dot } from "@/types/mock";
+import { Token } from "@/types/token";
+import { ref } from "vue";
 
 const router = useRouter();
 
+const token = ref<Token>(dot);
+const amount = ref<number>(0);
+const rewardsInfo =
+  "If you choose not to lock your rewards, then your newly minted rewards will be transferrable by default. However, this would mean lower earnings over longer period of time.";
+const periodInfo =
+  "Time period is only used for estimating returns. It doesn’t affect the unbonding period of approximately 28 days.";
+
+const inputAmount = (newVal: string) => {
+  amount.value = Number(newVal);
+};
+
 const nextAction = () => {
-  // router.push({ name: "claiming" });
+  router.push({ name: "stake-enter-amount" });
 };
 
 const moreAction = () => {
@@ -75,12 +122,63 @@ const moreAction = () => {
   }
   &__calculate {
     &-header {
-      margin: 0 0 8px 0;
+      margin: 0 0 10px 0;
+      display: flex;
+      flex-direction: row;
+      justify-content: flex-start;
+      align-items: center;
+
       h4 {
         .body1__Bold();
         color: @primaryLabel;
         margin: 0;
       }
+    }
+    &-items {
+      display: flex;
+      flex-direction: row;
+      justify-content: space-between;
+      align-items: flex-start;
+      text-align: center;
+      padding-left: 4px;
+      .sizing();
+      text-align: left;
+      height: 98px;
+    }
+    &-block {
+      text-align: left;
+      width: 50%;
+      padding-top: 12px;
+      h6 {
+        .caption__Regular();
+        color: @secondaryLabel;
+        letter-spacing: 0.25px;
+        margin: 0 0 4px 0;
+      }
+      h5 {
+        .headline6__Bold();
+        letter-spacing: 0.15px;
+        color: @primaryLabel;
+        margin: 0 0 4px 0;
+      }
+      p {
+        .body2__Regular();
+        color: @secondaryLabel;
+        letter-spacing: 0.25px;
+        margin: 0;
+      }
+    }
+  }
+  &__lock {
+    display: flex;
+    flex-direction: row;
+    justify-content: flex-start;
+    align-items: center;
+
+    p {
+      .body2__Regular();
+      margin: 0 8px;
+      color: @primaryLabel;
     }
   }
 }

@@ -3,10 +3,13 @@ import Accounts from "@/views/accounts/index.vue";
 import SendTransaction from "@/views/send-transaction/index.vue";
 import SendTransactionVerify from "@/views/send-transaction-verify/index.vue";
 import Invite from "@/views/invite-friend/index.vue";
-import Stake from "@/views/stake/index.vue";
-import Crowdloan from "@/views/crowdloan/index.vue";
 import Claim from "@/views/claim/index.vue";
 import Claiming from "@/views/claiming/index.vue";
+import Stake from "@/views/stake/index.vue";
+import StakeEnterAmount from "@/views/stake-enter-amount/index.vue";
+import StakeNominate from "@/views/stake-nominate/index.vue";
+import StakeConfirm from "@/views/stake-confirm/index.vue";
+import Crowdloan from "@/views/crowdloan/index.vue";
 import Empty from "@/views/empty/index.vue";
 
 const routes = {
@@ -52,10 +55,36 @@ const routes = {
   },
   stake: {
     path: "/stake",
-    components: {
-      view: Stake,
-    },
-    name: "stake",
+    children: [
+      {
+        path: "",
+        components: {
+          view: Stake,
+        },
+        name: "stake",
+      },
+      {
+        path: "enter-amount",
+        components: {
+          view: StakeEnterAmount,
+        },
+        name: "stake-enter-amount",
+      },
+      {
+        path: "enter-nominate",
+        components: {
+          view: StakeNominate,
+        },
+        name: "stake-nominate",
+      },
+      {
+        path: "confirm",
+        components: {
+          view: StakeConfirm,
+        },
+        name: "stake-confirm",
+      },
+    ],
   },
   crowdloan: {
     path: "/crowdloan",
