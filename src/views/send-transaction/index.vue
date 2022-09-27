@@ -52,6 +52,8 @@ import { ref, computed, watch } from "vue";
 import { useRouter } from "vue-router";
 import { dot } from "@/types/tokens";
 import { useGetAccountNativeBalance } from "@/libs/balances";
+import { SendOptions, TransferType } from "@/types/base-token";
+import { ApiPromise } from "@polkadot/api";
 const router = useRouter();
 
 const fromAccount = ref<Account>(accounts.value[0]);
@@ -82,6 +84,26 @@ const inputAmount = (newVal: string) => {
 
 const nextAction = () => {
   router.push({ name: "send-verify" });
+};
+
+const send = async (
+  api: any,
+  to: string,
+  amount: string,
+  options: SendOptions
+): Promise<any> => {
+  const transferType: TransferType = options ? options.type : "keepAlive";
+
+  switch (transferType) {
+    case "transfer":
+      return (api as ApiPromise).tx.balances.transfer(to, amount);
+    case "keepAlive":
+      return (api as ApiPromise).tx.balances.transferKeepAlive(to, amount);
+    case "all":
+      return (api as ApiPromise).tx.balances.transferAll(to, false);
+    case "allKeepAlive":
+      return (api as ApiPromise).tx.balances.transferAll(to, true);
+  }
 };
 </script>
 

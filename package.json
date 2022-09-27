@@ -16,6 +16,7 @@
     "@polkadot/api": "^9.4.1",
     "@substrate/connect": "^0.7.13",
     "@vueuse/core": "^9.1.1",
+    "bignumber.js": "^9.1.0",
     "moment": "^2.29.4",
     "vue": "^3.2.37",
     "vue-router": "^4.1.3",
