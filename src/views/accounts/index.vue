@@ -21,9 +21,11 @@ import AccountsItem from "./components/accounts-item.vue";
 import { accounts, apiPromise, nativeBalances, nativeToken } from "@/stores";
 import { useGetNativeBalances } from "@/libs/balances";
 import { computed, watch } from "vue";
+import { useGetNativePrice } from "@/libs/prices";
 
 watch([accounts, apiPromise], () => {
   useGetNativeBalances();
+  useGetNativePrice();
 });
 
 const totalBalance = computed(() => {

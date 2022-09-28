@@ -1,13 +1,13 @@
 <template>
   <div class="send-verify-amount">
-    <img class="send-verify-amount__icon" :src="token.image" />
+    <img class="send-verify-amount__icon" :src="token.icon" />
     <div class="send-verify-amount__info">
       <h2 class="send-verify-amount__info-amount">
         {{ $filters.cryptoCurrencyFormat(amount) }}
         <span>{{ token.symbol }}</span>
       </h2>
       <div class="send-verify-amount__info-fiat">
-        ~{{ $filters.currencyFormat(token.price * amount, "USD") }}
+        ~{{ $filters.currencyFormat(verifyAmount, "USD") }}
       </div>
     </div>
   </div>
@@ -15,9 +15,9 @@
 
 <script setup lang="ts">
 import { Token } from "@/types/token";
-import { PropType } from "vue";
+import { computed, PropType } from "vue";
 
-defineProps({
+const props = defineProps({
   token: {
     type: Object as PropType<Token>,
     default: null,
@@ -26,6 +26,10 @@ defineProps({
     type: Number,
     default: 0,
   },
+});
+
+const verifyAmount = computed(() => {
+  return (props.token.price || 0) * props.amount;
 });
 </script>
 

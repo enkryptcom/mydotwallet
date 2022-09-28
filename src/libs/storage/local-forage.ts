@@ -1,4 +1,4 @@
-import { BrowserStorageArea } from "@enkryptcom/types";
+import { BrowserStorageArea } from "@/types/storage";
 import LocalForageLib from "localforage";
 
 class LocalForage implements BrowserStorageArea {
@@ -22,7 +22,7 @@ class LocalForage implements BrowserStorageArea {
   }
 
   async set(items: Record<string, any>): Promise<void> {
-    const promises = [];
+    const promises: any[] = [];
     Object.keys(items).forEach((key) => {
       promises.push(this.storage.setItem(key, items[key]));
     });
@@ -47,7 +47,7 @@ class LocalForage implements BrowserStorageArea {
   }
 
   async getWholeStorage(): Promise<Record<string, any>> {
-    const storeOb = {};
+    const storeOb: Record<string, any> = {};
     return this.storage
       .iterate((value, key) => {
         storeOb[key] = value;

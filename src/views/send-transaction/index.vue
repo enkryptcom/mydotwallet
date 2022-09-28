@@ -54,6 +54,7 @@ import { dot } from "@/types/tokens";
 import { useGetAccountNativeBalance } from "@/libs/balances";
 import { SendOptions, TransferType } from "@/types/base-token";
 import { ApiPromise } from "@polkadot/api";
+import { useGetNativePrice } from "@/libs/prices";
 const router = useRouter();
 
 const fromAccount = ref<Account>(accounts.value[0]);
@@ -67,6 +68,7 @@ const isValid = computed<boolean>(() => {
 watch(fromAccount, () => {
   if (fromAccount.value) {
     useGetAccountNativeBalance(fromAccount.value.address);
+    useGetNativePrice();
   }
 });
 

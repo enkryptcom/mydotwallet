@@ -4,4 +4,7 @@ export interface Token {
   image: string;
   symbol: string;
   price: number;
+  decimals: number;
+  existentialDeposit: number;
+  coingeckoID: string;
 }

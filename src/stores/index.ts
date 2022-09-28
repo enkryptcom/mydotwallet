@@ -57,6 +57,8 @@ export const nativeToken = computed(() => {
 
 export const isBalancesLoading = ref<boolean>(false);
 
+export const isPricesLoading = ref<boolean>(false);
+
 export const extension = ref<InjectedExtension>();
 
 export const signer = ref<Signer>();
