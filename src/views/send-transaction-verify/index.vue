@@ -44,18 +44,56 @@ import SendVerifySuccess from "./components/send-verify-success.vue";
 
 import { Account } from "@/types/account";
 import { Token } from "@/types/token";
-import { ref } from "vue";
-import { useRouter } from "vue-router";
-import { accounts, recent } from "@/types/mock";
+import { ref, watch } from "vue";
+import { useRoute, useRouter } from "vue-router";
+import { recent } from "@/types/mock";
+import {
+  accounts,
+  apiPromise,
+  nativeBalances,
+  nativeToken,
+  selectedNetwork,
+} from "@/stores";
 import { dot } from "@/types/tokens";
 
 const router = useRouter();
+const route = useRoute();
 
-const fromAccount = ref<Account>(accounts[0]);
+const fromAccount = ref<Account>(accounts.value[1]);
 const toAccount = ref<Account>(recent[1]);
-const amount = ref<number>(10.5);
+const amount = ref<string>();
 const token = ref<Token>(dot);
 const isSend = ref<boolean>(false);
+
+watch(
+  () => route.params.from,
+  async (auxAddress) => {
+    const found = accounts.value.find((item) => item.address === auxAddress);
+    if (found) {
+      fromAccount.value = found;
+    }
+  }
+);
+
+watch(
+  () => route.params.to,
+  async (auxAddress) => {
+    const found = accounts.value.find((item) => item.address === auxAddress);
+    if (found) {
+      toAccount.value = found;
+    }
+  }
+);
+
+watch(
+  () => route.params.amount,
+  async (auxAmount) => {
+    const converted = Number(auxAmount);
+    if (converted) {
+      amount.value = auxAmount.toString();
+    }
+  }
+);
 
 const nextAction = () => {
   isSend.value = true;

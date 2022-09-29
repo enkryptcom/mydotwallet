@@ -23,21 +23,22 @@
 import BaseButton from "@/components/base-button/index.vue";
 import { computed, PropType } from "vue";
 import { Token } from "@/types/token";
+import BigNumber from "bignumber.js";
+import { nativeToken } from "@/stores";
 
 const props = defineProps({
   balance: {
-    type: Number,
-    default: 0,
+    type: Object as PropType<BigNumber>,
+    default: new BigNumber(0),
   },
   token: {
     type: Object as PropType<Token>,
-    default: undefined,
+    default: nativeToken,
   },
 });
 
 const totalUsdValue = computed(() => {
-  // TODO get price of tokens so we can calculate usd value
-  return props.balance * (props.token?.price || 0);
+  return props.balance.times(props.token.price);
 });
 </script>
 

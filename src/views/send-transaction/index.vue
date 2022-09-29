@@ -15,12 +15,13 @@
         @update:select="selectToAccount"
       />
       <amount-input
-        :token="token"
+        :has-enough-balance="hasEnough"
+        :token="selectedAsset"
         :value="String(amount)"
         :max-value="nativeBalances[fromAccount?.address]?.available"
         @update:amount="inputAmount"
       />
-      <fee-info />
+      <fee-info :fee="fee" />
       <send-error />
       <buttons-block>
         <base-button
@@ -45,24 +46,35 @@ import ButtonsBlock from "@/components/buttons-block/index.vue";
 import BaseButton from "@/components/base-button/index.vue";
 import SendError from "./components/send-error.vue";
 import { recent } from "@/types/mock";
-import { accounts, nativeBalances } from "@/stores";
+import {
+  accounts,
+  apiPromise,
+  nativeBalances,
+  nativeToken,
+  selectedNetwork,
+} from "@/stores";
 import { Account } from "@/types/account";
 import { Token } from "@/types/token";
 import { ref, computed, watch } from "vue";
-import { useRouter } from "vue-router";
-import { dot } from "@/types/tokens";
+import { useRoute, useRouter } from "vue-router";
 import { useGetAccountNativeBalance } from "@/libs/balances";
-import { SendOptions, TransferType } from "@/types/base-token";
+import { TransferType } from "@/types/transfer";
 import { ApiPromise } from "@polkadot/api";
 import { useGetNativePrice } from "@/libs/prices";
+import { fromBase, isValidDecimals } from "@/libs/utils/units";
+import BigNumber from "bignumber.js";
+import { GasFeeInfo } from "@/types/transaction";
 const router = useRouter();
+const route = useRoute();
 
 const fromAccount = ref<Account>(accounts.value[0]);
-const toAccount = ref<Account | null>(null);
-const token = ref<Token>(dot);
-const amount = ref<number>(0);
+const toAccount = ref<Account>();
+const amount = ref<string>("");
+const fee = ref<GasFeeInfo>();
+const selectedAsset = ref<Token>(nativeToken.value);
+const hasEnough = ref(true);
 const isValid = computed<boolean>(() => {
-  return !!fromAccount.value && !!toAccount.value && amount.value > 0;
+  return !!fromAccount.value && !!toAccount.value && Number(amount.value) > 0;
 });
 
 watch(fromAccount, () => {
@@ -71,6 +83,41 @@ watch(fromAccount, () => {
     useGetNativePrice();
   }
 });
+
+watch(selectedNetwork, () => {
+  selectedAsset.value = nativeToken.value;
+});
+
+watch(
+  () => route.params.from,
+  async (auxAddress) => {
+    const found = accounts.value.find((item) => item.address === auxAddress);
+    if (found) {
+      fromAccount.value = found;
+    }
+  }
+);
+
+watch(
+  () => route.params.to,
+  async (auxAddress) => {
+    const found = accounts.value.find((item) => item.address === auxAddress);
+    if (found) {
+      toAccount.value = found;
+    }
+  }
+);
+
+watch(
+  () => route.params.amount,
+  async (auxAmount) => {
+    console.log(auxAmount)
+    const converted = Number(auxAmount);
+    if (converted) {
+      amount.value = auxAmount.toString();
+    }
+  }
+);
 
 const selectFromAccount = (account: Account) => {
   fromAccount.value = account;
@@ -81,21 +128,69 @@ const selectToAccount = (account: Account) => {
 };
 
 const inputAmount = (newVal: string) => {
-  amount.value = Number(newVal);
+  amount.value = newVal;
 };
 
 const nextAction = () => {
   router.push({ name: "send-verify" });
 };
 
+watch([selectedAsset, amount, nativeBalances, toAccount], async () => {
+  if (amount.value && selectedAsset.value && toAccount.value) {
+    if (
+      !isValidDecimals(amount.value.toString(), selectedAsset.value.decimals)
+    ) {
+      hasEnough.value = false;
+      return;
+    }
+
+    const api = await apiPromise.value;
+    await api.isReady;
+
+    const rawAmount = amount.value || 0;
+
+    const rawBalance = Number(
+      nativeBalances.value[fromAccount.value.address]?.available || 0
+    );
+    if (rawAmount > rawBalance) {
+      hasEnough.value = false;
+    } else {
+      hasEnough.value = true;
+    }
+
+    const transferType = "all";
+
+    const tx = await send(
+      api,
+      toAccount.value.address,
+      rawAmount.toString(),
+      transferType
+    );
+    const { partialFee } = (
+      await tx.paymentInfo(fromAccount.value.address)
+    ).toJSON();
+
+    const txFeeHuman = new BigNumber(
+      fromBase(partialFee?.toString() ?? "", selectedAsset.value.decimals)
+    );
+
+    const txPrice = new BigNumber(selectedAsset.value.price).times(txFeeHuman);
+
+    fee.value = {
+      fiatSymbol: "USD",
+      fiatValue: txPrice,
+      nativeSymbol: selectedAsset.value.symbol ?? "",
+      nativeValue: txFeeHuman,
+    };
+  }
+});
+
 const send = async (
   api: any,
   to: string,
   amount: string,
-  options: SendOptions
+  transferType: TransferType = "keepAlive"
 ): Promise<any> => {
-  const transferType: TransferType = options ? options.type : "keepAlive";
-
   switch (transferType) {
     case "transfer":
       return (api as ApiPromise).tx.balances.transfer(to, amount);

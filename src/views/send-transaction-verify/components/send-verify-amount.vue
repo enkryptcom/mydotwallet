@@ -1,6 +1,6 @@
 <template>
   <div class="send-verify-amount">
-    <img class="send-verify-amount__icon" :src="token.icon" />
+    <img class="send-verify-amount__icon" :src="token.image" />
     <div class="send-verify-amount__info">
       <h2 class="send-verify-amount__info-amount">
         {{ $filters.cryptoCurrencyFormat(amount) }}
@@ -16,6 +16,7 @@
 <script setup lang="ts">
 import { Token } from "@/types/token";
 import { computed, PropType } from "vue";
+import BigNumber from "bignumber.js";
 
 const props = defineProps({
   token: {
@@ -23,13 +24,13 @@ const props = defineProps({
     default: null,
   },
   amount: {
-    type: Number,
-    default: 0,
+    type: String,
+    default: "",
   },
 });
 
 const verifyAmount = computed(() => {
-  return (props.token.price || 0) * props.amount;
+  return new BigNumber(props.amount || 0).times(props.token.price);
 });
 </script>
 

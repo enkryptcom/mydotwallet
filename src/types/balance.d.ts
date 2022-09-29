@@ -1,14 +1,16 @@
+import BigNumber from "bignumber.js";
+
 export interface Balance {
-  free: string;
-  available: string;
-  locked: string;
-  reserved: string;
-  vested: string;
+  free: BigNumber;
+  available: BigNumber;
+  locked: BigNumber;
+  reserved: BigNumber;
+  vested: BigNumber;
   vestingEndBlock: number;
   vestingEndMillisecondsLeft: number;
-  total: string;
-  staked: string;
-  redeemable: string;
-  unbounding: string;
-  bonded: string;
+  total: BigNumber;
+  staked: BigNumber;
+  redeemable: BigNumber;
+  unbounding: BigNumber;
+  bonded: BigNumber;
 }

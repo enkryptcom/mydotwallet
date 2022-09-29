@@ -3,8 +3,8 @@ export interface Token {
   name: string;
   image: string;
   symbol: string;
-  price: number;
+  price: BigNumber;
   decimals: number;
-  existentialDeposit: number;
+  existentialDeposit: BigNumber;
   coingeckoID: string;
 }

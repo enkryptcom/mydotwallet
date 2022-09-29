@@ -4,6 +4,7 @@
     <base-button
       :stroke="true"
       class="amount-input__max"
+      :class="{ error: !hasEnoughBalance }"
       title="Max"
       :small="true"
       @click="setMaxValue"
@@ -11,20 +12,21 @@
     <div class="amount-input__wrapper">
       <input
         ref="inputRef"
-        v-model="textValue"
-        type="text"
+        v-model="amountValue"
+        type="number"
         class="amount-input__input"
-        placeholder="0 DOT"
+        placeholder="0"
+        :class="{ error: !hasEnoughBalance }"
         :style="{ width: size + 'ch' }"
       />
       <span v-show="props.value != '0'" @click="focus">{{ token.symbol }}</span>
     </div>
 
-    <p v-if="props.value == '0'" class="amount-input__fiat">
-      {{ $filters.currencyFormat(0, "USD") }}
+    <p v-if="props.value" class="amount-input__fiat">
+      ~{{ $filters.currencyFormat(amountInFiat, "USD") }}
     </p>
     <p v-else class="amount-input__fiat">
-      ~{{ $filters.currencyFormat(3.1, "USD") }}
+      {{ $filters.currencyFormat(0, "USD") }}
     </p>
   </div>
 </template>
@@ -33,6 +35,8 @@
 import { PropType, computed, ref, ComponentPublicInstance } from "vue";
 import { Token } from "@/types/token";
 import BaseButton from "@/components/base-button/index.vue";
+import { nativeToken } from "@/stores";
+import BigNumber from "bignumber.js";
 
 const inputRef = ref<ComponentPublicInstance<HTMLInputElement>>();
 defineExpose({ inputRef });
@@ -40,7 +44,11 @@ defineExpose({ inputRef });
 const props = defineProps({
   token: {
     type: Object as PropType<Token>,
-    default: null,
+    default: nativeToken,
+  },
+  hasEnoughBalance: {
+    type: Boolean,
+    default: false,
   },
   isError: {
     type: Boolean,
@@ -48,13 +56,11 @@ const props = defineProps({
   },
   value: {
     type: String,
-    default: () => {
-      return "";
-    },
+    default: "",
   },
   maxValue: {
-    type: String,
-    default: "0",
+    type: Object as PropType<BigNumber>,
+    default: new BigNumber(0),
   },
 });
 
@@ -64,13 +70,18 @@ const setMaxValue = () => {
   emit("update:amount", props.maxValue);
 };
 
-const textValue = computed({
-  get: () => (props.value != "0" ? props.value.replace(/[^0-9.-]+/g, "") : ""),
-  set: (value) => emit("update:amount", value.replace(/[^0-9.-]+/g, "")),
+const amountValue = computed({
+  get: () => props.value,
+  set: (value) => {
+    emit("update:amount", value ? new BigNumber(value).toFixed() : "");
+  },
+});
+const size = computed(() => {
+  return amountValue.value.length == 0 ? 70 : amountValue.value.length;
 });
 
-const size = computed(() => {
-  return textValue.value.length == 0 ? 70 : textValue.value.length;
+const amountInFiat = computed(() => {
+  return new BigNumber(props.value || 0).times(props.token.price);
 });
 
 const focus = () => {
@@ -123,6 +134,15 @@ const focus = () => {
     margin-bottom: 4px;
     max-width: 100%;
 
+    &[type="number"]::-webkit-outer-spin-button,
+    &[type="number"]::-webkit-inner-spin-button {
+      -webkit-appearance: none;
+      margin: 0;
+    }
+    &[type="number"] {
+      -moz-appearance: textfield;
+    }
+
     &::placeholder {
       color: @tertiaryLabel;
     }
@@ -152,6 +172,10 @@ const focus = () => {
     letter-spacing: 0.25px;
     color: @tertiaryLabel;
     margin: 0;
+  }
+
+  .error {
+    color: @error !important;
   }
 }
 </style>

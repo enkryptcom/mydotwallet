@@ -29,7 +29,7 @@
           {{
             balance === undefined
               ? "--"
-              : $filters.cryptoCurrencyFormatString(balance.total)
+              : $filters.cryptoCurrencyFormat(balance.total)
           }}
           <span>{{ token?.symbol || "dot" }}</span>
         </h3>

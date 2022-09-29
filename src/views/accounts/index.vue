@@ -22,6 +22,7 @@ import { accounts, apiPromise, nativeBalances, nativeToken } from "@/stores";
 import { useGetNativeBalances } from "@/libs/balances";
 import { computed, watch } from "vue";
 import { useGetNativePrice } from "@/libs/prices";
+import BigNumber from "bignumber.js";
 
 watch([accounts, apiPromise], () => {
   useGetNativeBalances();
@@ -30,8 +31,8 @@ watch([accounts, apiPromise], () => {
 
 const totalBalance = computed(() => {
   return Object.values(nativeBalances.value).reduce(
-    (previous, current) => previous + Number(current?.total || 0),
-    0
+    (previous, current) => previous.plus(current?.total || 0),
+    new BigNumber(0)
   );
 });
 </script>

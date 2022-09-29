@@ -12,6 +12,7 @@ import {
 } from "@polkadot/api-derive/types";
 import { fromBase } from "../utils/units";
 import { BN, BN_ONE, BN_ZERO } from "@polkadot/util";
+import BigNumber from "bignumber.js";
 
 export const useGetNativeBalances = async () => {
   try {
@@ -132,30 +133,48 @@ const buildBalanceFromResults = (
           .reduce((total, [{ value }]) => total.iadd(value), new BN(0));
 
   return {
-    free: fromBase(balanceResult.freeBalance.toString(), decimals),
-    available: fromBase(balanceResult.availableBalance.toString(), decimals),
-    locked: fromBase(balanceResult.lockedBalance.toString(), decimals),
-    reserved: fromBase(balanceResult.reservedBalance.toString(), decimals),
-    vested: fromBase(balanceResult.vestedBalance.toString(), decimals),
+    free: new BigNumber(
+      fromBase(balanceResult.freeBalance.toString(), decimals)
+    ),
+    available: new BigNumber(
+      fromBase(balanceResult.availableBalance.toString(), decimals)
+    ),
+    locked: new BigNumber(
+      fromBase(balanceResult.lockedBalance.toString(), decimals)
+    ),
+    reserved: new BigNumber(
+      fromBase(balanceResult.reservedBalance.toString(), decimals)
+    ),
+    vested: new BigNumber(
+      fromBase(balanceResult.vestedBalance.toString(), decimals)
+    ),
     vestingEndBlock: vestingEndBlock > lastBlockNumber ? vestingEndBlock : 0,
     vestingEndMillisecondsLeft:
       vestingEndBlock > lastBlockNumber ? timeToEnd : 0,
-    total: fromBase(
-      balanceResult.freeBalance.add(balanceResult.reservedBalance).toString(),
-      decimals
+    total: new BigNumber(
+      fromBase(
+        balanceResult.freeBalance.add(balanceResult.reservedBalance).toString(),
+        decimals
+      )
     ),
     staked:
       stakingResult &&
       stakingResult.stakingLedger &&
       stakingResult.stakingLedger.active &&
       stakingResult.accountId.eq(stakingResult.stashId)
-        ? fromBase(stakingResult.stakingLedger.active.unwrap(), decimals)
-        : "0",
-    redeemable: fromBase(stakingResult.redeemable?.toString() || "0", decimals),
-    unbounding: fromBase(unboundingCalc.toString(), decimals),
-    bonded: fromBase(
-      unboundingCalc.add(stakingResult.redeemable || BN_ZERO).toString(),
-      decimals
+        ? new BigNumber(
+            fromBase(stakingResult.stakingLedger.active.unwrap(), decimals)
+          )
+        : new BigNumber(0),
+    redeemable: new BigNumber(
+      fromBase(stakingResult.redeemable?.toString() || "0", decimals)
+    ),
+    unbounding: new BigNumber(fromBase(unboundingCalc.toString(), decimals)),
+    bonded: new BigNumber(
+      fromBase(
+        unboundingCalc.add(stakingResult.redeemable || BN_ZERO).toString(),
+        decimals
+      )
     ),
   };
 };
