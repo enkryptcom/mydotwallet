@@ -55,13 +55,13 @@ import {
 } from "@/stores";
 import { Account } from "@/types/account";
 import { Token } from "@/types/token";
-import { ref, computed, watch } from "vue";
+import { ref, computed, watch, onMounted } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { useGetAccountNativeBalance } from "@/libs/balances";
 import { TransferType } from "@/types/transfer";
 import { ApiPromise } from "@polkadot/api";
 import { useGetNativePrice } from "@/libs/prices";
-import { fromBase, isValidDecimals } from "@/libs/utils/units";
+import { fromBase, isValidDecimals } from "@/utils/units";
 import BigNumber from "bignumber.js";
 import { GasFeeInfo } from "@/types/transaction";
 const router = useRouter();
@@ -74,7 +74,12 @@ const fee = ref<GasFeeInfo>();
 const selectedAsset = ref<Token>(nativeToken.value);
 const hasEnough = ref(true);
 const isValid = computed<boolean>(() => {
-  return !!fromAccount.value && !!toAccount.value && Number(amount.value) > 0;
+  return (
+    !!fromAccount.value &&
+    !!toAccount.value &&
+    Number(amount.value) > 0 &&
+    hasEnough.value
+  );
 });
 
 watch(fromAccount, () => {
@@ -88,36 +93,30 @@ watch(selectedNetwork, () => {
   selectedAsset.value = nativeToken.value;
 });
 
-watch(
-  () => route.params.from,
-  async (auxAddress) => {
-    const found = accounts.value.find((item) => item.address === auxAddress);
+onMounted(() => {
+  if (route.query.from) {
+    const found = accounts.value.find(
+      (item) => item.address === route.query.from
+    );
     if (found) {
       fromAccount.value = found;
     }
   }
-);
-
-watch(
-  () => route.params.to,
-  async (auxAddress) => {
-    const found = accounts.value.find((item) => item.address === auxAddress);
+  if (route.query.to) {
+    const found = accounts.value.find(
+      (item) => item.address === route.query.to
+    );
     if (found) {
       toAccount.value = found;
     }
   }
-);
-
-watch(
-  () => route.params.amount,
-  async (auxAmount) => {
-    console.log(auxAmount)
-    const converted = Number(auxAmount);
+  if (route.query.amount) {
+    const converted = Number(route.query.amount);
     if (converted) {
-      amount.value = auxAmount.toString();
+      amount.value = converted.toString();
     }
   }
-);
+});
 
 const selectFromAccount = (account: Account) => {
   fromAccount.value = account;
@@ -132,7 +131,14 @@ const inputAmount = (newVal: string) => {
 };
 
 const nextAction = () => {
-  router.push({ name: "send-verify" });
+  router.push({
+    name: "send-verify",
+    query: {
+      from: fromAccount.value.address,
+      to: toAccount.value?.address,
+      amount: amount.value,
+    },
+  });
 };
 
 watch([selectedAsset, amount, nativeBalances, toAccount], async () => {

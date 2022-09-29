@@ -10,7 +10,7 @@ import {
   DeriveStakingAccount,
   DeriveUnlocking,
 } from "@polkadot/api-derive/types";
-import { fromBase } from "../utils/units";
+import { fromBase } from "../../utils/units";
 import { BN, BN_ONE, BN_ZERO } from "@polkadot/util";
 import BigNumber from "bignumber.js";
 

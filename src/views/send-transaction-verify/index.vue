@@ -44,7 +44,7 @@ import SendVerifySuccess from "./components/send-verify-success.vue";
 
 import { Account } from "@/types/account";
 import { Token } from "@/types/token";
-import { ref, watch } from "vue";
+import { onMounted, ref, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { recent } from "@/types/mock";
 import {
@@ -55,6 +55,9 @@ import {
   selectedNetwork,
 } from "@/stores";
 import { dot } from "@/types/tokens";
+import { encodeSubstrateAddress } from "@/utils";
+import { formatAddress } from "@/utils/filters";
+import createIcon from "@/libs/polkadot-identicon";
 
 const router = useRouter();
 const route = useRoute();
@@ -65,35 +68,39 @@ const amount = ref<string>();
 const token = ref<Token>(dot);
 const isSend = ref<boolean>(false);
 
-watch(
-  () => route.params.from,
-  async (auxAddress) => {
-    const found = accounts.value.find((item) => item.address === auxAddress);
-    if (found) {
-      fromAccount.value = found;
-    }
+onMounted(() => {
+  if (!route.query.from || !route.query.to || !route.query.amount) {
+    router.push({ name: "send" });
+    return;
   }
-);
 
-watch(
-  () => route.params.to,
-  async (auxAddress) => {
-    const found = accounts.value.find((item) => item.address === auxAddress);
-    if (found) {
-      toAccount.value = found;
+  const foundFrom = accounts.value.find(
+    (item) => item.address === route.query.from
+  );
+  let foundTo = accounts.value.find((item) => item.address === route.query.to);
+  if (!foundTo) {
+    const toAddress = route.query.to.toString();
+    const isValidAddress = encodeSubstrateAddress(toAddress);
+    if (isValidAddress) {
+      foundTo = {
+        id: Number.MAX_SAFE_INTEGER,
+        name: "",
+        image: createIcon(toAddress),
+        address: formatAddress(toAddress),
+        isLedger: false,
+      };
     }
   }
-);
+  const convertedAmount = Number(route.query.amount);
 
-watch(
-  () => route.params.amount,
-  async (auxAmount) => {
-    const converted = Number(auxAmount);
-    if (converted) {
-      amount.value = auxAmount.toString();
-    }
+  if (foundFrom && foundTo && convertedAmount) {
+    fromAccount.value = foundFrom;
+    toAccount.value = foundTo;
+    amount.value = convertedAmount.toString();
+  } else {
+    router.push({ name: "send" });
   }
-);
+});
 
 const nextAction = () => {
   isSend.value = true;
