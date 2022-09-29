@@ -2,6 +2,7 @@ import { SelectItem } from "@/types/select-list";
 import { Account } from "@/types/account";
 import { Token } from "@/types/token";
 import { Validator } from "@/types/validator";
+import { CrowdloanItem } from "@/types/crowdloan";
 
 export const selectConnect: SelectItem = {
   id: 1,
@@ -291,5 +292,110 @@ export const selectValidators: Validator[] = [
     token: dot,
     isHightRisk: false,
     isOversubscribed: true,
+  },
+];
+
+export const ongoing: CrowdloanItem[] = [
+  {
+    id: 1,
+    name: "Kapex",
+    link: "https://kapex.com",
+    image: require("@/assets/pic/kapex.png"),
+    percent: 17.8,
+    amount: 79579000,
+    contributions: 46788,
+    tokens: "cDOT-6/13",
+    isContribute: true,
+  },
+];
+
+export const completed: CrowdloanItem[] = [
+  {
+    id: 1,
+    name: "Bitfrost",
+    link: "",
+    image: require("@/assets/pic/bitfrost.png"),
+    percent: 17.8,
+    amount: 79579000,
+    contributions: 46788,
+    tokens: "cDOT-6/13",
+    isContribute: false,
+  },
+  {
+    id: 2,
+    name: "Bitfrost",
+    link: "",
+    image: require("@/assets/pic/bitfrost.png"),
+    percent: 17.8,
+    amount: 79579000,
+    contributions: 46788,
+    tokens: "cDOT-6/13",
+    isContribute: false,
+  },
+  {
+    id: 3,
+    name: "Bitfrost",
+    link: "",
+    image: require("@/assets/pic/bitfrost.png"),
+    percent: 17.8,
+    amount: 79579000,
+    contributions: 46788,
+    tokens: "cDOT-6/13",
+    isContribute: false,
+  },
+  {
+    id: 4,
+    name: "Bitfrost",
+    link: "",
+    image: require("@/assets/pic/bitfrost.png"),
+    percent: 17.8,
+    amount: 79579000,
+    contributions: 46788,
+    tokens: "cDOT-6/13",
+    isContribute: false,
+  },
+  {
+    id: 5,
+    name: "Bitfrost",
+    link: "",
+    image: require("@/assets/pic/bitfrost.png"),
+    percent: 17.8,
+    amount: 79579000,
+    contributions: 46788,
+    tokens: "cDOT-6/13",
+    isContribute: false,
+  },
+  {
+    id: 6,
+    name: "Bitfrost",
+    link: "",
+    image: require("@/assets/pic/bitfrost.png"),
+    percent: 17.8,
+    amount: 79579000,
+    contributions: 46788,
+    tokens: "cDOT-6/13",
+    isContribute: false,
+  },
+  {
+    id: 7,
+    name: "Bitfrost",
+    link: "",
+    image: require("@/assets/pic/bitfrost.png"),
+    percent: 17.8,
+    amount: 79579000,
+    contributions: 46788,
+    tokens: "cDOT-6/13",
+    isContribute: false,
+  },
+  {
+    id: 8,
+    name: "Bitfrost",
+    link: "",
+    image: require("@/assets/pic/bitfrost.png"),
+    percent: 17.8,
+    amount: 79579000,
+    contributions: 46788,
+    tokens: "cDOT-6/13",
+    isContribute: false,
   },
 ];
