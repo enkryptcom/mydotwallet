@@ -38,6 +38,7 @@ import { ongoing, completed } from "@/types/mock";
 .crowdloan {
   &__wrap {
     padding: 16px 32px;
+    margin-left: -4px;
   }
   &__title {
     .headline4__Bold();
@@ -50,7 +51,7 @@ import { ongoing, completed } from "@/types/mock";
     margin: 0;
 
     &.inner {
-      margin: 16px 0 0 0;
+      margin: 24px 0 0 0;
     }
   }
   &__header {
@@ -77,7 +78,7 @@ import { ongoing, completed } from "@/types/mock";
         min-width: 17.26%;
       }
       &:nth-child(4) {
-        min-width: 27.9%;
+        min-width: 26.44%;
         text-align: right;
       }
     }

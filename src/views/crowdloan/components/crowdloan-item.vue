@@ -1,23 +1,37 @@
 <template>
   <div class="crowdloan-item">
     <div class="crowdloan-item__block">
-      <div class="crowdloan-item__info">
+      <a class="crowdloan-item__info" :href="item.link" target="_blank">
         <img :src="item.image" alt="" />
         <div class="crowdloan-item__info-block">
           <h3>
             {{ item.name }}
           </h3>
+          <link-icon class="crowdloan-item__info-block-link" />
         </div>
-      </div>
+      </a>
     </div>
     <div class="crowdloan-item__block">
-      <span>{{ item.percent }}%</span>
+      <div class="crowdloan-item__block-info">
+        <p class="crowdloan-item__block-info-amount">
+          <b>{{ item.percent }}%</b> 79.579K of 5M
+        </p>
+        <p class="crowdloan-item__block-info-count">46,788 contributions</p>
+      </div>
     </div>
     <div class="crowdloan-item__block">
       <span>{{ item.tokens }}</span>
     </div>
     <div class="crowdloan-item__block">
-      <span>-</span>
+      <div v-if="item.isContribute" class="crowdloan-item__block-action">
+        <p class="crowdloan-item__block-action-timer">Ending in<b>3d 11h</b></p>
+        <base-button
+          title="Contribute"
+          :small="true"
+          :action="contributeAction"
+        />
+      </div>
+      <span v-else>—</span>
     </div>
   </div>
 </template>
@@ -25,6 +39,11 @@
 <script setup lang="ts">
 import { PropType } from "vue";
 import { CrowdloanItem } from "@/types/crowdloan";
+import BaseButton from "@/components/base-button/index.vue";
+import LinkIcon from "@/icons/common/link-icon.vue";
+import { useRouter } from "vue-router";
+
+const router = useRouter();
 
 defineProps({
   item: {
@@ -32,6 +51,10 @@ defineProps({
     default: null,
   },
 });
+
+const contributeAction = () => {
+  router.push({ name: "crowdloan-contribute" });
+};
 </script>
 
 <style lang="less" scoped>
@@ -47,7 +70,6 @@ defineProps({
   margin: 8px 0;
   height: 52px;
   .sizing();
-  cursor: pointer;
 
   &__block {
     &:nth-child(1) {
@@ -60,13 +82,50 @@ defineProps({
       min-width: 17.26%;
     }
     &:nth-child(4) {
-      min-width: 27.9%;
+      min-width: 26.44%;
       text-align: right;
     }
 
     span {
       .body2__Regular();
       color: @primaryLabel;
+    }
+
+    &-info {
+      &-amount {
+        .body2__Regular();
+        color: @primaryLabel;
+        margin: 0 0 3px 0;
+
+        b {
+          .body2__Bold();
+        }
+      }
+      &-count {
+        .caption__Regular();
+        color: @secondaryLabel;
+        margin: 0;
+      }
+    }
+
+    &-action {
+      display: flex;
+      flex-direction: row;
+      justify-content: flex-end;
+      align-items: center;
+
+      &-timer {
+        margin-right: 16px;
+        .caption__Regular();
+        color: @primaryLabel;
+
+        b {
+          display: block;
+          .caption__Bold();
+          color: @accent;
+          margin: 3px 0 0 0;
+        }
+      }
     }
   }
 
@@ -76,6 +135,8 @@ defineProps({
     justify-content: flex-start;
     align-items: center;
     height: 52px;
+    text-decoration: none;
+    cursor: pointer;
 
     img {
       width: 32px;
@@ -85,6 +146,16 @@ defineProps({
     }
 
     &-block {
+      position: relative;
+
+      &-link {
+        position: absolute;
+        right: -20px;
+        top: 2.5px;
+        opacity: 0;
+        .transition(opacity, 0.3s);
+      }
+
       h3 {
         .body2__Medium();
         color: @primaryLabel;
@@ -122,6 +193,12 @@ defineProps({
             left: 2px;
           }
         }
+      }
+    }
+
+    &:hover {
+      .crowdloan-item__info-block-link {
+        opacity: 1;
       }
     }
   }

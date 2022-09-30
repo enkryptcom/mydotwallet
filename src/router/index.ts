@@ -13,6 +13,8 @@ import StakeUnbound from "@/views/stake-unbound/index.vue";
 import StakeUnboundConfirm from "@/views/stake-unbound-confirm/index.vue";
 import StakeWithdraw from "@/views/stake-withdraw/index.vue";
 import Crowdloan from "@/views/crowdloan/index.vue";
+import CrowdloanContribute from "@/views/crowdloan-contribute/index.vue";
+import CrowdloanConfirm from "@/views/crowdloan-confirm/index.vue";
 import Empty from "@/views/empty/index.vue";
 
 const routes = {
@@ -117,10 +119,29 @@ const routes = {
   },
   crowdloan: {
     path: "/crowdloan",
-    components: {
-      view: Crowdloan,
-    },
-    name: "crowdloan",
+    children: [
+      {
+        path: "",
+        components: {
+          view: Crowdloan,
+        },
+        name: "crowdloan",
+      },
+      {
+        path: "contribute",
+        components: {
+          view: CrowdloanContribute,
+        },
+        name: "crowdloan-contribute",
+      },
+      {
+        path: "confirm",
+        components: {
+          view: CrowdloanConfirm,
+        },
+        name: "crowdloan-confirm",
+      },
+    ],
   },
   claim: {
     path: "/claim",
