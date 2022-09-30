@@ -15,13 +15,13 @@
         <send-verify-item :account="toAccount" title="To" />
       </div>
       <div class="send-verify__block-item">
-        <send-verify-amount :token="token" :amount="amount" />
+        <send-verify-amount :token="selectedAsset" :amount="amount" />
       </div>
       <div class="send-verify__block-item">
-        <send-verify-fee />
+        <send-verify-fee :fee="fee" />
       </div>
     </div>
-    <send-error />
+    <send-error v-if="edWarn" :token="selectedAsset" />
     <buttons-block>
       <base-button title="Confirm and send" :action="nextAction" :send="true" />
     </buttons-block>
@@ -44,28 +44,33 @@ import SendVerifySuccess from "./components/send-verify-success.vue";
 
 import { Account } from "@/types/account";
 import { Token } from "@/types/token";
-import { onMounted, ref, watch } from "vue";
+import { computed, onMounted, ref, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
-import { recent } from "@/types/mock";
 import {
   accounts,
   apiPromise,
   nativeBalances,
   nativeToken,
-  selectedNetwork,
+  signer,
 } from "@/stores";
-import { dot } from "@/types/tokens";
 import { encodeSubstrateAddress } from "@/utils";
 import { formatAddress } from "@/utils/filters";
 import createIcon from "@/libs/polkadot-identicon";
+import { GasFeeInfo } from "@/types/transaction";
+import { fromBase, isValidDecimals, toBase } from "@/utils/units";
+import { sendExtrinsic } from "@/utils/extrinsic";
+import BigNumber from "bignumber.js";
+import { toBN } from "web3-utils";
 
 const router = useRouter();
 const route = useRoute();
 
-const fromAccount = ref<Account>(accounts.value[1]);
-const toAccount = ref<Account>(recent[1]);
+const fromAccount = ref<Account>(accounts.value[0]);
+const toAccount = ref<Account>();
 const amount = ref<string>();
-const token = ref<Token>(dot);
+const fee = ref<GasFeeInfo>();
+const selectedAsset = ref<Token>(nativeToken.value);
+const hasEnough = ref(true);
 const isSend = ref<boolean>(false);
 
 onMounted(() => {
@@ -102,8 +107,143 @@ onMounted(() => {
   }
 });
 
-const nextAction = () => {
+const edWarn = computed(() => {
+  if (!fee.value || !amount.value) {
+    return false;
+  }
+
+  if (!isValidDecimals(amount.value, selectedAsset.value.decimals)) {
+    return false;
+  }
+
+  const rawAmount = toBN(
+    toBase(amount.value?.toString() || "0", selectedAsset.value.decimals)
+  );
+  const ed = toBN(
+    toBase(
+      selectedAsset.value.existentialDeposit || "0",
+      selectedAsset.value.decimals
+    )
+  );
+  const userBalance = toBN(
+    toBase(
+      nativeBalances.value[fromAccount.value.address]?.available.toString() ||
+        "0",
+      selectedAsset.value.decimals
+    )
+  );
+
+  const txFee = toBN(
+    toBase(fee.value.nativeValue.toString(), selectedAsset.value.decimals)
+  );
+  return userBalance.sub(txFee).sub(rawAmount).lt(ed);
+});
+
+watch([selectedAsset, amount, nativeBalances, toAccount], async () => {
+  if (amount.value && selectedAsset.value && toAccount.value) {
+    if (
+      !isValidDecimals(amount.value.toString(), selectedAsset.value.decimals)
+    ) {
+      hasEnough.value = false;
+      return;
+    }
+
+    const api = await apiPromise.value;
+    await api.isReady;
+
+    const rawAmount = toBN(
+      toBase(amount.value?.toString() || "0", selectedAsset.value.decimals)
+    );
+
+    const rawBalance = toBN(
+      toBase(
+        nativeBalances.value[fromAccount.value.address]?.available.toString() ||
+          "0",
+        selectedAsset.value.decimals
+      )
+    );
+
+    if (rawAmount.gt(rawBalance)) {
+      hasEnough.value = false;
+    } else {
+      hasEnough.value = true;
+    }
+
+    const transferType = "all";
+
+    const tx = await sendExtrinsic(
+      api,
+      toAccount.value.address,
+      rawAmount.toString(),
+      transferType
+    );
+    const { partialFee } = (
+      await tx.paymentInfo(fromAccount.value.address)
+    ).toJSON();
+
+    const txFeeHuman = new BigNumber(
+      fromBase(partialFee?.toString() ?? "", selectedAsset.value.decimals)
+    );
+
+    const txPrice = new BigNumber(selectedAsset.value.price).times(txFeeHuman);
+
+    fee.value = {
+      fiatSymbol: "USD",
+      fiatValue: txPrice,
+      nativeSymbol: selectedAsset.value.symbol ?? "",
+      nativeValue: txFeeHuman,
+    };
+  }
+});
+
+const nextAction = async () => {
+  if (!toAccount.value?.address || !amount.value) {
+    return;
+  }
+
   isSend.value = true;
+
+  const api = await apiPromise.value;
+  const sendAmount = toBase(amount.value, selectedAsset.value.decimals);
+  const transferType = "transfer";
+
+  const tx = await sendExtrinsic(
+    api,
+    toAccount.value.address,
+    sendAmount,
+    transferType
+  );
+
+  const unsubscribe = await tx.signAndSend(
+    fromAccount.value.address,
+    {
+      signer: signer.value,
+      nonce: -1,
+    },
+    async (result) => {
+      if (!result || !result.status) {
+        return;
+      }
+
+      if (result.status.isFinalized || result.status.isInBlock) {
+        result.events
+          .filter(({ event: { section } }) => section === "system")
+          .forEach(({ event: { method } }): void => {
+            if (method === "ExtrinsicFailed") {
+              // Handle error
+            } else if (method === "ExtrinsicSuccess") {
+              // Handle succes
+            }
+          });
+      } else if (result.isError) {
+        // Handle error
+      }
+
+      if (result.isCompleted) {
+        unsubscribe();
+      }
+    }
+  );
 };
 
 const back = () => {

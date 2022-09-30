@@ -67,7 +67,7 @@ const props = defineProps({
 const emit = defineEmits(["update:amount"]);
 
 const setMaxValue = () => {
-  emit("update:amount", props.maxValue);
+  emit("update:amount", props.maxValue?.toString() || "0");
 };
 
 const amountValue = computed({

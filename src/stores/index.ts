@@ -7,13 +7,7 @@ import { Account } from "@/types/account";
 import { dot, ksm } from "@/types/tokens";
 import { Balance } from "@/types/balance";
 
-const POLKADOT_ENDPOINTS = [
-  "wss://rpc.polkadot.io",
-  "wss://polkadot.api.onfinality.io/public-ws",
-  "wss://polkadot-rpc.dwellir.com",
-  "wss://public-rpc.pinknode.io/polkadot",
-  "wss://polkadot.public.curie.radiumblock.io/ws",
-];
+const POLKADOT_ENDPOINTS = ["wss://westend.api.onfinality.io/public-ws"];
 const KUSAMA_ENDPOINTS = ["wss://kusama-rpc.polkadot.io"];
 
 export const selectedNetwork = ref(Network.Polkadot);

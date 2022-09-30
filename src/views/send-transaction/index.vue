@@ -17,12 +17,12 @@
       <amount-input
         :has-enough-balance="hasEnough"
         :token="selectedAsset"
-        :value="String(amount)"
+        :value="amount"
         :max-value="nativeBalances[fromAccount?.address]?.available"
         @update:amount="inputAmount"
       />
       <fee-info :fee="fee" />
-      <send-error />
+      <send-error v-if="edWarn" :token="selectedAsset" />
       <buttons-block>
         <base-button
           title="Continue"
@@ -58,12 +58,12 @@ import { Token } from "@/types/token";
 import { ref, computed, watch, onMounted } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { useGetAccountNativeBalance } from "@/libs/balances";
-import { TransferType } from "@/types/transfer";
-import { ApiPromise } from "@polkadot/api";
 import { useGetNativePrice } from "@/libs/prices";
-import { fromBase, isValidDecimals } from "@/utils/units";
+import { fromBase, isValidDecimals, toBase } from "@/utils/units";
 import BigNumber from "bignumber.js";
 import { GasFeeInfo } from "@/types/transaction";
+import { sendExtrinsic } from "@/utils/extrinsic";
+import { toBN } from "web3-utils";
 const router = useRouter();
 const route = useRoute();
 
@@ -118,6 +118,38 @@ onMounted(() => {
   }
 });
 
+const edWarn = computed(() => {
+  if (!fee.value || !amount.value) {
+    return false;
+  }
+
+  if (!isValidDecimals(amount.value, selectedAsset.value.decimals)) {
+    return false;
+  }
+
+  const rawAmount = toBN(
+    toBase(amount.value?.toString() || "0", selectedAsset.value.decimals)
+  );
+  const ed = toBN(
+    toBase(
+      selectedAsset.value.existentialDeposit || "0",
+      selectedAsset.value.decimals
+    )
+  );
+  const userBalance = toBN(
+    toBase(
+      nativeBalances.value[fromAccount.value.address]?.available.toString() ||
+        "0",
+      selectedAsset.value.decimals
+    )
+  );
+
+  const txFee = toBN(
+    toBase(fee.value.nativeValue.toString(), selectedAsset.value.decimals)
+  );
+  return userBalance.sub(txFee).sub(rawAmount).lt(ed);
+});
+
 const selectFromAccount = (account: Account) => {
   fromAccount.value = account;
 };
@@ -141,73 +173,68 @@ const nextAction = () => {
   });
 };
 
-watch([selectedAsset, amount, nativeBalances, toAccount], async () => {
-  if (amount.value && selectedAsset.value && toAccount.value) {
-    if (
-      !isValidDecimals(amount.value.toString(), selectedAsset.value.decimals)
-    ) {
-      hasEnough.value = false;
-      return;
+watch(
+  [selectedAsset, amount, nativeBalances, fromAccount, toAccount],
+  async () => {
+    if (amount.value && selectedAsset.value && toAccount.value) {
+      if (
+        !isValidDecimals(amount.value.toString(), selectedAsset.value.decimals)
+      ) {
+        hasEnough.value = false;
+        return;
+      }
+
+      const api = await apiPromise.value;
+      await api.isReady;
+
+      const rawAmount = toBN(
+        toBase(amount.value?.toString() || "0", selectedAsset.value.decimals)
+      );
+
+      const rawBalance = toBN(
+        toBase(
+          nativeBalances.value[
+            fromAccount.value.address
+          ]?.available.toString() || "0",
+          selectedAsset.value.decimals
+        )
+      );
+
+      if (rawAmount.gt(rawBalance)) {
+        hasEnough.value = false;
+      } else {
+        hasEnough.value = true;
+      }
+
+      const transferType = "transfer";
+
+      const tx = await sendExtrinsic(
+        api,
+        toAccount.value.address,
+        rawAmount.toString(),
+        transferType
+      );
+      const { partialFee } = (
+        await tx.paymentInfo(fromAccount.value.address)
+      ).toJSON();
+
+      const txFeeHuman = new BigNumber(
+        fromBase(partialFee?.toString() ?? "", selectedAsset.value.decimals)
+      );
+
+      const txPrice = new BigNumber(selectedAsset.value.price).times(
+        txFeeHuman
+      );
+
+      fee.value = {
+        fiatSymbol: "USD",
+        fiatValue: txPrice,
+        nativeSymbol: selectedAsset.value.symbol ?? "",
+        nativeValue: txFeeHuman,
+      };
     }
-
-    const api = await apiPromise.value;
-    await api.isReady;
-
-    const rawAmount = amount.value || 0;
-
-    const rawBalance = Number(
-      nativeBalances.value[fromAccount.value.address]?.available || 0
-    );
-    if (rawAmount > rawBalance) {
-      hasEnough.value = false;
-    } else {
-      hasEnough.value = true;
-    }
-
-    const transferType = "all";
-
-    const tx = await send(
-      api,
-      toAccount.value.address,
-      rawAmount.toString(),
-      transferType
-    );
-    const { partialFee } = (
-      await tx.paymentInfo(fromAccount.value.address)
-    ).toJSON();
-
-    const txFeeHuman = new BigNumber(
-      fromBase(partialFee?.toString() ?? "", selectedAsset.value.decimals)
-    );
-
-    const txPrice = new BigNumber(selectedAsset.value.price).times(txFeeHuman);
-
-    fee.value = {
-      fiatSymbol: "USD",
-      fiatValue: txPrice,
-      nativeSymbol: selectedAsset.value.symbol ?? "",
-      nativeValue: txFeeHuman,
-    };
   }
-});
-
-const send = async (
-  api: any,
-  to: string,
-  amount: string,
-  transferType: TransferType = "keepAlive"
-): Promise<any> => {
-  switch (transferType) {
-    case "transfer":
-      return (api as ApiPromise).tx.balances.transfer(to, amount);
-    case "keepAlive":
-      return (api as ApiPromise).tx.balances.transferKeepAlive(to, amount);
-    case "all":
-      return (api as ApiPromise).tx.balances.transferAll(to, false);
-    case "allKeepAlive":
-      return (api as ApiPromise).tx.balances.transferAll(to, true);
-  }
-};
+);
 </script>
 
 <style lang="less" scoped>
