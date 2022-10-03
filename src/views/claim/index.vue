@@ -18,7 +18,17 @@
     <claim-valid-account v-if="isValid" :token="token" :amount="80.4" />
     <claim-unvalid-account v-if="isValid" />
     <buttons-block>
-      <base-button title="Continue" :action="nextAction" :send="true" />
+      <base-button
+        v-if="isConnected"
+        title="Continue"
+        :action="nextAction"
+        :send="true"
+      />
+      <base-button
+        v-else
+        title="Connect wallet to claim"
+        :action="connectWallet"
+      />
     </buttons-block>
   </white-wrapper>
 
@@ -38,9 +48,10 @@ import BaseButton from "@/components/base-button/index.vue";
 import { Account } from "@/types/account";
 import { Token } from "@/types/token";
 import { recent } from "@/types/mock";
-import { ref } from "vue";
+import { computed, ref } from "vue";
 import { useRouter } from "vue-router";
 import { dot } from "@/types/tokens";
+import { shouldOpenWalletSelector, walletSelected } from "@/stores";
 
 const router = useRouter();
 
@@ -58,6 +69,12 @@ const addressInput = (newVal: string) => {
 const nextAction = () => {
   router.push({ name: "claiming" });
 };
+
+const connectWallet = () => {
+  shouldOpenWalletSelector.value = true;
+};
+
+const isConnected = computed(() => walletSelected.value.id !== 1);
 </script>
 
 <style lang="less" scoped>

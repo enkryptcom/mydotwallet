@@ -1,5 +1,6 @@
 <template>
   <select-list
+    ref="selectRef"
     :select="walletSelected"
     :items="walletConnectItems"
     :is-list-image="true"
@@ -8,11 +9,16 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from "vue";
 import { walletConnect, walletConnectItems } from "@/types/wallets";
 import SelectList from "@/components/select-list/index.vue";
 import { SelectItem } from "@/types/select-list";
-import { accounts, extension, signer } from "@/stores";
+import {
+  accounts,
+  extension,
+  shouldOpenWalletSelector,
+  signer,
+  walletSelected,
+} from "@/stores";
 import {
   InjectedExtension,
   InjectedWindow,
@@ -20,8 +26,16 @@ import {
 import { WalletItem } from "@/types/wallet-list";
 import createIcon from "@/libs/polkadot-identicon";
 import { formatAddress } from "@/utils/filters";
+import { ComponentPublicInstance, ref, watch } from "vue";
 
-const walletSelected = ref<SelectItem>(walletConnect);
+const selectRef = ref<ComponentPublicInstance<any>>();
+
+watch(shouldOpenWalletSelector, () => {
+  if (shouldOpenWalletSelector && selectRef) {
+    selectRef.value.isOpen = true;
+    shouldOpenWalletSelector.value = false;
+  }
+});
 
 const selectItem = async (item: SelectItem) => {
   // If disconnecting
