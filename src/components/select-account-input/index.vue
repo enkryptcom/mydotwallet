@@ -11,7 +11,8 @@
             {{ $filters.replaceWithEllipsis(account?.address, 6, 6) }}
           </span>
           <span v-if="isAmount">
-            {{ $filters.cryptoCurrencyFormat(15.9) }} <span>dot</span>
+            {{ $filters.cryptoCurrencyFormat(amount) }}
+            <span>{{ token.symbol }}</span>
           </span>
         </p>
       </div>
@@ -34,6 +35,8 @@ import AccountSelect from "@/components/account-select/index.vue";
 import { Account } from "@/types/account";
 import { PropType, ref } from "vue";
 import { onClickOutside } from "@vueuse/core";
+import { Token } from "@/types/token";
+import { dot } from "@/types/tokens";
 
 const isOpenDropdown = ref<boolean>(false);
 const dropdown = ref(null);
@@ -55,6 +58,14 @@ defineProps({
   title: {
     type: String,
     default: "From",
+  },
+  amount: {
+    type: Number,
+    default: 0,
+  },
+  token: {
+    type: Object as PropType<Token>,
+    default: dot,
   },
   isAmount: {
     type: Boolean,

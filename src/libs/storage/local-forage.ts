@@ -17,7 +17,7 @@ class LocalForage implements BrowserStorageArea {
     this.storage = LocalForageLib.createInstance({
       name: this.namespace,
       driver: drivers,
-      storeName: "enkrypt_db",
+      storeName: "mydotwallet_db",
     });
   }
 

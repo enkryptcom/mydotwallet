@@ -55,7 +55,7 @@ import {
 } from "@/stores";
 import { encodeSubstrateAddress } from "@/utils";
 import { formatAddress } from "@/utils/filters";
-import createIcon from "@/libs/polkadot-identicon";
+import createIcon from "@/libs/identicon/polkadot";
 import { GasFeeInfo } from "@/types/transaction";
 import { fromBase, isValidDecimals, toBase } from "@/utils/units";
 import { sendExtrinsic } from "@/utils/extrinsic";

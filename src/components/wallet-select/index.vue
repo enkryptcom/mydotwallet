@@ -24,7 +24,7 @@ import {
   InjectedWindow,
 } from "@polkadot/extension-inject/types";
 import { WalletItem } from "@/types/wallet-list";
-import createIcon from "@/libs/polkadot-identicon";
+import createIcon from "@/libs/identicon/polkadot";
 import { formatAddress } from "@/utils/filters";
 import { ComponentPublicInstance, ref, watch } from "vue";
 

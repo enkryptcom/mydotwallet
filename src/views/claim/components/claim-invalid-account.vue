@@ -1,5 +1,5 @@
 <template>
-  <div class="claim-unvalid-account">
+  <div class="claim-invalid-account">
     <h2>Nothing to claim</h2>
     <p>
       Looks like there is no claim associated with this address.<br />
@@ -13,9 +13,13 @@
 <style lang="less" scoped>
 @import "@/assets/styles/theme.less";
 
-.claim-unvalid-account {
+.claim-invalid-account {
   width: 100%;
-  padding: 16px 0 0 0;
+  padding: 20px;
+  border: 1px solid rgba(95, 99, 104, 0.2);
+  border-radius: 10px;
+  margin-bottom: 16px;
+  background-color: #f2f4f7;
 
   h2 {
     .body1__Bold();

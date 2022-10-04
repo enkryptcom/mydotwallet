@@ -1,13 +1,16 @@
 <template>
   <white-wrapper class="claim__wrap">
-    <h2 class="claim__title">Claim DOT tokens for Ethereum presale address</h2>
+    <h2 class="claim__title">
+      Claim {{ tokenSymbol }} tokens for Ethereum presale address
+    </h2>
     <p class="claim__text">
-      This claims process only applies to DOT (old) that were purchased in the
-      form of DOT Allocation Indicators on Ethereum before June 30, 2020.
+      This claims process only applies to {{ tokenSymbol }} (old) that were
+      purchased in the form of {{ tokenSymbol }} Allocation Indicators on
+      Ethereum before June 30, 2020.
     </p>
     <p class="claim__text claim__text--gray">
-      If you bought your DOT tokens more recently or from another source, this
-      process does not apply to you. You do not need to claim.
+      If you bought your {{ tokenSymbol }} tokens more recently or from another
+      source, this process does not apply to you. You do not need to claim.
     </p>
     <h4 class="claim__label">Check your Ethereum address</h4>
     <claim-address-input
@@ -15,11 +18,16 @@
       :value="address"
       @update:address="addressInput"
     />
-    <claim-valid-account v-if="isValid" :token="token" :amount="80.4" />
-    <claim-unvalid-account v-if="isValid" />
+    <claim-valid-account
+      v-if="!isLoading && isValid"
+      :token="nativeToken"
+      :amount="claimable.toNumber()"
+    />
+    <claim-invalid-account v-if="account && !isLoading && !isValid" />
     <buttons-block>
       <base-button
         v-if="isConnected"
+        :disabled="isLoading || !isValid"
         title="Continue"
         :action="nextAction"
         :send="true"
@@ -42,32 +50,84 @@ import WhiteWrapper from "@/components/white-wrapper/index.vue";
 import ClaimAddressInput from "./components/claim-address-input.vue";
 import ClaimEnkryptBanner from "./components/claim-enkrypt-banner.vue";
 import ClaimValidAccount from "./components/claim-valid-account.vue";
-import ClaimUnvalidAccount from "./components/claim-unvalid-account.vue";
+import ClaimInvalidAccount from "./components/claim-invalid-account.vue";
 import ButtonsBlock from "@/components/buttons-block/index.vue";
 import BaseButton from "@/components/base-button/index.vue";
 import { Account } from "@/types/account";
-import { Token } from "@/types/token";
-import { recent } from "@/types/mock";
-import { computed, ref } from "vue";
+import { computed, ref, watch } from "vue";
 import { useRouter } from "vue-router";
-import { dot } from "@/types/tokens";
-import { shouldOpenWalletSelector, walletSelected } from "@/stores";
+import {
+  apiPromise,
+  nativeToken,
+  shouldOpenWalletSelector,
+  walletSelected,
+} from "@/stores";
+import { isAddress } from "web3-utils";
+import createIcon from "@/libs/identicon/ethereum";
+import { BN_ZERO } from "@polkadot/util";
+import type { Option } from "@polkadot/types";
+import type { BalanceOf } from "@polkadot/types/interfaces";
+import BigNumber from "bignumber.js";
+import { fromBase } from "@/utils/units";
 
 const router = useRouter();
 
-const account = ref<Account | null>(null);
+const account = ref<Account>();
 const address = ref<string>("");
 const isValid = ref<boolean>(false);
-const token = ref<Token>(dot);
+const isLoading = ref<boolean>(false);
+const claimable = ref<BigNumber>(new BigNumber(0));
+
+watch(account, async () => {
+  if (account.value) {
+    try {
+      isLoading.value = true;
+      const api = await apiPromise.value;
+
+      const claims = await api.query.claims.claims<Option<BalanceOf>>(
+        account.value.address
+      );
+      claimable.value = new BigNumber(
+        fromBase(
+          claims.unwrapOr(BN_ZERO).toString(),
+          nativeToken.value.decimals
+        )
+      );
+      isValid.value = claimable.value.gt(0);
+
+      isLoading.value = false;
+    } catch (err) {
+      console.error(
+        "Unexpected error when querying if account has claimable balance",
+        err
+      );
+      isLoading.value = false;
+    }
+  }
+});
 
 const addressInput = (newVal: string) => {
-  address.value = newVal;
-  account.value = address.value.length > 41 ? recent[0] : null;
-  isValid.value = address.value.length > 41;
+  const trimmed = newVal.trim();
+  address.value = trimmed;
+  const isValidAddress = isAddress(trimmed);
+  account.value = isValidAddress
+    ? {
+        id: Number.MAX_SAFE_INTEGER,
+        name: "",
+        image: createIcon(trimmed),
+        address: trimmed,
+        isLedger: false,
+      }
+    : undefined;
 };
 
 const nextAction = () => {
-  router.push({ name: "claiming" });
+  router.push({
+    name: "claiming",
+    query: {
+      ethAddress: account.value?.address,
+    },
+  });
 };
 
 const connectWallet = () => {
@@ -75,6 +135,9 @@ const connectWallet = () => {
 };
 
 const isConnected = computed(() => walletSelected.value.id !== 1);
+const tokenSymbol = computed(() =>
+  nativeToken.value.symbol.toLocaleUpperCase()
+);
 </script>
 
 <style lang="less" scoped>
