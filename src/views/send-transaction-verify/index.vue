@@ -201,8 +201,6 @@ const nextAction = async () => {
     return;
   }
 
-  isSend.value = true;
-
   const api = await apiPromise.value;
   const sendAmount = toBase(amount.value, selectedAsset.value.decimals);
   const transferType = "transfer";
@@ -244,6 +242,8 @@ const nextAction = async () => {
       }
     }
   );
+
+  isSend.value = true;
 };
 
 const back = () => {
