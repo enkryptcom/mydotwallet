@@ -43,6 +43,10 @@ const showLeftBanner = computed(() => {
   top: 0;
   z-index: 1;
 
+  .screen-xl({
+    padding-top: 96px;
+  });
+
   .screen-sm({
     display: none;
   });
@@ -63,6 +67,10 @@ const showLeftBanner = computed(() => {
     padding-right: 24px;
     position: relative;
     .sizing();
+
+    .screen-xl({
+      padding-left: 80px;
+    });
 
     .screen-lg({
       padding-left: 24px;
@@ -112,6 +120,10 @@ const showLeftBanner = computed(() => {
     &:active {
       color: @tertiaryLabel;
     }
+
+    .screen-xl({
+      left: 80px;
+    });
 
     .screen-lg({
       left: 24px;

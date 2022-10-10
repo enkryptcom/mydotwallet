@@ -71,7 +71,7 @@ const selectNetworkAction = async (item: NetworkSelectItem) => {
     border-radius: 32px;
     display: flex;
     flex-direction: row;
-
+    margin-right: -4px;
     & > .select-list {
       margin-left: 16px;
 
