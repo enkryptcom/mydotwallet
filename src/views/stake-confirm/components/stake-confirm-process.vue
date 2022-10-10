@@ -1,7 +1,7 @@
 <template>
   <div class="stake-confirm-process">
-    <success-icon v-if="isDone" />
-    <process-icon v-else />
+    <done-animation v-if="isDone" />
+    <spinner-animation v-else />
 
     <h3 v-if="isDone">You have successfully<br />staked your assets</h3>
     <h3 v-else>Your transaction is<br />on the way</h3>
@@ -13,8 +13,8 @@
 </template>
 
 <script setup lang="ts">
-import SuccessIcon from "@/icons/send/success-icon.vue";
-import ProcessIcon from "@/icons/send/process-icon.vue";
+import DoneAnimation from "@/icons/animation/done.vue";
+import SpinnerAnimation from "@/icons/animation/spinner.vue";
 import BaseButton from "@/components/base-button/index.vue";
 
 defineProps({

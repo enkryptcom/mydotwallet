@@ -14,7 +14,7 @@
     <div class="crowdloan-item__block">
       <div class="crowdloan-item__block-info">
         <p class="crowdloan-item__block-info-amount">
-          <b>{{ item.percent }}%</b> 79.579K of 5M
+          <b>17,8%</b> 79.579K of 5M
         </p>
         <p class="crowdloan-item__block-info-count">46,788 contributions</p>
       </div>

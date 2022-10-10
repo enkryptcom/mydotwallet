@@ -2,6 +2,11 @@
   <div class="stake-nominate__controls">
     <div class="stake-nominate__controls-sort">
       <span>Sort by:</span>
+      <base-select
+        :options="sortOptions"
+        :selected="sort"
+        @update:toggle="selectSort"
+      />
     </div>
     <div class="stake-nominate__controls-filter">
       <div class="stake-nominate__controls-filter-block">
@@ -23,6 +28,25 @@
 <script setup lang="ts">
 import InfoTooltip from "@/components/info-tooltip/index.vue";
 import Switch from "@/components/switch/index.vue";
+import BaseSelect from "@/components/base-select/index.vue";
+import { BaseSelectItem } from "@/types/base-select";
+import { ref } from "vue";
+
+const sort = ref<BaseSelectItem>({
+  id: 0,
+  name: "Estimated returns",
+});
+
+const sortOptions = [
+  {
+    id: 0,
+    name: "Estimated returns",
+  },
+  {
+    id: 1,
+    name: "Validator name",
+  },
+];
 
 const rewardsInfo =
   "Rewards will be credited to your bonded balance for compound earning.";
@@ -30,6 +54,7 @@ const rewardsInfo =
 const emit = defineEmits<{
   (e: "update:high-risk", isChecked: boolean): void;
   (e: "update:only-selected", isChecked: boolean): void;
+  (e: "update:sort", item: BaseSelectItem): void;
 }>();
 
 defineProps({
@@ -49,6 +74,11 @@ const highRiskSwitch = (isChecked: boolean) => {
 
 const onlySelectedSwitch = (isChecked: boolean) => {
   emit("update:only-selected", isChecked);
+};
+
+const selectSort = (item: BaseSelectItem) => {
+  sort.value = item;
+  emit("update:sort", item);
 };
 </script>
 
@@ -74,6 +104,7 @@ const onlySelectedSwitch = (isChecked: boolean) => {
       span {
         .body2__Regular();
         color: @secondaryLabel;
+        margin-right: 8px;
       }
     }
 

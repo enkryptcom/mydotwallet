@@ -42,6 +42,7 @@
           :validator="item"
           @update:select-validator="selectValidator"
           @update:delete-validator="deleteValidator"
+          @update:sort="updateSort"
         />
       </custom-scrollbar>
     </div>
@@ -69,6 +70,7 @@ import StakeNominateHeaderInfo from "./components/stake-nominate-header-info.vue
 import StakeNominateControls from "./components/stake-nominate-controls.vue";
 import StakeNominateItem from "./components/stake-nominate-item.vue";
 import CustomScrollbar from "@/components/custom-scrollbar/index.vue";
+import { BaseSelectItem } from "@/types/base-select";
 import { ComponentPublicInstance, ref, onMounted, onUnmounted } from "vue";
 import { useRouter } from "vue-router";
 import { Validator } from "@/types/validator";
@@ -133,6 +135,10 @@ const deleteValidator = (validator: Validator) => {
     if (selectedValidators.value[i].id === validator.id)
       selectedValidators.value.splice(i, 1);
   }
+};
+
+const updateSort = (item: BaseSelectItem) => {
+  console.log(item);
 };
 </script>
 
