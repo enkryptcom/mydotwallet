@@ -44,7 +44,8 @@ import { Account } from "@/types/account";
 import { Token } from "@/types/token";
 import { ref } from "vue";
 import { useRouter } from "vue-router";
-import { dot, accounts } from "@/types/mock";
+import { accounts } from "@/types/mock";
+import { dot } from "@/types/tokens";
 
 const router = useRouter();
 const fromAccount = ref<Account>(accounts[0]);

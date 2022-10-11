@@ -60,8 +60,9 @@ import SelectAccountInput from "@/components/select-account-input/index.vue";
 import { Token } from "@/types/token";
 import { ref } from "vue";
 import { useRouter } from "vue-router";
-import { dot, accounts } from "@/types/mock";
+import { accounts } from "@/types/mock";
 import { Account } from "@/types/account";
+import { dot } from "@/types/tokens";
 
 const router = useRouter();
 

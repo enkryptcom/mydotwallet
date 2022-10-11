@@ -7,7 +7,7 @@
         v-model="textValue"
         type="text"
         class="stake-amount-input__input"
-        placeholder="0 DOT"
+        :placeholder="`0 ${token.symbol.toLocaleUpperCase()}`"
         :style="{ width: size + 'ch' }"
       />
       <span v-show="props.value != '0'" @click="focus">{{ token.symbol }}</span>
@@ -17,7 +17,7 @@
       {{ $filters.currencyFormat(0, "USD") }}
     </p>
     <p v-else class="stake-amount-input__fiat">
-      ~{{ $filters.currencyFormat(3.1, "USD") }}
+      ~{{ $filters.currencyFormat(amountUsd, "USD") }}
     </p>
   </div>
 </template>
@@ -47,6 +47,10 @@ const props = defineProps({
 });
 
 const emit = defineEmits(["update:amount"]);
+
+const amountUsd = computed(() => {
+  return props.token.price.times(props.value).toNumber();
+});
 
 const textValue = computed({
   get: () => (props.value != "0" ? props.value.replace(/[^0-9.-]+/g, "") : ""),

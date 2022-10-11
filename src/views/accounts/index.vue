@@ -20,9 +20,14 @@ import AccountsBalance from "./components/accounts-balance.vue";
 import AccountsItem from "./components/accounts-item.vue";
 import { accounts, apiPromise, nativeBalances, nativeToken } from "@/stores";
 import { useGetNativeBalances } from "@/libs/balances";
-import { computed, watch } from "vue";
+import { computed, onMounted, watch } from "vue";
 import { useGetNativePrice } from "@/libs/prices";
 import BigNumber from "bignumber.js";
+
+onMounted(() => {
+  useGetNativeBalances();
+  useGetNativePrice();
+});
 
 watch([accounts, apiPromise], () => {
   useGetNativeBalances();

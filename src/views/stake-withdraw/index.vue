@@ -44,7 +44,7 @@ import StakeWithdrawProcess from "./components/stake-withdraw-process.vue";
 import { Token } from "@/types/token";
 import { ref } from "vue";
 import { useRouter } from "vue-router";
-import { dot } from "@/types/mock";
+import { dot } from "@/types/tokens";
 
 const router = useRouter();
 

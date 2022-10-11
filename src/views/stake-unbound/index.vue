@@ -40,7 +40,7 @@ import AmountInput from "@/components/amount-input/index.vue";
 import { Token } from "@/types/token";
 import { ref } from "vue";
 import { useRouter } from "vue-router";
-import { dot } from "@/types/mock";
+import { dot } from "@/types/tokens";
 
 const router = useRouter();
 
