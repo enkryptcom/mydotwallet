@@ -149,7 +149,6 @@ watch([selectedAsset, amount, nativeBalances, toAccount], async () => {
     }
 
     const api = await apiPromise.value;
-    await api.isReady;
 
     const rawAmount = toBN(
       toBase(amount.value?.toString() || "0", selectedAsset.value.decimals)

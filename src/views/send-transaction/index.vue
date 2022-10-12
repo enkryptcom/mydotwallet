@@ -132,7 +132,7 @@ const edWarn = computed(() => {
   );
   const ed = toBN(
     toBase(
-      selectedAsset.value.existentialDeposit || "0",
+      selectedAsset.value.existentialDeposit.toString() || "0",
       selectedAsset.value.decimals
     )
   );
@@ -185,7 +185,6 @@ watch(
       }
 
       const api = await apiPromise.value;
-      await api.isReady;
 
       const rawAmount = toBN(
         toBase(amount.value?.toString() || "0", selectedAsset.value.decimals)

@@ -16,28 +16,35 @@
         them.
       </p>
     </div>
-
     <select-account-input
       :account="fromAccount"
       :accounts="accounts"
+      :amount="availableBalance"
       :is-amount="true"
       title="From"
       @update:select="selectAccount"
     />
 
     <amount-input
-      :token="token"
+      :has-enough-balance="hasEnough"
+      :token="nativeToken"
       :value="String(amount)"
+      :max-value="nativeBalances[fromAccount?.address]?.available"
       @update:amount="inputAmount"
     />
 
     <buttons-block :is-space="true">
       <div class="stake-enter-amount__lock">
-        <Switch />
+        <Switch :is-checked="isCompounding" @update:check="updateCompounding" />
         <p>Lock rewards for compounding?</p>
         <info-tooltip :text="rewardsInfo" />
       </div>
-      <base-button title="Continue" :action="nextAction" :send="true" />
+      <base-button
+        title="Continue"
+        :action="nextAction"
+        :send="true"
+        :disabled="!isValid"
+      />
     </buttons-block>
   </white-wrapper>
 </template>
@@ -52,27 +59,134 @@ import Switch from "@/components/switch/index.vue";
 import SelectAccountInput from "@/components/select-account-input/index.vue";
 import AmountInput from "@/components/amount-input/index.vue";
 import { Account } from "@/types/account";
-import { Token } from "@/types/token";
-import { ref } from "vue";
-import { useRouter } from "vue-router";
-import { accounts } from "@/types/mock";
-import { dot } from "@/types/tokens";
+import { computed, onMounted, ref, watch } from "vue";
+import { useRoute, useRouter } from "vue-router";
+import { accounts, apiPromise, nativeBalances, nativeToken } from "@/stores";
+import { useGetNativeBalances } from "@/libs/balances";
+import { useGetNativePrice } from "@/libs/prices";
+import { fromBase, isValidDecimals, toBase } from "@/utils/units";
+import { toBN } from "web3-utils";
+import { stakeExtrinsic } from "@/utils/extrinsic";
+import BigNumber from "bignumber.js";
+import { GasFeeInfo } from "@/types/transaction";
 
 const router = useRouter();
+const route = useRoute();
 
 const rewardsInfo =
   "If you choose not to lock your rewards, then your newly minted rewards will be transferrable by default. However, this would mean lower earnings over longer period of time.";
 
-const fromAccount = ref<Account>(accounts[0]);
-const amount = ref<number>(1000);
-const token = ref<Token>(dot);
+const fromAccount = ref<Account>(accounts.value[0]);
+const amount = ref<number>(0);
+const fee = ref<GasFeeInfo>();
+const isCompounding = ref<boolean>(true);
+const hasEnough = ref(true);
+
+onMounted(() => {
+  useGetNativeBalances();
+  useGetNativePrice();
+
+  try {
+    // Parse query param value for isCompounding
+    if (route.query.compounding) {
+      const compounding = route.query.compounding.toString().trim() === "true";
+      isCompounding.value = compounding;
+    }
+
+    // Parse query param value for amount
+    const value = Number(route.query.amount?.toString().trim() || "");
+    if (value) {
+      amount.value = value;
+    }
+  } catch (err) {
+    console.error("Error trying to parse query parameters", err);
+  }
+});
+
+watch([amount, nativeBalances, fromAccount], async () => {
+  if (!amount.value || !fromAccount.value?.address) {
+    return;
+  }
+
+  if (!isValidDecimals(amount.value.toString(), nativeToken.value.decimals)) {
+    hasEnough.value = false;
+    return;
+  }
+
+  const api = await apiPromise.value;
+
+  const rawAmount = toBN(
+    toBase(amount.value?.toString() || "0", nativeToken.value.decimals)
+  );
+
+  const rawBalance = toBN(
+    toBase(
+      nativeBalances.value[fromAccount.value.address]?.available.toString() ||
+        "0",
+      nativeToken.value.decimals
+    )
+  );
+
+  if (rawAmount.gt(rawBalance)) {
+    hasEnough.value = false;
+  } else {
+    hasEnough.value = true;
+  }
+
+  const tx = await stakeExtrinsic(
+    api,
+    fromAccount.value.address,
+    rawAmount.toString()
+  );
+  const { partialFee } = (
+    await tx.paymentInfo(fromAccount.value.address)
+  ).toJSON();
+
+  const txFeeHuman = new BigNumber(
+    fromBase(partialFee?.toString() ?? "", nativeToken.value.decimals)
+  );
+
+  const txPrice = new BigNumber(nativeToken.value.price).times(txFeeHuman);
+
+  fee.value = {
+    fiatSymbol: "USD",
+    fiatValue: txPrice,
+    nativeSymbol: nativeToken.value.symbol ?? "",
+    nativeValue: txFeeHuman,
+  };
+});
+
+const isValid = computed<boolean>(() => {
+  return !!fromAccount.value && Number(amount.value) > 0 && hasEnough.value;
+});
+
+const availableBalance = computed(() => {
+  if (!nativeBalances.value || !fromAccount.value) {
+    return 0;
+  }
+
+  return (
+    nativeBalances.value[fromAccount.value.address]?.available.toNumber() || 0
+  );
+});
 
 const nextAction = () => {
-  router.push({ name: "stake-nominate" });
+  router.push({
+    name: "stake-nominate",
+    query: {
+      amount: amount.value.toString(),
+      compounding: isCompounding.value.toString(),
+      address: fromAccount.value.address,
+    },
+  });
 };
 
 const back = () => {
   router.go(-1);
+};
+
+const updateCompounding = (newValue: boolean) => {
+  isCompounding.value = newValue;
 };
 
 const selectAccount = (account: Account) => {

@@ -33,10 +33,11 @@ import ChevronSmallDown from "@/icons/common/chevron-small-down.vue";
 import DropdownWrapper from "@/components/dropdown-wrapper/index.vue";
 import AccountSelect from "@/components/account-select/index.vue";
 import { Account } from "@/types/account";
-import { PropType, ref } from "vue";
+import { computed, PropType, ref } from "vue";
 import { onClickOutside } from "@vueuse/core";
 import { Token } from "@/types/token";
 import { dot } from "@/types/tokens";
+import { nativeBalances } from "@/stores";
 
 const isOpenDropdown = ref<boolean>(false);
 const dropdown = ref(null);
@@ -46,7 +47,7 @@ const emit = defineEmits<{
   (e: "update:select", account: Account): void;
 }>();
 
-defineProps({
+const props = defineProps({
   account: {
     type: Object as PropType<Account>,
     default: null,

@@ -121,11 +121,6 @@ onMounted(async () => {
   updateRewardCalculation();
 });
 
-watch([apiPromise], () => {
-  useGetNativePrice();
-  updateRewardCalculation();
-});
-
 const estimatedYield = computed(() => {
   let numberOfDays;
   switch (period.value.id) {
@@ -186,6 +181,7 @@ const nextAction = () => {
     name: "stake-enter-amount",
     query: {
       amount: amount.value ? amount.value.toString() : undefined,
+      compounding: isCompounding.value.toString(),
     },
   });
 };

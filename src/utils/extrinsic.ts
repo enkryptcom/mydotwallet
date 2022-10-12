@@ -18,3 +18,21 @@ export const sendExtrinsic = async (
       return (api as ApiPromise).tx.balances.transferAll(to, true);
   }
 };
+
+export const stakeExtrinsic = async (
+  api: any,
+  address: string,
+  amount: string
+) => {
+  if (api.tx.utility.batchAll) {
+    return api.tx.utility.batchAll([
+      api.tx.staking.bond(address, amount, { Account: address }),
+      api.tx.staking.nominate([]),
+    ]);
+  } else {
+    return api.tx.utility.batch([
+      api.tx.staking.bond(address, amount, { Account: address }),
+      api.tx.staking.nominate([]),
+    ]);
+  }
+};

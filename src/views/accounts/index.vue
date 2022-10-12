@@ -29,11 +29,6 @@ onMounted(() => {
   useGetNativePrice();
 });
 
-watch([accounts, apiPromise], () => {
-  useGetNativeBalances();
-  useGetNativePrice();
-});
-
 const totalBalance = computed(() => {
   return Object.values(nativeBalances.value).reduce(
     (previous, current) => previous.plus(current?.total || 0),
