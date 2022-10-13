@@ -64,11 +64,11 @@ import { useRoute, useRouter } from "vue-router";
 import { accounts, apiPromise, nativeBalances, nativeToken } from "@/stores";
 import { useGetNativeBalances } from "@/libs/balances";
 import { useGetNativePrice } from "@/libs/prices";
-import { fromBase, isValidDecimals, toBase } from "@/utils/units";
+import { isValidDecimals, toBase } from "@/utils/units";
 import { toBN } from "web3-utils";
 import { stakeExtrinsic } from "@/utils/extrinsic";
-import BigNumber from "bignumber.js";
 import { GasFeeInfo } from "@/types/transaction";
+import { getGasFeeInfo } from "@/utils/fee";
 
 const router = useRouter();
 const route = useRoute();
@@ -136,24 +136,11 @@ watch([amount, nativeBalances, fromAccount], async () => {
   const tx = await stakeExtrinsic(
     api,
     fromAccount.value.address,
-    rawAmount.toString()
-  );
-  const { partialFee } = (
-    await tx.paymentInfo(fromAccount.value.address)
-  ).toJSON();
-
-  const txFeeHuman = new BigNumber(
-    fromBase(partialFee?.toString() ?? "", nativeToken.value.decimals)
+    rawAmount.toString(),
+    [fromAccount.value.address]
   );
 
-  const txPrice = new BigNumber(nativeToken.value.price).times(txFeeHuman);
-
-  fee.value = {
-    fiatSymbol: "USD",
-    fiatValue: txPrice,
-    nativeSymbol: nativeToken.value.symbol ?? "",
-    nativeValue: txFeeHuman,
-  };
+  fee.value = await getGasFeeInfo(tx, fromAccount.value.address);
 });
 
 const isValid = computed<boolean>(() => {

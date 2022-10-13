@@ -2,7 +2,7 @@
   <div class="stake-staked-validators__header">
     <div class="stake-staked-validators__table-item">Validator</div>
     <div class="stake-staked-validators__table-item">Status</div>
-    <div class="stake-staked-validators__table-item">Comission</div>
+    <div class="stake-staked-validators__table-item">Commission</div>
     <div class="stake-staked-validators__table-item">Total stake</div>
     <div class="stake-staked-validators__table-item">Bonded amount</div>
   </div>

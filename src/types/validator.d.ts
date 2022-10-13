@@ -1,15 +1,20 @@
 import { Token } from "@/types/token";
 
 export interface Validator {
-  id: number;
-  name: string;
-  image: string;
+  id?: number;
+  name?: string;
+  image?: string;
   address: string;
   nominators: number;
-  comission: number;
+  commission: number;
   total: number;
-  returns: number;
+  bonded: number;
+  returns?: number;
   token: Token;
-  isHightRisk: boolean;
+  isActive: boolean;
+  isBlocking: boolean;
+  isElected: boolean;
+  isNominating: boolean;
+  isHighRisk: boolean;
   isOversubscribed: boolean;
 }

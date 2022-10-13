@@ -22,17 +22,18 @@ export const sendExtrinsic = async (
 export const stakeExtrinsic = async (
   api: any,
   address: string,
-  amount: string
+  amount: string,
+  nominating: string[]
 ) => {
   if (api.tx.utility.batchAll) {
     return api.tx.utility.batchAll([
       api.tx.staking.bond(address, amount, { Account: address }),
-      api.tx.staking.nominate([]),
+      api.tx.staking.nominate(nominating),
     ]);
   } else {
     return api.tx.utility.batch([
       api.tx.staking.bond(address, amount, { Account: address }),
-      api.tx.staking.nominate([]),
+      api.tx.staking.nominate(nominating),
     ]);
   }
 };

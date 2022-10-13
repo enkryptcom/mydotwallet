@@ -61,6 +61,7 @@ import { fromBase, isValidDecimals, toBase } from "@/utils/units";
 import { sendExtrinsic } from "@/utils/extrinsic";
 import BigNumber from "bignumber.js";
 import { toBN } from "web3-utils";
+import { getGasFeeInfo } from "@/utils/fee";
 
 const router = useRouter();
 const route = useRoute();
@@ -121,7 +122,7 @@ const edWarn = computed(() => {
   );
   const ed = toBN(
     toBase(
-      selectedAsset.value.existentialDeposit || "0",
+      selectedAsset.value.existentialDeposit.toString() || "0",
       selectedAsset.value.decimals
     )
   );
@@ -176,22 +177,8 @@ watch([selectedAsset, amount, nativeBalances, toAccount], async () => {
       rawAmount.toString(),
       transferType
     );
-    const { partialFee } = (
-      await tx.paymentInfo(fromAccount.value.address)
-    ).toJSON();
 
-    const txFeeHuman = new BigNumber(
-      fromBase(partialFee?.toString() ?? "", selectedAsset.value.decimals)
-    );
-
-    const txPrice = new BigNumber(selectedAsset.value.price).times(txFeeHuman);
-
-    fee.value = {
-      fiatSymbol: "USD",
-      fiatValue: txPrice,
-      nativeSymbol: selectedAsset.value.symbol ?? "",
-      nativeValue: txFeeHuman,
-    };
+    fee.value = await getGasFeeInfo(tx, fromAccount.value.address);
   }
 });
 

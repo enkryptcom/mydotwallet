@@ -20,7 +20,7 @@
 
     <div class="stake-nominate__table-header">
       <div class="stake-nominate__table-item">Validator</div>
-      <div class="stake-nominate__table-item">Comission</div>
+      <div class="stake-nominate__table-item">Commission</div>
       <div class="stake-nominate__table-item">Total stake</div>
       <div class="stake-nominate__table-item">Estimated returns</div>
       <div class="stake-nominate__table-item"></div>
@@ -72,11 +72,22 @@ import StakeNominateItem from "./components/stake-nominate-item.vue";
 import CustomScrollbar from "@/components/custom-scrollbar/index.vue";
 import { BaseSelectItem } from "@/types/base-select";
 import { ComponentPublicInstance, ref, onMounted, onUnmounted } from "vue";
-import { useRouter } from "vue-router";
+import { useRoute, useRouter } from "vue-router";
 import { Validator } from "@/types/validator";
-import { validators } from "@/types/mock";
+import { validators as mockValidators } from "@/types/mock";
+import { useGetNativeBalances } from "@/libs/balances";
+import { encodeSubstrateAddress } from "@/utils";
+import {
+  DeriveSessionInfo,
+  DeriveStakingElected,
+  DeriveStakingWaiting,
+} from "@polkadot/api-derive/types";
+import { apiPromise } from "@/stores";
+import { BN, BN_ONE, BN_ZERO } from "@polkadot/util";
+import { extractValidatorData } from "@/utils/staking";
 
 const router = useRouter();
+const route = useRoute();
 
 const isHighRisk = ref<boolean>(false);
 const isOnlySelected = ref<boolean>(false);
@@ -84,7 +95,12 @@ const isOnlySelected = ref<boolean>(false);
 const blockScrollRef = ref<ComponentPublicInstance<HTMLElement>>();
 const blockRef = ref<ComponentPublicInstance<HTMLElement>>();
 const height = ref<number>(0);
+const validators = ref<Array<Validator>>(mockValidators);
 const selectedValidators = ref<Array<Validator>>([]);
+
+const amount = ref<number>(0);
+const isCompounding = ref<boolean>(true);
+const address = ref<string>("");
 
 defineExpose({ blockScrollRef, blockRef });
 
@@ -93,6 +109,39 @@ onMounted(() => {
   setTimeout(() => {
     onResize();
   }, 100);
+
+  useGetNativeBalances();
+  loadValidators();
+
+  if (!route.query.compounding || !route.query.amount || !route.query.address) {
+    router.push({
+      name: "stake-enter-amount",
+    });
+    return;
+  }
+
+  try {
+    // Parse query param value for isCompounding
+    if (route.query.compounding) {
+      const compounding = route.query.compounding.toString().trim() === "true";
+      isCompounding.value = compounding;
+    }
+
+    // Parse query param value for amount
+    const value = Number(route.query.amount.toString().trim() || "");
+    amount.value = value;
+
+    // Parse address
+    address.value = route.query.address.toString().trim();
+    if (!encodeSubstrateAddress(address.value)) {
+      throw "Invalid address";
+    }
+  } catch (err) {
+    console.error("Error trying to parse query parameters", err);
+    router.push({
+      name: "stake-enter-amount",
+    });
+  }
 });
 onUnmounted(() => {
   window.removeEventListener("resize", onResize);
@@ -116,6 +165,32 @@ const nextAction = () => {
 
 const back = () => {
   router.go(-1);
+};
+
+const loadValidators = async () => {
+  const api = await apiPromise.value;
+  const electedInfo: DeriveStakingElected =
+    await api.derive.staking.electedInfo({
+      withController: true,
+      withExposure: true,
+      withPrefs: true,
+    });
+  const waitingInfo: DeriveStakingWaiting =
+    await api.derive.staking.waitingInfo({
+      withController: true,
+      withPrefs: true,
+    });
+  const historyDepth: BN =
+    (await api.query.staking.historyDepth()) as unknown as BN;
+  console.log("history", historyDepth);
+
+  const [elected] = extractValidatorData(api, [], electedInfo);
+  const [waiting] = extractValidatorData(api, [], waitingInfo);
+
+  console.log(electedInfo);
+  console.log(waitingInfo);
+  console.log(elected, waiting);
+  validators.value = elected;
 };
 
 const highRiskSwitch = (isChecked: boolean) => {

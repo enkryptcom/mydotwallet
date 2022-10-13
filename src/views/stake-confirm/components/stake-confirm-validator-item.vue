@@ -6,7 +6,7 @@
         <h3>
           {{ validator.name }}
           <span
-            v-if="validator.isHightRisk"
+            v-if="validator.isHighRisk"
             :class="{ empty: validator.name == '' }"
           >
             High risk

@@ -64,6 +64,7 @@ import BigNumber from "bignumber.js";
 import { GasFeeInfo } from "@/types/transaction";
 import { sendExtrinsic } from "@/utils/extrinsic";
 import { toBN } from "web3-utils";
+import { getGasFeeInfo } from "@/utils/fee";
 const router = useRouter();
 const route = useRoute();
 
@@ -213,24 +214,8 @@ watch(
         rawAmount.toString(),
         transferType
       );
-      const { partialFee } = (
-        await tx.paymentInfo(fromAccount.value.address)
-      ).toJSON();
 
-      const txFeeHuman = new BigNumber(
-        fromBase(partialFee?.toString() ?? "", selectedAsset.value.decimals)
-      );
-
-      const txPrice = new BigNumber(selectedAsset.value.price).times(
-        txFeeHuman
-      );
-
-      fee.value = {
-        fiatSymbol: "USD",
-        fiatValue: txPrice,
-        nativeSymbol: selectedAsset.value.symbol ?? "",
-        nativeValue: txFeeHuman,
-      };
+      fee.value = await getGasFeeInfo(tx, fromAccount.value.address);
     }
   }
 );

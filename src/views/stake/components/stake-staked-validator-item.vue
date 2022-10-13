@@ -10,7 +10,7 @@
                 ? validator.name
                 : $filters.replaceWithEllipsis(validator.address, 6, 6)
             }}
-            <span v-if="validator.isHightRisk">High risk</span>
+            <span v-if="validator.isHighRisk">High risk</span>
           </h3>
           <p v-if="!validator.isOversubscribed">
             {{ validator.nominators }} nominators
@@ -26,13 +26,13 @@
       <span>Active</span>
     </div>
     <div class="stake-staked-validator-item__block">
-      <span>{{ validator.comission }}%</span>
+      <span>{{ validator.commission }}%</span>
     </div>
     <div class="stake-staked-validator-item__block">
-      <span>{{ $filters.cryptoCurrencyFormat(validator.total) }} DOT</span>
+      <span>{{ $filters.cryptoCurrencyFormat(validator.total || 0) }} DOT</span>
     </div>
     <div class="stake-staked-validator-item__block">
-      <span>{{ $filters.cryptoCurrencyFormat(validator.returns) }} DOT</span>
+      <span>{{ $filters.cryptoCurrencyFormat(validator.returns || 0) }} DOT</span>
     </div>
   </div>
 </template>
