@@ -168,7 +168,7 @@ const loadPreviousStakingOptions = () => {
     !stakingWizardOptions.value.amount ||
     !stakingWizardOptions.value.fromAccount
   ) {
-    router.push({
+    router.replace({
       name: "stake-enter-amount",
     });
     return;

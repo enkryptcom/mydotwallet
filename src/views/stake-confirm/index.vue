@@ -39,7 +39,13 @@
     </div>
 
     <buttons-block>
-      <base-button title="Stake 1000 DOT" :action="nextAction" :send="true" />
+      <base-button
+        :title="`Stake ${$filters.cryptoCurrencyFormat(
+          amount
+        )} ${nativeToken.symbol.toLocaleUpperCase()}`"
+        :action="nextAction"
+        :send="true"
+      />
     </buttons-block>
   </white-wrapper>
   <white-wrapper v-else class="stake-confirm__wrap">
@@ -140,7 +146,8 @@ const nextAction = async () => {
     api,
     fromAccount.value.address || "",
     rawAmount.toString(),
-    validators.value.map((item) => item.address)
+    validators.value.map((item) => item.address),
+    isCompounding.value
   );
 
   const unsubscribe = await tx.signAndSend(
@@ -188,7 +195,7 @@ const loadPreviousStakingOptions = () => {
     !stakingWizardOptions.value.fromAccount ||
     !stakingWizardOptions.value.validators
   ) {
-    router.push({
+    router.replace({
       name: "stake-enter-amount",
     });
     return;
@@ -220,7 +227,8 @@ const loadFeeInfo = async () => {
     api,
     fromAccount.value?.address || "",
     rawAmount.toString(),
-    validators.value.map((item) => item.address)
+    validators.value.map((item) => item.address),
+    isCompounding.value
   );
 
   fee.value = await getGasFeeInfo(tx, fromAccount.value?.address || "");

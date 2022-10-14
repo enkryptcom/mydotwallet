@@ -129,7 +129,8 @@ watch(
       api,
       fromAccount.value.address,
       rawAmount.toString(),
-      [fromAccount.value.address]
+      [fromAccount.value.address],
+      isCompounding.value
     );
 
     fee.value = await getGasFeeInfo(tx, fromAccount.value.address);

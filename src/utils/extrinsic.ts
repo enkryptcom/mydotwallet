@@ -25,16 +25,17 @@ export const stakeExtrinsic = async (
   api: any,
   address: string,
   amount: string,
-  nominating: string[]
+  nominating: string[],
+  isCompounding: boolean
 ): Promise<SubmittableExtrinsic<"promise", ISubmittableResult>> => {
   if (api.tx.utility.batchAll) {
     return api.tx.utility.batchAll([
-      api.tx.staking.bond(address, amount, { Account: address }),
+      api.tx.staking.bond(address, amount, isCompounding ? "Staked" : "Stash"),
       api.tx.staking.nominate(nominating),
     ]);
   } else {
     return api.tx.utility.batch([
-      api.tx.staking.bond(address, amount, { Account: address }),
+      api.tx.staking.bond(address, amount, isCompounding ? "Staked" : "Stash"),
       api.tx.staking.nominate(nominating),
     ]);
   }
