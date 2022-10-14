@@ -7,7 +7,7 @@
         <span>{{ token.symbol }}</span>
       </h2>
       <div class="stake-confirm-amount__info-fiat">
-        ~{{ $filters.currencyFormat(token.price * amount, "USD") }}
+        ~{{ $filters.currencyFormat(token.price.toNumber() * amount, "USD") }}
       </div>
     </div>
   </div>

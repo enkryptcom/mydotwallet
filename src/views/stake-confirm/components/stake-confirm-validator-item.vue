@@ -20,7 +20,7 @@
 
 <script setup lang="ts">
 import { PropType } from "vue";
-import { Validator } from "@/types/validator";
+import { Validator } from "@/types/staking";
 
 defineProps({
   validator: {

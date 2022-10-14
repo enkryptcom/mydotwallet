@@ -11,10 +11,14 @@
 
     <div class="stake-confirm__block">
       <div class="stake-confirm__block-item">
-        <stake-confirm-account :account="fromAccount" title="From" />
+        <stake-confirm-account
+          :account="fromAccount"
+          title="From"
+          :amount="availableBalance"
+        />
       </div>
       <div class="stake-confirm__block-item">
-        <stake-confirm-amount :token="token" :amount="amount" />
+        <stake-confirm-amount :token="nativeToken" :amount="amount" />
       </div>
       <div
         ref="blockRef"
@@ -26,11 +30,11 @@
           class="stake-confirm__scroll-area"
           :style="{ maxHeight: height + 'px' }"
         >
-          <stake-confirm-validators />
+          <stake-confirm-validators :validators="validators" />
         </custom-scrollbar>
       </div>
       <div class="stake-confirm__block-item">
-        <stake-confirm-fee />
+        <stake-confirm-fee :fee="fee" />
       </div>
     </div>
 
@@ -55,11 +59,28 @@ import StakeConfirmValidators from "./components/stake-confirm-validators.vue";
 import StakeConfirmProcess from "./components/stake-confirm-process.vue";
 import CustomScrollbar from "@/components/custom-scrollbar/index.vue";
 import { Account } from "@/types/account";
-import { Token } from "@/types/token";
-import { ComponentPublicInstance, ref, onMounted, onUnmounted } from "vue";
+import {
+  ComponentPublicInstance,
+  ref,
+  onMounted,
+  onUnmounted,
+  computed,
+} from "vue";
 import { useRouter } from "vue-router";
-import { accounts } from "@/types/mock";
-import { dot } from "@/types/tokens";
+import {
+  apiPromise,
+  nativeBalances,
+  nativeToken,
+  signer,
+  stakingWizardOptions,
+} from "@/stores";
+import { Validator } from "@/types/staking";
+import { GasFeeInfo } from "@/types/transaction";
+import { toBN } from "web3-utils";
+import { toBase } from "@/utils/units";
+import { stakeExtrinsic } from "@/utils/extrinsic";
+import { getGasFeeInfo } from "@/utils/fee";
+import { ISubmittableResult } from "@polkadot/types/types";
 
 const router = useRouter();
 
@@ -67,19 +88,25 @@ const blockScrollRef = ref<ComponentPublicInstance<HTMLElement>>();
 const blockRef = ref<ComponentPublicInstance<HTMLElement>>();
 const height = ref<number>(0);
 
-const fromAccount = ref<Account>(accounts[0]);
-const amount = ref<number>(1000);
-const token = ref<Token>(dot);
+const fromAccount = ref<Account>();
+const amount = ref<number>(0);
+const validators = ref<Array<Validator>>([]);
 const isSend = ref<boolean>(false);
 const isSendDone = ref<boolean>(false);
+const isCompounding = ref<boolean>(true);
+
+const fee = ref<GasFeeInfo>();
 
 defineExpose({ blockScrollRef, blockRef });
 
 onMounted(() => {
+  console.log(fromAccount);
   window.addEventListener("resize", onResize);
   setTimeout(() => {
     onResize();
   }, 100);
+
+  loadPreviousStakingOptions();
 });
 onUnmounted(() => {
   window.removeEventListener("resize", onResize);
@@ -97,15 +124,106 @@ const onResize = () => {
   }
 };
 
-const nextAction = () => {
+const nextAction = async () => {
+  if (!fromAccount.value) {
+    return;
+  }
+
   isSend.value = true;
-  setTimeout(() => {
-    isSendDone.value = true;
-  }, 3000);
+
+  const api = await apiPromise.value;
+  const rawAmount = toBN(
+    toBase(amount.value?.toString() || "0", nativeToken.value.decimals)
+  );
+
+  const tx = await stakeExtrinsic(
+    api,
+    fromAccount.value.address || "",
+    rawAmount.toString(),
+    validators.value.map((item) => item.address)
+  );
+
+  const unsubscribe = await tx.signAndSend(
+    fromAccount.value.address,
+    {
+      signer: signer.value,
+      nonce: -1,
+    },
+    async (result: ISubmittableResult) => {
+      if (!result || !result.status) {
+        return;
+      }
+
+      if (result.status.isFinalized || result.status.isInBlock) {
+        result.events
+          .filter(({ event: { section } }) => section === "system")
+          .forEach(({ event: { method } }): void => {
+            if (method === "ExtrinsicFailed") {
+              // Handle error
+            } else if (method === "ExtrinsicSuccess") {
+              // Handle succes
+              isSendDone.value = true;
+            }
+          });
+      } else if (result.isError) {
+        // Handle error
+      }
+
+      if (result.isCompleted) {
+        unsubscribe();
+      }
+    }
+  );
 };
 
 const back = () => {
   router.go(-1);
+};
+
+const loadPreviousStakingOptions = () => {
+  console.log(stakingWizardOptions.value);
+  isCompounding.value = stakingWizardOptions.value.isCompounding;
+  if (
+    !stakingWizardOptions.value.amount ||
+    !stakingWizardOptions.value.fromAccount ||
+    !stakingWizardOptions.value.validators
+  ) {
+    router.push({
+      name: "stake-enter-amount",
+    });
+    return;
+  }
+  amount.value = stakingWizardOptions.value.amount;
+  fromAccount.value = stakingWizardOptions.value.fromAccount;
+  validators.value = stakingWizardOptions.value.validators;
+  loadFeeInfo();
+};
+
+const availableBalance = computed(() => {
+  if (!nativeBalances.value || !fromAccount.value) {
+    return 0;
+  }
+
+  return (
+    nativeBalances.value[fromAccount.value.address]?.available.toNumber() || 0
+  );
+});
+
+const loadFeeInfo = async () => {
+  const api = await apiPromise.value;
+
+  const rawAmount = toBN(
+    toBase(amount.value?.toString() || "0", nativeToken.value.decimals)
+  );
+
+  const tx = await stakeExtrinsic(
+    api,
+    fromAccount.value?.address || "",
+    rawAmount.toString(),
+    validators.value.map((item) => item.address)
+  );
+
+  fee.value = await getGasFeeInfo(tx, fromAccount.value?.address || "");
 };
 </script>
 

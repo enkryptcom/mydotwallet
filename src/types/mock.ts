@@ -1,7 +1,7 @@
 import { SelectItem, NetworkSelectItem } from "@/types/select-list";
 import { Account } from "@/types/account";
 import { Network } from "@/types/network";
-import { Validator } from "@/types/validator";
+import { Validator } from "@/types/staking";
 import { CrowdloanItem } from "@/types/crowdloan";
 import { dot } from "./tokens";
 

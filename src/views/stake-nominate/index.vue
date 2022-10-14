@@ -5,9 +5,9 @@
       <h1 class="stake-nominate__title">Nominate validators</h1>
 
       <stake-nominate-header-info
-        :amount="1000"
-        :returns="140.738"
-        :yield="14.27"
+        :amount="amount"
+        :returns="estimatedReturn"
+        :yield="estimatedYield * 100"
       />
     </div>
 
@@ -16,6 +16,7 @@
       :is-only-selected="isOnlySelected"
       @update:high-risk="highRiskSwitch"
       @update:only-selected="onlySelectedSwitch"
+      @update:sort="updateSort"
     />
 
     <div class="stake-nominate__table-header">
@@ -37,9 +38,11 @@
         :style="{ maxHeight: height + 'px' }"
       >
         <stake-nominate-item
-          v-for="(item, index) in validators"
+          v-for="(item, index) in sortedAndFiltered"
           :key="index"
+          :amount-to-stake="amount"
           :validator="item"
+          :yield="estimatedYield"
           @update:select-validator="selectValidator"
           @update:delete-validator="deleteValidator"
           @update:sort="updateSort"
@@ -71,23 +74,32 @@ import StakeNominateControls from "./components/stake-nominate-controls.vue";
 import StakeNominateItem from "./components/stake-nominate-item.vue";
 import CustomScrollbar from "@/components/custom-scrollbar/index.vue";
 import { BaseSelectItem } from "@/types/base-select";
-import { ComponentPublicInstance, ref, onMounted, onUnmounted } from "vue";
-import { useRoute, useRouter } from "vue-router";
-import { Validator } from "@/types/validator";
-import { validators as mockValidators } from "@/types/mock";
-import { useGetNativeBalances } from "@/libs/balances";
-import { encodeSubstrateAddress } from "@/utils";
 import {
-  DeriveSessionInfo,
+  ComponentPublicInstance,
+  ref,
+  onMounted,
+  onUnmounted,
+  computed,
+} from "vue";
+import { useRouter } from "vue-router";
+import {
+  periodOptions,
+  periodToNumberOfDays,
+  Validator,
+} from "@/types/staking";
+import { useGetNativeBalances } from "@/libs/balances";
+import {
   DeriveStakingElected,
   DeriveStakingWaiting,
 } from "@polkadot/api-derive/types";
-import { apiPromise } from "@/stores";
-import { BN, BN_ONE, BN_ZERO } from "@polkadot/util";
-import { extractValidatorData } from "@/utils/staking";
+import { apiPromise, stakingWizardOptions } from "@/stores";
+import {
+  extractNominatorList,
+  extractValidatorData,
+  getLastEraReward,
+} from "@/utils/staking";
 
 const router = useRouter();
-const route = useRoute();
 
 const isHighRisk = ref<boolean>(false);
 const isOnlySelected = ref<boolean>(false);
@@ -95,12 +107,14 @@ const isOnlySelected = ref<boolean>(false);
 const blockScrollRef = ref<ComponentPublicInstance<HTMLElement>>();
 const blockRef = ref<ComponentPublicInstance<HTMLElement>>();
 const height = ref<number>(0);
-const validators = ref<Array<Validator>>(mockValidators);
+const validators = ref<Array<Validator>>([]);
 const selectedValidators = ref<Array<Validator>>([]);
 
+const sortType = ref<number>(0);
 const amount = ref<number>(0);
 const isCompounding = ref<boolean>(true);
-const address = ref<string>("");
+const periodNumberOfDays = ref<number>(365);
+const lastEraReward = ref<number>(0);
 
 defineExpose({ blockScrollRef, blockRef });
 
@@ -111,37 +125,8 @@ onMounted(() => {
   }, 100);
 
   useGetNativeBalances();
+  loadPreviousStakingOptions();
   loadValidators();
-
-  if (!route.query.compounding || !route.query.amount || !route.query.address) {
-    router.push({
-      name: "stake-enter-amount",
-    });
-    return;
-  }
-
-  try {
-    // Parse query param value for isCompounding
-    if (route.query.compounding) {
-      const compounding = route.query.compounding.toString().trim() === "true";
-      isCompounding.value = compounding;
-    }
-
-    // Parse query param value for amount
-    const value = Number(route.query.amount.toString().trim() || "");
-    amount.value = value;
-
-    // Parse address
-    address.value = route.query.address.toString().trim();
-    if (!encodeSubstrateAddress(address.value)) {
-      throw "Invalid address";
-    }
-  } catch (err) {
-    console.error("Error trying to parse query parameters", err);
-    router.push({
-      name: "stake-enter-amount",
-    });
-  }
 });
 onUnmounted(() => {
   window.removeEventListener("resize", onResize);
@@ -160,6 +145,10 @@ const onResize = () => {
 };
 
 const nextAction = () => {
+  stakingWizardOptions.value = {
+    ...stakingWizardOptions.value,
+    validators: selectedValidators.value,
+  };
   router.push({ name: "stake-confirm" });
 };
 
@@ -167,8 +156,30 @@ const back = () => {
   router.go(-1);
 };
 
+const loadPreviousStakingOptions = () => {
+  isCompounding.value = stakingWizardOptions.value.isCompounding;
+  const searchPeriod = periodOptions.find(
+    (item) => item.id === stakingWizardOptions.value?.period
+  );
+  if (searchPeriod) {
+    periodNumberOfDays.value = periodToNumberOfDays(searchPeriod.id);
+  }
+  if (
+    !stakingWizardOptions.value.amount ||
+    !stakingWizardOptions.value.fromAccount
+  ) {
+    router.push({
+      name: "stake-enter-amount",
+    });
+    return;
+  }
+  amount.value = stakingWizardOptions.value.amount;
+};
+
 const loadValidators = async () => {
   const api = await apiPromise.value;
+
+  lastEraReward.value = await getLastEraReward(api);
   const electedInfo: DeriveStakingElected =
     await api.derive.staking.electedInfo({
       withController: true,
@@ -180,18 +191,56 @@ const loadValidators = async () => {
       withController: true,
       withPrefs: true,
     });
-  const historyDepth: BN =
-    (await api.query.staking.historyDepth()) as unknown as BN;
-  console.log("history", historyDepth);
 
-  const [elected] = extractValidatorData(api, [], electedInfo);
-  const [waiting] = extractValidatorData(api, [], waitingInfo);
+  const nominatorList = await extractNominatorList(api);
+  const [elected] = await extractValidatorData(
+    api,
+    [],
+    electedInfo,
+    nominatorList
+  );
+  const [waiting] = await extractValidatorData(
+    api,
+    [],
+    waitingInfo,
+    nominatorList
+  );
 
-  console.log(electedInfo);
-  console.log(waitingInfo);
-  console.log(elected, waiting);
-  validators.value = elected;
+  validators.value = elected.concat(waiting);
 };
+
+const sortedAndFiltered = computed(() => {
+  // Apply filters
+  let finalResult = isOnlySelected.value
+    ? selectedValidators.value
+    : validators.value;
+
+  if (isHighRisk.value) {
+    finalResult = finalResult.filter((item) => {
+      return !isHighRisk.value || !item.isHighRisk;
+    });
+  }
+
+  // Apply sorting
+  finalResult.sort((a, b) => {
+    if (sortType.value === 0) {
+      return a.commission - b.commission;
+    } else {
+      return a.name ? (b.name ? a.name.localeCompare(b.name) : -1) : 1;
+    }
+  });
+  return finalResult;
+});
+
+const estimatedYield = computed(() => {
+  return isCompounding.value
+    ? Math.pow(1 + lastEraReward.value, periodNumberOfDays.value) - 1
+    : lastEraReward.value * periodNumberOfDays.value;
+});
+
+const estimatedReturn = computed(() => {
+  return estimatedYield.value * amount.value;
+});
 
 const highRiskSwitch = (isChecked: boolean) => {
   isHighRisk.value = isChecked;
@@ -213,7 +262,7 @@ const deleteValidator = (validator: Validator) => {
 };
 
 const updateSort = (item: BaseSelectItem) => {
-  console.log(item);
+  sortType.value = item.id;
 };
 </script>
 

@@ -40,7 +40,7 @@
 <script setup lang="ts">
 import { PropType } from "vue";
 import InfoTooltip from "@/components/info-tooltip/index.vue";
-import { Validator } from "@/types/validator";
+import { Validator } from "@/types/staking";
 
 const overInfo =
   "Oversubscribed info will be credited to your bonded balance for compound earning.";

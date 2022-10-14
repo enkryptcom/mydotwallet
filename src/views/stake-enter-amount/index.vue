@@ -60,8 +60,14 @@ import SelectAccountInput from "@/components/select-account-input/index.vue";
 import AmountInput from "@/components/amount-input/index.vue";
 import { Account } from "@/types/account";
 import { computed, onMounted, ref, watch } from "vue";
-import { useRoute, useRouter } from "vue-router";
-import { accounts, apiPromise, nativeBalances, nativeToken } from "@/stores";
+import { useRouter } from "vue-router";
+import {
+  accounts,
+  apiPromise,
+  nativeBalances,
+  nativeToken,
+  stakingWizardOptions,
+} from "@/stores";
 import { useGetNativeBalances } from "@/libs/balances";
 import { useGetNativePrice } from "@/libs/prices";
 import { isValidDecimals, toBase } from "@/utils/units";
@@ -71,7 +77,6 @@ import { GasFeeInfo } from "@/types/transaction";
 import { getGasFeeInfo } from "@/utils/fee";
 
 const router = useRouter();
-const route = useRoute();
 
 const rewardsInfo =
   "If you choose not to lock your rewards, then your newly minted rewards will be transferrable by default. However, this would mean lower earnings over longer period of time.";
@@ -85,63 +90,59 @@ const hasEnough = ref(true);
 onMounted(() => {
   useGetNativeBalances();
   useGetNativePrice();
-
-  try {
-    // Parse query param value for isCompounding
-    if (route.query.compounding) {
-      const compounding = route.query.compounding.toString().trim() === "true";
-      isCompounding.value = compounding;
-    }
-
-    // Parse query param value for amount
-    const value = Number(route.query.amount?.toString().trim() || "");
-    if (value) {
-      amount.value = value;
-    }
-  } catch (err) {
-    console.error("Error trying to parse query parameters", err);
-  }
+  loadPreviousStakingOptions();
 });
 
-watch([amount, nativeBalances, fromAccount], async () => {
-  if (!amount.value || !fromAccount.value?.address) {
-    return;
+watch(
+  [amount, nativeBalances, fromAccount],
+  async () => {
+    if (!amount.value || !fromAccount.value?.address) {
+      return;
+    }
+
+    if (!isValidDecimals(amount.value.toString(), nativeToken.value.decimals)) {
+      hasEnough.value = false;
+      return;
+    }
+
+    const api = await apiPromise.value;
+
+    const rawAmount = toBN(
+      toBase(amount.value?.toString() || "0", nativeToken.value.decimals)
+    );
+
+    const rawBalance = toBN(
+      toBase(
+        nativeBalances.value[fromAccount.value.address]?.available.toString() ||
+          "0",
+        nativeToken.value.decimals
+      )
+    );
+
+    if (rawAmount.gt(rawBalance)) {
+      hasEnough.value = false;
+    } else {
+      hasEnough.value = true;
+    }
+
+    const tx = await stakeExtrinsic(
+      api,
+      fromAccount.value.address,
+      rawAmount.toString(),
+      [fromAccount.value.address]
+    );
+
+    fee.value = await getGasFeeInfo(tx, fromAccount.value.address);
+  },
+  { deep: true }
+);
+
+const loadPreviousStakingOptions = () => {
+  isCompounding.value = stakingWizardOptions.value.isCompounding;
+  if (stakingWizardOptions.value.amount) {
+    amount.value = stakingWizardOptions.value.amount;
   }
-
-  if (!isValidDecimals(amount.value.toString(), nativeToken.value.decimals)) {
-    hasEnough.value = false;
-    return;
-  }
-
-  const api = await apiPromise.value;
-
-  const rawAmount = toBN(
-    toBase(amount.value?.toString() || "0", nativeToken.value.decimals)
-  );
-
-  const rawBalance = toBN(
-    toBase(
-      nativeBalances.value[fromAccount.value.address]?.available.toString() ||
-        "0",
-      nativeToken.value.decimals
-    )
-  );
-
-  if (rawAmount.gt(rawBalance)) {
-    hasEnough.value = false;
-  } else {
-    hasEnough.value = true;
-  }
-
-  const tx = await stakeExtrinsic(
-    api,
-    fromAccount.value.address,
-    rawAmount.toString(),
-    [fromAccount.value.address]
-  );
-
-  fee.value = await getGasFeeInfo(tx, fromAccount.value.address);
-});
+};
 
 const isValid = computed<boolean>(() => {
   return !!fromAccount.value && Number(amount.value) > 0 && hasEnough.value;
@@ -158,13 +159,14 @@ const availableBalance = computed(() => {
 });
 
 const nextAction = () => {
+  stakingWizardOptions.value = {
+    ...stakingWizardOptions.value,
+    fromAccount: fromAccount.value,
+    isCompounding: isCompounding.value,
+    amount: amount.value,
+  };
   router.push({
     name: "stake-nominate",
-    query: {
-      amount: amount.value.toString(),
-      compounding: isCompounding.value.toString(),
-      address: fromAccount.value.address,
-    },
   });
 };
 

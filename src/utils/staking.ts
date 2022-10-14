@@ -1,13 +1,29 @@
 import { nativeToken } from "@/stores";
-import { Validator } from "@/types/validator";
+import { NominatedByMap, Validator } from "@/types/staking";
 import { ApiPromise } from "@polkadot/api";
 import {
   DeriveStakingElected,
   DeriveStakingWaiting,
 } from "@polkadot/api-derive/types";
-import { IndividualExposure } from "@polkadot/types/interfaces";
+import { Option, StorageKey } from "@polkadot/types";
+import { IndividualExposure, Nominations } from "@polkadot/types/interfaces";
 import { BN, BN_ZERO } from "@polkadot/util";
 import { fromBase } from "./units";
+
+export const getLastEraReward = async (api: ApiPromise): Promise<number> => {
+  const currentEra = await api.query.staking.currentEra();
+  const lastEra = Number(currentEra.toString()) - 1;
+
+  const lastRewardQuery = await api.query.staking.erasValidatorReward(lastEra);
+  const lastStakeTotalQuery = await api.query.staking.erasTotalStake(lastEra);
+  const lastReward = Number(
+    fromBase(lastRewardQuery.toString(), nativeToken.value.decimals)
+  );
+  const lastStakeTotal = Number(
+    fromBase(lastStakeTotalQuery.toString(), nativeToken.value.decimals)
+  );
+  return lastReward / lastStakeTotal;
+};
 
 const isWaitingDerive = (
   derive: DeriveStakingElected | DeriveStakingWaiting
@@ -15,11 +31,44 @@ const isWaitingDerive = (
   return !(derive as DeriveStakingElected).nextElected;
 };
 
-export const extractValidatorData = (
+export const extractNominatorList = async (api: ApiPromise) => {
+  const result: [StorageKey, Option<Nominations>][] =
+    await api.query.staking.nominators.entries();
+
+  const mapped: NominatedByMap = {};
+
+  for (let i = 0; i < result.length; i++) {
+    const [key, optNoms] = result[i];
+
+    if (optNoms.isSome && key.args.length) {
+      const nominatorId = key.args[0].toString();
+      const { submittedIn, targets } = optNoms.unwrap();
+
+      for (let j = 0; j < targets.length; j++) {
+        const validatorId = targets[j].toString();
+
+        if (!mapped[validatorId]) {
+          mapped[validatorId] = [];
+        }
+
+        mapped[validatorId].push({
+          index: j + 1,
+          nominatorId,
+          submittedIn: submittedIn.toNumber(),
+        });
+      }
+    }
+  }
+
+  return mapped;
+};
+
+export const extractValidatorData = async (
   api: ApiPromise,
   allAccounts: string[],
-  derive: DeriveStakingElected | DeriveStakingWaiting
-): [Validator[], Record<string, BN>] => {
+  derive: DeriveStakingElected | DeriveStakingWaiting,
+  nominatorList: NominatedByMap
+): Promise<[Validator[], Record<string, BN>]> => {
   const nominators: Record<string, BN> = {};
   const emptyExposure = api.createType("Exposure");
   const list = new Array<Validator>(derive.info.length);
@@ -53,9 +102,11 @@ export const extractValidatorData = (
       api.consts.staking?.maxNominatorRewardedPerValidator?.toString() || 0
     );
 
+    const numNominators =
+      (exposure.others || []).length || (nominatorList[key] || []).length;
+
     list[i] = {
       address: key,
-      name: key,
       bonded: bondOwn,
       total,
       commission: validatorPrefs.commission.unwrap().toNumber() / 10_000_000,
@@ -76,12 +127,29 @@ export const extractValidatorData = (
         },
         allAccounts.includes(key)
       ),
-      nominators: (exposure.others || []).length,
+      nominators: numNominators,
       token: nativeToken.value,
       isHighRisk: false,
-      isOversubscribed: (exposure.others || []).length > maxNominators,
+      isOversubscribed: numNominators > maxNominators,
     };
   }
+
+  // Get names
+  const identities = await Promise.all(
+    list.map((item) => api.derive.accounts.info(item.address))
+  );
+
+  identities.forEach((item, index) => {
+    list[index].name = item.identity.displayParent
+      ? `${item.identity.displayParent}${
+          item.identity.display ? `/${item.identity.display}` : ""
+        }`
+      : item.identity.display;
+    list[index].isHighRisk =
+      item.identity.judgements.some(
+        ([, judgement]) => judgement.isErroneous || judgement.isLowQuality
+      ) || !list[index].name;
+  });
 
   return [list, nominators];
 };

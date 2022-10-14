@@ -13,7 +13,7 @@
       <input
         ref="inputRef"
         v-model="amountValue"
-        type="number"
+        type="text"
         class="amount-input__input"
         placeholder="0"
         :class="{ error: !hasEnoughBalance }"
@@ -22,7 +22,7 @@
       <span v-show="props.value != '0'" @click="focus">{{ token.symbol }}</span>
     </div>
 
-    <p v-if="props.value" class="amount-input__fiat">
+    <p v-if="props.value !== '0'" class="amount-input__fiat">
       ~{{ $filters.currencyFormat(amountInFiat, "USD") }}
     </p>
     <p v-else class="amount-input__fiat">
@@ -71,10 +71,8 @@ const setMaxValue = () => {
 };
 
 const amountValue = computed({
-  get: () => props.value,
-  set: (value) => {
-    emit("update:amount", value ? new BigNumber(value).toFixed() : "");
-  },
+  get: () => (props.value != "0" ? props.value.replace(/[^0-9.-]+/g, "") : ""),
+  set: (value) => emit("update:amount", value.replace(/[^0-9.-]+/g, "")),
 });
 const size = computed(() => {
   return amountValue.value.length == 0 ? 70 : amountValue.value.length;

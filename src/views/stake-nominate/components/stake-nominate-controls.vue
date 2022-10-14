@@ -5,7 +5,7 @@
       <base-select
         :options="sortOptions"
         :selected="sort"
-        @update:toggle="selectSort"
+        @toggle:select="selectSort"
       />
     </div>
     <div class="stake-nominate__controls-filter">

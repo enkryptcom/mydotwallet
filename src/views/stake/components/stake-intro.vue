@@ -78,32 +78,14 @@ import BaseSelect from "@/components/base-select/index.vue";
 import { BaseSelectItem } from "@/types/base-select";
 import StakeAmountInput from "./stake-amount-input.vue";
 import { useRouter } from "vue-router";
-import { computed, onMounted, ref, watch } from "vue";
-import { apiPromise, nativeToken } from "@/stores";
-import { fromBase } from "@/utils/units";
+import { computed, onMounted, ref } from "vue";
+import { apiPromise, nativeToken, stakingWizardOptions } from "@/stores";
 import { useGetNativeBalances } from "@/libs/balances";
 import { useGetNativePrice } from "@/libs/prices";
+import { periodOptions, periodToNumberOfDays } from "@/types/staking";
+import { getLastEraReward } from "@/utils/staking";
 
 const router = useRouter();
-
-const periodOptions = [
-  {
-    id: 0,
-    name: "for 12 months",
-  },
-  {
-    id: 1,
-    name: "for 6 months",
-  },
-  {
-    id: 2,
-    name: "for 3 months",
-  },
-  {
-    id: 3,
-    name: "for 1 month",
-  },
-];
 
 const amount = ref<number>(0);
 const period = ref<BaseSelectItem>(periodOptions[0]);
@@ -119,24 +101,11 @@ onMounted(async () => {
   useGetNativeBalances();
   useGetNativePrice();
   updateRewardCalculation();
+  loadPreviousStakingOptions();
 });
 
 const estimatedYield = computed(() => {
-  let numberOfDays;
-  switch (period.value.id) {
-    case 1:
-      numberOfDays = 365 / 2;
-      break;
-    case 2:
-      numberOfDays = 365 / 4;
-      break;
-    case 3:
-      numberOfDays = 365 / 12;
-      break;
-    default:
-      numberOfDays = 365;
-      break;
-  }
+  const numberOfDays = periodToNumberOfDays(period.value.id);
 
   return isCompounding.value
     ? Math.pow(1 + lastEraReward.value, numberOfDays) - 1
@@ -151,21 +120,22 @@ const estimatedReturnUsd = computed(() => {
   return nativeToken.value.price.times(estimatedReturn.value).toNumber();
 });
 
+const loadPreviousStakingOptions = () => {
+  isCompounding.value = stakingWizardOptions.value.isCompounding;
+  if (stakingWizardOptions.value.amount) {
+    amount.value = stakingWizardOptions.value.amount;
+  }
+  const searchPeriod = periodOptions.find(
+    (item) => item.id === stakingWizardOptions.value?.period
+  );
+  if (searchPeriod) {
+    period.value = searchPeriod;
+  }
+};
+
 const updateRewardCalculation = async () => {
   const api = await apiPromise.value;
-
-  const currentEra = await api.query.staking.currentEra();
-  const lastEra = Number(currentEra.toString()) - 1;
-
-  const lastRewardQuery = await api.query.staking.erasValidatorReward(lastEra);
-  const lastStakeTotalQuery = await api.query.staking.erasTotalStake(lastEra);
-  const lastReward = Number(
-    fromBase(lastRewardQuery.toString(), nativeToken.value.decimals)
-  );
-  const lastStakeTotal = Number(
-    fromBase(lastStakeTotalQuery.toString(), nativeToken.value.decimals)
-  );
-  lastEraReward.value = lastReward / lastStakeTotal;
+  lastEraReward.value = await getLastEraReward(api);
 };
 
 const updateCompounding = (newValue: boolean) => {
@@ -177,12 +147,13 @@ const inputAmount = (newVal: string) => {
 };
 
 const nextAction = () => {
+  stakingWizardOptions.value = {
+    isCompounding: isCompounding.value,
+    period: period.value.id,
+    amount: amount.value,
+  };
   router.push({
     name: "stake-enter-amount",
-    query: {
-      amount: amount.value ? amount.value.toString() : undefined,
-      compounding: isCompounding.value.toString(),
-    },
   });
 };
 

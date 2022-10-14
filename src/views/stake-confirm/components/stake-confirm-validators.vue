@@ -3,7 +3,7 @@
     <h5>Validators</h5>
 
     <stake-confirm-validator-item
-      v-for="(item, index) in validators"
+      v-for="(item, index) in props.validators"
       :key="index"
       :validator="item"
     />
@@ -11,8 +11,20 @@
 </template>
 
 <script setup lang="ts">
-import { validators } from "@/types/mock";
+import { PropType } from "vue";
 import StakeConfirmValidatorItem from "./stake-confirm-validator-item.vue";
+import { Validator } from "@/types/staking";
+
+const props = defineProps({
+  amountToStake: { type: Number, default: 0 },
+  validators: {
+    type: Object as PropType<Array<Validator>>,
+    default: () => {
+      return [];
+    },
+  },
+  yield: { type: Number, default: 0 },
+});
 </script>
 
 <style lang="less" scoped>

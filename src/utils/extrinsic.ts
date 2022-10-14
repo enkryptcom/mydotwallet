@@ -1,12 +1,14 @@
 import { TransferType } from "@/types/transfer";
 import { ApiPromise } from "@polkadot/api";
+import { SubmittableExtrinsic } from "@polkadot/api/types";
+import { ISubmittableResult } from "@polkadot/types/types";
 
 export const sendExtrinsic = async (
   api: any,
   to: string,
   amount: string,
   transferType: TransferType = "keepAlive"
-) => {
+): Promise<SubmittableExtrinsic<"promise", ISubmittableResult>> => {
   switch (transferType) {
     case "transfer":
       return (api as ApiPromise).tx.balances.transfer(to, amount);
@@ -24,7 +26,7 @@ export const stakeExtrinsic = async (
   address: string,
   amount: string,
   nominating: string[]
-) => {
+): Promise<SubmittableExtrinsic<"promise", ISubmittableResult>> => {
   if (api.tx.utility.batchAll) {
     return api.tx.utility.batchAll([
       api.tx.staking.bond(address, amount, { Account: address }),

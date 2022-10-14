@@ -37,7 +37,7 @@ import { computed, PropType, ref } from "vue";
 import { onClickOutside } from "@vueuse/core";
 import { Token } from "@/types/token";
 import { dot } from "@/types/tokens";
-import { nativeBalances } from "@/stores";
+import { nativeBalances, nativeToken } from "@/stores";
 
 const isOpenDropdown = ref<boolean>(false);
 const dropdown = ref(null);
@@ -66,7 +66,7 @@ const props = defineProps({
   },
   token: {
     type: Object as PropType<Token>,
-    default: dot,
+    default: nativeToken.value,
   },
   isAmount: {
     type: Boolean,

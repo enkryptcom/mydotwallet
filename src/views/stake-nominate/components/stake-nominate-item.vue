@@ -1,12 +1,12 @@
 <template>
-  <div class="stake-nominate__item" @click.capture="toggleSelect">
+  <div class="stake-nominate__item" @click.stop="toggleSelect">
     <div class="stake-nominate__item-block">
       <div class="stake-nominate__item-info">
         <img src="@/assets/pic/account1.png" alt="" />
         <div class="stake-nominate__item-info-block">
           <h3>
             {{
-              validator.name != ""
+              validator.name
                 ? validator.name
                 : $filters.replaceWithEllipsis(validator.address, 6, 6)
             }}
@@ -23,30 +23,30 @@
       </div>
     </div>
     <div class="stake-nominate__item-block">
-      <span>{{ validator.commission }}%</span>
+      <span>{{ validator.commission.toFixed(2) }}%</span>
     </div>
     <div class="stake-nominate__item-block">
       <span>{{ $filters.cryptoCurrencyFormat(validator.total || 0) }} DOT</span>
     </div>
     <div class="stake-nominate__item-block">
-      <span>{{ $filters.cryptoCurrencyFormat(validator.returns || 0) }} DOT</span>
+      <span>{{ $filters.cryptoCurrencyFormat(estimatedReturn || 0) }} DOT</span>
     </div>
     <div class="stake-nominate__item-block">
       <base-checkbox
         class="hardware-select-account__checkbox"
         :is-checked="isSelect"
         :disabled="false"
-        @toggle:select="toggleSelect"
+        @click.prevent
       />
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, PropType } from "vue";
+import { computed, ref, PropType } from "vue";
 import BaseCheckbox from "@/components/base-checkbox/index.vue";
 import InfoTooltip from "@/components/info-tooltip/index.vue";
-import { Validator } from "@/types/validator";
+import { Validator } from "@/types/staking";
 
 const isSelect = ref<boolean>(false);
 const overInfo =
@@ -58,10 +58,18 @@ const emit = defineEmits<{
 }>();
 
 const props = defineProps({
+  amountToStake: { type: Number, default: 0 },
   validator: {
     type: Object as PropType<Validator>,
     default: null,
   },
+  yield: { type: Number, default: 0 },
+});
+
+const estimatedReturn = computed(() => {
+  return (
+    props.amountToStake * props.yield * (1 - props.validator.commission / 100)
+  );
 });
 
 const selectValidator = () => {

@@ -1,22 +1,27 @@
 <template>
   <div class="stake-confirm-account">
-    <img class="stake-confirm-account__icon" :src="account.image" />
+    <img class="stake-confirm-account__icon" :src="account?.image" />
     <div class="stake-confirm-account__info">
       <h5 class="stake-confirm-account__info-title">{{ title }}</h5>
-      <div v-if="!!account.name" class="stake-confirm-account__info-address">
-        {{ account.name }}
-        <span>{{ $filters.replaceWithEllipsis(account.address, 6, 6) }}</span>
-        <span>{{ $filters.cryptoCurrencyFormat(15.9) }} <span>dot</span></span>
+      <div v-if="!!account?.name" class="stake-confirm-account__info-address">
+        {{ account?.name }}
+        <span>{{ $filters.replaceWithEllipsis(account?.address, 6, 6) }}</span>
+        <span
+          >{{ $filters.cryptoCurrencyFormat(amount) }}
+          <span>{{ token.symbol }}</span></span
+        >
       </div>
       <div v-else class="stake-confirm-account__info-address">
-        {{ account.address }}
+        {{ account?.address }}
       </div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
+import { nativeToken } from "@/stores";
 import { Account } from "@/types/account";
+import { Token } from "@/types/token";
 import { PropType } from "vue";
 
 defineProps({
@@ -27,6 +32,14 @@ defineProps({
   title: {
     type: String,
     default: "",
+  },
+  amount: {
+    type: Number,
+    default: 0,
+  },
+  token: {
+    type: Object as PropType<Token>,
+    default: nativeToken.value,
   },
 });
 </script>

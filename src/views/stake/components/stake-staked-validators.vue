@@ -17,7 +17,7 @@
 <script setup lang="ts">
 import StakeStakedValidatorItem from "./stake-staked-validator-item.vue";
 import { PropType } from "vue";
-import { Validator } from "@/types/validator";
+import { Validator } from "@/types/staking";
 
 defineProps({
   validators: {

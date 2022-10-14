@@ -8,6 +8,7 @@ import { dot, ksm } from "@/types/tokens";
 import { Balance } from "@/types/balance";
 import { WalletItem } from "@/types/wallet-list";
 import { walletConnect } from "@/types/wallets";
+import { StakingOptions } from "@/types/staking";
 
 const POLKADOT_ENDPOINTS = [
   "wss://rpc.polkadot.io",
@@ -68,3 +69,8 @@ export const isPricesLoading = ref<boolean>(false);
 export const extension = ref<InjectedExtension>();
 
 export const signer = ref<Signer>();
+
+export const stakingWizardOptions = ref<StakingOptions>({
+  isCompounding: true,
+  period: 0,
+});
