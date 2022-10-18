@@ -2,14 +2,14 @@
   <div class="stake-staked-account">
     <div class="stake-staked-account__item">
       <div class="stake-staked-account__item-info">
-        <img :src="account.image" alt="" />
+        <img :src="account?.image" alt="" />
         <div class="stake-staked-account__item-block">
           <h3>
-            {{ account.name }}
-            <span v-if="account.isLedger">Ledger</span>
+            {{ account?.name }}
+            <span v-if="account?.isLedger">Ledger</span>
           </h3>
           <p>
-            {{ $filters.replaceWithEllipsis(account.address, 6, 6) }}
+            {{ $filters.replaceWithEllipsis(account?.address, 6, 6) }}
           </p>
         </div>
       </div>

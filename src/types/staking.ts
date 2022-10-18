@@ -1,4 +1,8 @@
 import { Token } from "@/types/token";
+import { DeriveStakingAccount } from "@polkadot/api-derive/types";
+import { Exposure, RewardDestination, StakingLedger, ValidatorPrefs } from "@polkadot/types/interfaces";
+import { Codec, ITuple } from "@polkadot/types/types";
+import BigNumber from "bignumber.js";
 import { Account } from "./account";
 import { BaseSelectItem } from "./base-select";
 
@@ -65,3 +69,35 @@ export const periodToNumberOfDays = (id: number) => {
   };
   return mapping[id] || 365;
 };
+
+export type ValidatorInfo = ITuple<[ValidatorPrefs, Codec]> | ValidatorPrefs;
+export type Queried = Record<
+  string,
+  [boolean, DeriveStakingAccount, ValidatorInfo]
+>;
+
+export interface StakerState {
+  controllerId: string | null;
+  destination?: RewardDestination;
+  exposure?: Exposure;
+  hexSessionIdNext: string | null;
+  hexSessionIdQueue: string | null;
+  isLoading: boolean;
+  isOwnController: boolean;
+  isOwnStash: boolean;
+  isStashNominating: boolean;
+  isStashValidating: boolean;
+  nominating?: string[];
+  sessionIds: string[];
+  stakingLedger?: StakingLedger;
+  stashId: string;
+  validatorPrefs?: ValidatorPrefs;
+};
+
+export interface StakedTotalState {
+  bondedNoms?: BigNumber;
+  bondedNone?: BigNumber;
+  bondedTotal?: BigNumber;
+  bondedVals?: BigNumber;
+  foundStashes?: StakerState[];
+}

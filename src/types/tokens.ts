@@ -23,6 +23,17 @@ export const ksm: Token = {
   coingeckoID: "kusama",
 };
 
+export const wnd: Token = {
+  id: 3,
+  name: "Westend",
+  image: require("@/assets/pic/polkadot.token.svg"),
+  symbol: "wnd",
+  price: new BigNumber(0),
+  decimals: 12,
+  existentialDeposit: new BigNumber(0.01),
+  coingeckoID: "polkadot",
+};
+
 export const getToken = (nameOrSymbol: string) => {
   const allTokens = [dot, ksm];
   const lowercaseValue = nameOrSymbol.toLowerCase();

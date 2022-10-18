@@ -26,16 +26,195 @@ import StakeStakedOverview from "./components/stake-staked-overview.vue";
 import StakeStakedAccount from "./components/stake-staked-account.vue";
 import StakeIntro from "./components/stake-intro.vue";
 import { useRouter } from "vue-router";
-import { accounts } from "@/types/mock";
 import { onMounted, ref } from "vue";
+import { accounts, apiPromise, nativeToken } from "@/stores";
+import type { Option } from "@polkadot/types";
+import { AccountId, StakingLedger } from "@polkadot/types/interfaces";
+import BigNumber from "bignumber.js";
+import { DeriveStakingAccount } from "@polkadot/api-derive/types";
+import {
+  Queried,
+  StakedTotalState,
+  StakerState,
+  ValidatorInfo,
+} from "@/types/staking";
+import { u8aConcat, u8aToHex } from "@polkadot/util";
+import { fromBase } from "@/utils/units";
 
 const router = useRouter();
 
 const showStakeIntro = ref<boolean>(false);
 
 onMounted(() => {
-  showStakeIntro.value = true;
+  loadOwnStashes();
 });
+
+const loadOwnStashes = async () => {
+  if (!accounts.value.length) {
+    return [];
+  }
+
+  const api = await apiPromise.value;
+  const addresses = accounts.value.map((item) => item.address);
+  console.log(addresses);
+  const resultBonded: Option<AccountId>[] =
+    await api.query.staking?.bonded.multi(addresses);
+  const resultLedger: Option<StakingLedger>[] =
+    await api.query.staking?.ledger.multi(addresses);
+
+  const ownStashes: [string, boolean][] = [];
+
+  resultBonded.forEach((value, index): void => {
+    value.isSome && ownStashes.push([addresses[index], true]);
+  });
+
+  resultLedger.forEach((ledger): void => {
+    console.log(ledger.unwrapOr(null));
+    if (ledger.isSome) {
+      const stashId = ledger.unwrap().stash.toString();
+
+      !ownStashes.some(([accountId]) => accountId === stashId) &&
+        ownStashes.push([stashId, false]);
+    }
+  });
+
+  if (!ownStashes.length) {
+    return [];
+  }
+
+  const stashIds = ownStashes.map(([stashId]) => stashId);
+  const resAccounts: DeriveStakingAccount[] = await api.derive.staking.accounts(
+    stashIds
+  );
+  const resValidators: ValidatorInfo[] =
+    await api.query.staking.validators.multi(stashIds);
+
+  const queried = ownStashes.reduce(
+    (queried: Queried, [stashId, isOwnStash], index): Queried => ({
+      ...queried,
+      [stashId]: [isOwnStash, resAccounts[index], resValidators[index]],
+    }),
+    {}
+  );
+
+  if (!ownStashes.length) {
+    return [];
+  }
+
+  const stakerStates = ownStashes
+    .filter(([stashId]) => queried[stashId])
+    .map(([stashId]) => getStakerState(stashId, addresses, queried[stashId]));
+
+  // Staker totals
+  const bondedNoms = new BigNumber(0);
+  const bondedNone = new BigNumber(0);
+  const bondedVals = new BigNumber(0);
+  const bondedTotal = new BigNumber(0);
+
+  stakerStates.forEach(
+    ({ isStashNominating, isStashValidating, stakingLedger }): void => {
+      const value =
+        stakingLedger && stakingLedger.total
+          ? fromBase(
+              stakingLedger.total.unwrap().toString(),
+              nativeToken.value.decimals
+            )
+          : new BigNumber(0);
+
+      bondedTotal.plus(value);
+
+      if (isStashNominating) {
+        bondedNoms.plus(value);
+      } else if (isStashValidating) {
+        bondedVals.plus(value);
+      } else {
+        bondedNone.plus(value);
+      }
+    }
+  );
+
+  const assignValue = ({
+    isStashNominating,
+    isStashValidating,
+  }: StakerState): number => {
+    return isStashValidating ? 1 : isStashNominating ? 5 : 99;
+  };
+
+  const sortStashes = (a: StakerState, b: StakerState): number => {
+    return assignValue(a) - assignValue(b);
+  };
+
+  const totals: StakedTotalState = {
+    bondedNoms,
+    bondedNone,
+    bondedTotal,
+    bondedVals,
+    foundStashes: stakerStates.sort(sortStashes),
+  };
+
+  console.log('totals', totals)
+  return totals;
+};
+
+function getStakerState(
+  stashId: string,
+  allAccounts: string[],
+  [
+    isOwnStash,
+    {
+      controllerId: _controllerId,
+      exposure,
+      nextSessionIds: _nextSessionIds,
+      nominators,
+      rewardDestination,
+      sessionIds: _sessionIds,
+      stakingLedger,
+      validatorPrefs,
+    },
+    validateInfo,
+  ]: [boolean, DeriveStakingAccount, ValidatorInfo]
+): StakerState {
+  const isStashNominating = !!nominators?.length;
+  const isStashValidating = !(Array.isArray(validateInfo)
+    ? validateInfo[1].isEmpty
+    : validateInfo.isEmpty);
+  const nextSessionIds =
+    _nextSessionIds instanceof Map
+      ? [..._nextSessionIds.values()]
+      : _nextSessionIds;
+  const nextConcat = u8aConcat(...nextSessionIds.map((id) => id.toU8a()));
+  const sessionIds =
+    _sessionIds instanceof Map ? [..._sessionIds.values()] : _sessionIds;
+  const currConcat = u8aConcat(...sessionIds.map((id) => id.toU8a()));
+  const toIdString = (id?: AccountId | null): string | null => {
+    return id ? id.toString() : null;
+  };
+  const controllerId = toIdString(_controllerId);
+
+  return {
+    controllerId,
+    destination: rewardDestination,
+    exposure,
+    hexSessionIdNext: u8aToHex(nextConcat, 48),
+    hexSessionIdQueue: u8aToHex(
+      currConcat.length ? currConcat : nextConcat,
+      48
+    ),
+    isLoading: false,
+    isOwnController: allAccounts.includes(controllerId || ""),
+    isOwnStash,
+    isStashNominating,
+    isStashValidating,
+    // we assume that all ids are non-null
+    nominating: nominators?.map(toIdString) as string[],
+    sessionIds: (nextSessionIds.length ? nextSessionIds : sessionIds).map(
+      toIdString
+    ) as string[],
+    stakingLedger,
+    stashId,
+    validatorPrefs,
+  };
+}
 
 const stakeMoreAction = () => {
   router.push({ name: "stake-enter-amount" });
