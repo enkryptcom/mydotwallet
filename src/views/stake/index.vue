@@ -14,7 +14,11 @@
     </div>
 
     <div class="stake__staked-list">
-      <stake-staked-account :account="accounts[1]" />
+      <stake-staked-account
+        v-for="(item, index) in stakingAccounts"
+        :key="index"
+        :account="item"
+      />
     </div>
   </white-wrapper>
 </template>
@@ -47,7 +51,7 @@ import { loadValidatorData } from "@/utils/staking";
 const router = useRouter();
 
 const showStakeIntro = ref<boolean>(false);
-const stakingAccounts = ref<StakingAccountWithValidators[]>([]);
+const stakingAccounts = ref<Array<StakingAccountWithValidators>>([]);
 
 onMounted(async () => {
   stakingAccounts.value = await loadStakingAccounts();
@@ -165,13 +169,11 @@ const loadStakingAccounts = async () => {
 
   const validatorInfoMap: Record<string, Validator> = {};
   for (const auxAddress of validatorsAddress) {
-    let i = 0;
     for (const auxValidator of validators) {
       if (auxValidator.address.toLowerCase() === auxAddress.toLowerCase()) {
         validatorInfoMap[auxAddress] = auxValidator;
         break;
       }
-      i++;
     }
   }
 

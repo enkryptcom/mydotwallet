@@ -37,8 +37,18 @@
       <div class="stake-staked-account__stats-block">
         <p>Total staked</p>
         <div class="stake-staked-account__stats-block-amount">
-          <h5>{{ $filters.cryptoCurrencyFormat(1000) }} <span>dot</span></h5>
-          <h6>{{ $filters.currencyFormat(7945.24, "USD") }}</h6>
+          <h5>
+            {{ $filters.cryptoCurrencyFormat(account.totalStaked.toNumber()) }}
+            <span>{{ nativeToken.symbol }}</span>
+          </h5>
+          <h6>
+            {{
+              $filters.currencyFormat(
+                account.totalStaked.toNumber() * nativeToken.price.toNumber(),
+                "USD"
+              )
+            }}
+          </h6>
         </div>
       </div>
       <div class="stake-staked-account__stats-block">
@@ -56,11 +66,11 @@
       </div>
     </div>
     <div class="stake-staked-account__validators-toggle" @click="toggle">
-      Show 4 validators
+      Show {{ account.validators.length }} validator(s)
       <expand :class="{ open: isOpen }" />
     </div>
     <div v-show="isOpen" class="stake-staked-account__validators-list">
-      <stake-staked-validators :validators="selectValidators" />
+      <stake-staked-validators :validators="account.validators" />
     </div>
   </div>
 </template>
@@ -71,9 +81,9 @@ import Expand from "@/icons/common/expand.vue";
 import InfoTooltip from "@/components/info-tooltip/index.vue";
 import StakeStakedValidators from "./stake-staked-validators.vue";
 import { ref, PropType } from "vue";
-import { Account } from "@/types/account";
-import { selectValidators } from "@/types/mock";
 import { useRouter } from "vue-router";
+import { StakingAccountWithValidators } from "@/types/staking";
+import { nativeToken } from "@/stores";
 
 const router = useRouter();
 
@@ -83,7 +93,7 @@ const unbondInfo =
 
 defineProps({
   account: {
-    type: Object as PropType<Account>,
+    type: Object as PropType<StakingAccountWithValidators>,
     default: null,
   },
 });

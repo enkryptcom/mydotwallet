@@ -26,13 +26,19 @@
       <span>Active</span>
     </div>
     <div class="stake-staked-validator-item__block">
-      <span>{{ validator.commission }}%</span>
+      <span>{{ validator.commission.toFixed(2) }}%</span>
     </div>
     <div class="stake-staked-validator-item__block">
-      <span>{{ $filters.cryptoCurrencyFormat(validator.total || 0) }} DOT</span>
+      <span
+        >{{ $filters.cryptoCurrencyFormat(validator.total || 0) }}
+        {{ nativeToken.symbol.toLocaleUpperCase() }}</span
+      >
     </div>
     <div class="stake-staked-validator-item__block">
-      <span>{{ $filters.cryptoCurrencyFormat(validator.returns || 0) }} DOT</span>
+      <span
+        >{{ $filters.cryptoCurrencyFormat(validator.returns || 0) }}
+        {{ nativeToken.symbol.toLocaleUpperCase() }}</span
+      >
     </div>
   </div>
 </template>
@@ -41,6 +47,7 @@
 import { PropType } from "vue";
 import InfoTooltip from "@/components/info-tooltip/index.vue";
 import { Validator } from "@/types/staking";
+import { nativeToken } from "@/stores";
 
 const overInfo =
   "Oversubscribed info will be credited to your bonded balance for compound earning.";
