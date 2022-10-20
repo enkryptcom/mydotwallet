@@ -1,6 +1,11 @@
 import { Token } from "@/types/token";
 import { DeriveStakingAccount } from "@polkadot/api-derive/types";
-import { Exposure, RewardDestination, StakingLedger, ValidatorPrefs } from "@polkadot/types/interfaces";
+import {
+  Exposure,
+  RewardDestination,
+  StakingLedger,
+  ValidatorPrefs,
+} from "@polkadot/types/interfaces";
 import { Codec, ITuple } from "@polkadot/types/types";
 import BigNumber from "bignumber.js";
 import { Account } from "./account";
@@ -92,7 +97,7 @@ export interface StakerState {
   stakingLedger?: StakingLedger;
   stashId: string;
   validatorPrefs?: ValidatorPrefs;
-};
+}
 
 export interface StakedTotalState {
   bondedNoms?: BigNumber;
@@ -100,4 +105,12 @@ export interface StakedTotalState {
   bondedTotal?: BigNumber;
   bondedVals?: BigNumber;
   foundStashes?: StakerState[];
+}
+
+export interface StakingAccountWithValidators extends Account {
+  totalStaked: BigNumber;
+  earnings: BigNumber;
+  withdrawable: BigNumber;
+  unbonding: BigNumber;
+  validators: Validator[];
 }

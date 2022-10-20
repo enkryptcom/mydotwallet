@@ -36,32 +36,34 @@ import {
   Queried,
   StakedTotalState,
   StakerState,
+  StakingAccountWithValidators,
+  Validator,
   ValidatorInfo,
 } from "@/types/staking";
 import { u8aConcat, u8aToHex } from "@polkadot/util";
 import { fromBase } from "@/utils/units";
+import { loadValidatorData } from "@/utils/staking";
 
 const router = useRouter();
 
 const showStakeIntro = ref<boolean>(false);
+const stakingAccounts = ref<StakingAccountWithValidators[]>([]);
 
-onMounted(() => {
-  loadOwnStashes();
+onMounted(async () => {
+  stakingAccounts.value = await loadStakingAccounts();
 });
 
-const loadOwnStashes = async () => {
+const loadStakingAccounts = async () => {
   if (!accounts.value.length) {
     return [];
   }
 
   const api = await apiPromise.value;
   const addresses = accounts.value.map((item) => item.address);
-  console.log(addresses);
   const resultBonded: Option<AccountId>[] =
     await api.query.staking?.bonded.multi(addresses);
   const resultLedger: Option<StakingLedger>[] =
     await api.query.staking?.ledger.multi(addresses);
-
   const ownStashes: [string, boolean][] = [];
 
   resultBonded.forEach((value, index): void => {
@@ -69,7 +71,6 @@ const loadOwnStashes = async () => {
   });
 
   resultLedger.forEach((ledger): void => {
-    console.log(ledger.unwrapOr(null));
     if (ledger.isSome) {
       const stashId = ledger.unwrap().stash.toString();
 
@@ -106,10 +107,10 @@ const loadOwnStashes = async () => {
     .map(([stashId]) => getStakerState(stashId, addresses, queried[stashId]));
 
   // Staker totals
-  const bondedNoms = new BigNumber(0);
-  const bondedNone = new BigNumber(0);
-  const bondedVals = new BigNumber(0);
-  const bondedTotal = new BigNumber(0);
+  let bondedNoms = new BigNumber(0);
+  let bondedNone = new BigNumber(0);
+  let bondedVals = new BigNumber(0);
+  let bondedTotal = new BigNumber(0);
 
   stakerStates.forEach(
     ({ isStashNominating, isStashValidating, stakingLedger }): void => {
@@ -121,14 +122,14 @@ const loadOwnStashes = async () => {
             )
           : new BigNumber(0);
 
-      bondedTotal.plus(value);
+      bondedTotal = bondedTotal.plus(value);
 
       if (isStashNominating) {
-        bondedNoms.plus(value);
+        bondedNoms = bondedNoms.plus(value);
       } else if (isStashValidating) {
-        bondedVals.plus(value);
+        bondedVals = bondedVals.plus(value);
       } else {
-        bondedNone.plus(value);
+        bondedNone = bondedNone.plus(value);
       }
     }
   );
@@ -152,28 +153,63 @@ const loadOwnStashes = async () => {
     foundStashes: stakerStates.sort(sortStashes),
   };
 
-  console.log('totals', totals)
-  return totals;
+  const validators = await loadValidatorData(api);
+
+  let validatorsAddress: string[] = stakerStates.reduce(
+    (prev, current): string[] => {
+      return prev.concat(current.nominating || []);
+    },
+    [] as string[]
+  );
+  validatorsAddress = [...new Set(validatorsAddress)];
+
+  const validatorInfoMap: Record<string, Validator> = {};
+  for (const auxAddress of validatorsAddress) {
+    let i = 0;
+    for (const auxValidator of validators) {
+      if (auxValidator.address.toLowerCase() === auxAddress.toLowerCase()) {
+        validatorInfoMap[auxAddress] = auxValidator;
+        break;
+      }
+      i++;
+    }
+  }
+
+  const finalResult: StakingAccountWithValidators[] = [];
+  for (const auxStaker of totals.foundStashes || []) {
+    finalResult.push({
+      ...accounts.value.find((item) => item.address === auxStaker.controllerId),
+      totalStaked: new BigNumber(0),
+      earnings: new BigNumber(0),
+      withdrawable: new BigNumber(0),
+      unbonding: new BigNumber(0),
+      validators:
+        auxStaker.nominating?.map((item) => validatorInfoMap[item]) || [],
+    } as StakingAccountWithValidators);
+  }
+
+  return finalResult;
 };
 
-function getStakerState(
+const getStakerState = (
   stashId: string,
   allAccounts: string[],
-  [
-    isOwnStash,
-    {
-      controllerId: _controllerId,
-      exposure,
-      nextSessionIds: _nextSessionIds,
-      nominators,
-      rewardDestination,
-      sessionIds: _sessionIds,
-      stakingLedger,
-      validatorPrefs,
-    },
-    validateInfo,
-  ]: [boolean, DeriveStakingAccount, ValidatorInfo]
-): StakerState {
+  [isOwnStash, aaa, validateInfo]: [
+    boolean,
+    DeriveStakingAccount,
+    ValidatorInfo
+  ]
+): StakerState => {
+  const {
+    controllerId: _controllerId,
+    exposure,
+    nextSessionIds: _nextSessionIds,
+    nominators,
+    rewardDestination,
+    sessionIds: _sessionIds,
+    stakingLedger,
+    validatorPrefs,
+  } = aaa;
   const isStashNominating = !!nominators?.length;
   const isStashValidating = !(Array.isArray(validateInfo)
     ? validateInfo[1].isEmpty
@@ -214,7 +250,7 @@ function getStakerState(
     stashId,
     validatorPrefs,
   };
-}
+};
 
 const stakeMoreAction = () => {
   router.push({ name: "stake-enter-amount" });

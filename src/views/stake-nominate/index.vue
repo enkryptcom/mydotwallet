@@ -88,16 +88,8 @@ import {
   Validator,
 } from "@/types/staking";
 import { useGetNativeBalances } from "@/libs/balances";
-import {
-  DeriveStakingElected,
-  DeriveStakingWaiting,
-} from "@polkadot/api-derive/types";
 import { apiPromise, stakingWizardOptions } from "@/stores";
-import {
-  extractNominatorList,
-  extractValidatorData,
-  getLastEraReward,
-} from "@/utils/staking";
+import { getLastEraReward, loadValidatorData } from "@/utils/staking";
 
 const router = useRouter();
 
@@ -180,33 +172,7 @@ const loadValidators = async () => {
   const api = await apiPromise.value;
 
   lastEraReward.value = await getLastEraReward(api);
-  const electedInfo: DeriveStakingElected =
-    await api.derive.staking.electedInfo({
-      withController: true,
-      withExposure: true,
-      withPrefs: true,
-    });
-  const waitingInfo: DeriveStakingWaiting =
-    await api.derive.staking.waitingInfo({
-      withController: true,
-      withPrefs: true,
-    });
-
-  const nominatorList = await extractNominatorList(api);
-  const [elected] = await extractValidatorData(
-    api,
-    [],
-    electedInfo,
-    nominatorList
-  );
-  const [waiting] = await extractValidatorData(
-    api,
-    [],
-    waitingInfo,
-    nominatorList
-  );
-
-  validators.value = elected.concat(waiting);
+  validators.value = await loadValidatorData(api);
 };
 
 const sortedAndFiltered = computed(() => {

@@ -153,3 +153,33 @@ export const extractValidatorData = async (
 
   return [list, nominators];
 };
+
+export const loadValidatorData = async (api: ApiPromise) => {
+  const electedInfo: DeriveStakingElected =
+    await api.derive.staking.electedInfo({
+      withController: true,
+      withExposure: true,
+      withPrefs: true,
+    });
+  const waitingInfo: DeriveStakingWaiting =
+    await api.derive.staking.waitingInfo({
+      withController: true,
+      withPrefs: true,
+    });
+
+  const nominatorList = await extractNominatorList(api);
+  const [elected] = await extractValidatorData(
+    api,
+    [],
+    electedInfo,
+    nominatorList
+  );
+  const [waiting] = await extractValidatorData(
+    api,
+    [],
+    waitingInfo,
+    nominatorList
+  );
+
+  return elected.concat(waiting);
+};
