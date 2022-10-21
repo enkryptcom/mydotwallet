@@ -31,7 +31,12 @@ import StakeStakedAccount from "./components/stake-staked-account.vue";
 import StakeIntro from "./components/stake-intro.vue";
 import { useRouter } from "vue-router";
 import { onMounted, ref } from "vue";
-import { accounts, apiPromise, nativeToken } from "@/stores";
+import {
+  accounts,
+  apiPromise,
+  nativeToken,
+  subsquidExplorerUrl,
+} from "@/stores";
 import type { Option } from "@polkadot/types";
 import { AccountId, StakingLedger } from "@polkadot/types/interfaces";
 import BigNumber from "bignumber.js";
@@ -47,6 +52,7 @@ import {
 import { u8aConcat, u8aToHex } from "@polkadot/util";
 import { fromBase } from "@/utils/units";
 import { loadValidatorData } from "@/utils/staking";
+import { gql, request } from "graphql-request";
 
 const router = useRouter();
 
@@ -177,20 +183,75 @@ const loadStakingAccounts = async () => {
     }
   }
 
+  const accountRewardsMap = await getAccountsRewardsMap(
+    accounts.value.map((item) => item.address)
+  );
+
   const finalResult: StakingAccountWithValidators[] = [];
   for (const auxStaker of totals.foundStashes || []) {
     finalResult.push({
-      ...accounts.value.find((item) => item.address === auxStaker.controllerId),
-      totalStaked: new BigNumber(0),
-      earnings: new BigNumber(0),
+      ...accounts.value.find((item) => item.address === auxStaker.stashId),
+      totalStaked:
+        auxStaker.stakingLedger && auxStaker.stakingLedger.total
+          ? new BigNumber(
+              fromBase(
+                auxStaker.stakingLedger.total.unwrap().toString(),
+                nativeToken.value.decimals
+              )
+            )
+          : new BigNumber(0),
+      earnings: accountRewardsMap[auxStaker.stashId] || new BigNumber(0),
       withdrawable: new BigNumber(0),
       unbonding: new BigNumber(0),
       validators:
         auxStaker.nominating?.map((item) => validatorInfoMap[item]) || [],
     } as StakingAccountWithValidators);
   }
-
+  console.log("result", finalResult);
   return finalResult;
+};
+
+const getAccountsRewardsMap = async (
+  accounts: string[]
+): Promise<Record<string, BigNumber>> => {
+  let addressesStringQuery = accounts.reduce((prevValue, current) => {
+    return `, OR: { id_eq: "${current}"${prevValue} }`;
+  }, "");
+
+  const queryResult = await request(
+    subsquidExplorerUrl.value,
+    gql`
+      query MyQuery {
+        stakers(
+          where: {
+            id_eq: ""
+            ${addressesStringQuery}
+          }
+        ) {
+          totalSlash
+          totalReward
+          stashId
+          role
+          payeeType
+          payeeId
+          id
+          controllerId
+          commission
+          activeBond
+        }
+      }
+    `
+  );
+
+  const resultMap: Record<string, BigNumber> = {};
+
+  for (const auxStaker of queryResult.stakers) {
+    resultMap[auxStaker.id] = new BigNumber(
+      fromBase(auxStaker.totalReward, nativeToken.value.decimals)
+    );
+  }
+
+  return resultMap;
 };
 
 const getStakerState = (

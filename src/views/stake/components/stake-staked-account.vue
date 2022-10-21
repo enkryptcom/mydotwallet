@@ -54,14 +54,24 @@
       <div class="stake-staked-account__stats-block">
         <p>Overall earnings</p>
         <div class="stake-staked-account__stats-block-amount">
-          <h5>{{ $filters.cryptoCurrencyFormat(1.473) }} <span>dot</span></h5>
-          <h6>{{ $filters.currencyFormat(8.24, "USD") }}</h6>
+          <h5>
+            {{ $filters.cryptoCurrencyFormat(account.earnings.toNumber()) }}
+            <span>{{ nativeToken.symbol }}</span>
+          </h5>
+          <h6>
+            {{
+              $filters.currencyFormat(
+                account.earnings.toNumber() * nativeToken.price.toNumber(),
+                "USD"
+              )
+            }}
+          </h6>
         </div>
       </div>
       <div class="stake-staked-account__stats-block">
         <p>Overall yield</p>
         <div class="stake-staked-account__stats-block-amount">
-          <h5>{{ $filters.cryptoCurrencyFormat(1.46) }}%</h5>
+          <h5>{{ $filters.cryptoCurrencyFormat(earningsPercent) }}%</h5>
         </div>
       </div>
     </div>
@@ -70,7 +80,10 @@
       <expand :class="{ open: isOpen }" />
     </div>
     <div v-show="isOpen" class="stake-staked-account__validators-list">
-      <stake-staked-validators :validators="account.validators" />
+      <stake-staked-validators
+        :validators="account.validators"
+        :bonded-amount="account.totalStaked"
+      />
     </div>
   </div>
 </template>
@@ -80,7 +93,7 @@ import BaseButton from "@/components/base-button/index.vue";
 import Expand from "@/icons/common/expand.vue";
 import InfoTooltip from "@/components/info-tooltip/index.vue";
 import StakeStakedValidators from "./stake-staked-validators.vue";
-import { ref, PropType } from "vue";
+import { ref, PropType, computed } from "vue";
 import { useRouter } from "vue-router";
 import { StakingAccountWithValidators } from "@/types/staking";
 import { nativeToken } from "@/stores";
@@ -91,11 +104,15 @@ const isOpen = ref<boolean>(false);
 const unbondInfo =
   "Oversubscribed info will be credited to your bonded balance for compound earning.";
 
-defineProps({
+const props = defineProps({
   account: {
     type: Object as PropType<StakingAccountWithValidators>,
     default: null,
   },
+});
+
+const earningsPercent = computed(() => {
+  return props.account.earnings.div(props.account.totalStaked).times(100);
 });
 
 const toggle = () => {

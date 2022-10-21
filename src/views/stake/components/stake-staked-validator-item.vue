@@ -57,6 +57,10 @@ defineProps({
     type: Object as PropType<Validator>,
     default: null,
   },
+  approxBondedAmount: {
+    type: Number,
+    default: 0,
+  },
 });
 </script>
 

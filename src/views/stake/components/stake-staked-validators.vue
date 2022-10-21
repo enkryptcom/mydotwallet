@@ -11,19 +11,29 @@
     v-for="(item, index) in validators"
     :key="index"
     :validator="item"
+    :approx-bonded-amount="dividedAmount"
   />
 </template>
 
 <script setup lang="ts">
 import StakeStakedValidatorItem from "./stake-staked-validator-item.vue";
-import { PropType } from "vue";
+import { computed, PropType } from "vue";
 import { Validator } from "@/types/staking";
+import BigNumber from "bignumber.js";
 
-defineProps({
+const props = defineProps({
   validators: {
     type: Object as PropType<Array<Validator>>,
     default: null,
   },
+  bondedAmount: {
+    type: Object as PropType<BigNumber>,
+    default: new BigNumber(0),
+  },
+});
+
+const dividedAmount = computed(() => {
+  return props.bondedAmount.div(props.validators?.length || 1).toNumber();
 });
 </script>
 

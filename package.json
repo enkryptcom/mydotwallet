@@ -17,6 +17,8 @@
     "@substrate/connect": "^0.7.13",
     "@vueuse/core": "^9.1.1",
     "bignumber.js": "^9.1.0",
+    "graphql": "^16.6.0",
+    "graphql-request": "^5.0.0",
     "localforage": "^1.10.0",
     "lodash": "^4.17.21",
     "moment": "^2.29.4",

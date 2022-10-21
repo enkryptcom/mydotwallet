@@ -80,6 +80,18 @@ export const nativeToken = computed(() => {
   }
 });
 
+export const subsquidExplorerUrl = computed(() => {
+  switch (selectedNetwork.value) {
+    case Network.Polkadot:
+      return "https://squid.subsquid.io/polkadot-explorer/v/v3/graphql";
+    case Network.Kusama:
+      return "https://squid.subsquid.io/kusama-explorer/v/v3/graphql";
+    default:
+      return "https://squid.subsquid.io/polkadot-explorer/v/v3/graphql";
+      // return undefined;
+  }
+});
+
 export const isBalancesLoading = ref<boolean>(false);
 
 export const isPricesLoading = ref<boolean>(false);
