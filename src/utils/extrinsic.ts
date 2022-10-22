@@ -40,3 +40,10 @@ export const stakeExtrinsic = async (
     ]);
   }
 };
+
+export const unbondExtrinsic = async (
+  api: any,
+  amount: string
+): Promise<SubmittableExtrinsic<"promise", ISubmittableResult>> => {
+  return api.tx.staking.unbond(amount);
+};

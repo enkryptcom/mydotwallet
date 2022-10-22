@@ -1,13 +1,25 @@
 import { nativeToken } from "@/stores";
-import { NominatedByMap, Validator } from "@/types/staking";
+import {
+  NominatedByMap,
+  Queried,
+  StakerState,
+  Validator,
+  ValidatorInfo,
+} from "@/types/staking";
 import { ApiPromise } from "@polkadot/api";
 import {
+  DeriveStakingAccount,
   DeriveStakingElected,
   DeriveStakingWaiting,
 } from "@polkadot/api-derive/types";
 import { Option, StorageKey } from "@polkadot/types";
-import { IndividualExposure, Nominations } from "@polkadot/types/interfaces";
-import { BN, BN_ZERO } from "@polkadot/util";
+import {
+  AccountId,
+  IndividualExposure,
+  Nominations,
+  StakingLedger,
+} from "@polkadot/types/interfaces";
+import { BN, BN_ZERO, u8aConcat, u8aToHex } from "@polkadot/util";
 import { fromBase } from "./units";
 
 export const getLastEraReward = async (api: ApiPromise): Promise<number> => {
@@ -182,4 +194,89 @@ export const loadValidatorData = async (api: ApiPromise) => {
   );
 
   return elected.concat(waiting);
+};
+
+export const loadStakerState = async (api: ApiPromise, address: string) => {
+  const resultBonded = await api.query.staking?.bonded<Option<AccountId>>(
+    address
+  );
+  console.log("queryy", resultBonded, resultBonded.isSome);
+  if (!resultBonded.isSome) {
+    return undefined;
+  }
+  const resAccounts: DeriveStakingAccount = await api.derive.staking.account(
+    address
+  );
+  const resValidator = await api.query.staking.validators<ValidatorInfo>(
+    address
+  );
+
+  const stakerState = getStakerState(
+    address,
+    [address],
+    [true, resAccounts, resValidator]
+  );
+
+  console.log("staker states", stakerState);
+  return stakerState;
+};
+
+export const getStakerState = (
+  stashId: string,
+  allAccounts: string[],
+  [
+    isOwnStash,
+    {
+      controllerId: _controllerId,
+      exposure,
+      nextSessionIds: _nextSessionIds,
+      nominators,
+      rewardDestination,
+      sessionIds: _sessionIds,
+      stakingLedger,
+      validatorPrefs,
+    },
+    validateInfo,
+  ]: [boolean, DeriveStakingAccount, ValidatorInfo]
+): StakerState => {
+  const isStashNominating = !!nominators?.length;
+  const isStashValidating = !(Array.isArray(validateInfo)
+    ? validateInfo[1].isEmpty
+    : validateInfo.isEmpty);
+  const nextSessionIds =
+    _nextSessionIds instanceof Map
+      ? [..._nextSessionIds.values()]
+      : _nextSessionIds;
+  const nextConcat = u8aConcat(...nextSessionIds.map((id) => id.toU8a()));
+  const sessionIds =
+    _sessionIds instanceof Map ? [..._sessionIds.values()] : _sessionIds;
+  const currConcat = u8aConcat(...sessionIds.map((id) => id.toU8a()));
+  const toIdString = (id?: AccountId | null): string | null => {
+    return id ? id.toString() : null;
+  };
+  const controllerId = toIdString(_controllerId);
+
+  return {
+    controllerId,
+    destination: rewardDestination,
+    exposure,
+    hexSessionIdNext: u8aToHex(nextConcat, 48),
+    hexSessionIdQueue: u8aToHex(
+      currConcat.length ? currConcat : nextConcat,
+      48
+    ),
+    isLoading: false,
+    isOwnController: allAccounts.includes(controllerId || ""),
+    isOwnStash,
+    isStashNominating,
+    isStashValidating,
+    // we assume that all ids are non-null
+    nominating: nominators?.map(toIdString) as string[],
+    sessionIds: (nextSessionIds.length ? nextSessionIds : sessionIds).map(
+      toIdString
+    ) as string[],
+    stakingLedger,
+    stashId,
+    validatorPrefs,
+  };
 };

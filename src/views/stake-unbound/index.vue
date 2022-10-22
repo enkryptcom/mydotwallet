@@ -10,12 +10,14 @@
     <h4 class="stake-unbound__label">Amount to unbond</h4>
 
     <amount-input
-      :token="token"
+      :has-enough-balance="hasEnough"
+      :token="nativeToken"
       :value="String(amount)"
+      :max-value="stakedBalance"
       @update:amount="inputAmount"
     />
 
-    <div class="stake-unbound__fee">
+    <!-- <div class="stake-unbound__fee">
       <p class="stake-unbound__fee-title">Network fee:</p>
       <p class="stake-unbound__fee-fiat">
         {{ $filters.currencyFormat(0.34, "USD") }}
@@ -23,10 +25,16 @@
       <p class="stake-unbound__fee-amount">
         {{ $filters.cryptoCurrencyFormat(0.037) }} <span>dot</span>
       </p>
-    </div>
+    </div> -->
 
+    <fee-info :fee="fee" />
     <buttons-block>
-      <base-button title="Continue" :action="nextAction" :send="true" />
+      <base-button
+        title="Continue"
+        :action="nextAction"
+        :send="true"
+        :disabled="!isValid"
+      />
     </buttons-block>
   </white-wrapper>
 </template>
@@ -37,18 +45,140 @@ import ButtonsBlock from "@/components/buttons-block/index.vue";
 import BaseButton from "@/components/base-button/index.vue";
 import BackButton from "@/components/back-button/index.vue";
 import AmountInput from "@/components/amount-input/index.vue";
-import { Token } from "@/types/token";
-import { ref } from "vue";
-import { useRouter } from "vue-router";
-import { dot } from "@/types/tokens";
+import FeeInfo from "@/components/fee-info/index.vue";
+import { computed, onMounted, ref, watch } from "vue";
+import { useRoute, useRouter } from "vue-router";
+import { accounts, apiPromise, nativeBalances, nativeToken } from "@/stores";
+import { Account } from "@/types/account";
+import { loadStakerState } from "@/utils/staking";
+import BigNumber from "bignumber.js";
+import { fromBase, isValidDecimals, toBase } from "@/utils/units";
+import { toBN } from "web3-utils";
+import { getGasFeeInfo } from "@/utils/fee";
+import { GasFeeInfo } from "@/types/transaction";
+import { unbondExtrinsic } from "@/utils/extrinsic";
+import { useGetNativeBalances } from "@/libs/balances";
+import { useGetNativePrice } from "@/libs/prices";
 
 const router = useRouter();
+const route = useRoute();
 
-const amount = ref<number>(1000);
-const token = ref<Token>(dot);
+const amount = ref<number>(0);
+const fee = ref<GasFeeInfo>();
+const fromAccount = ref<Account>();
+const stakedBalance = ref<BigNumber>(new BigNumber(0));
+const hasEnough = ref(true);
+
+onMounted(() => {
+  // if (route.query.account) {
+  //   const found = accounts.value.find(
+  //     (item) => item.address === route.query.account
+  //   );
+  //   if (found) {
+  //     fromAccount.value = found;
+  //     updateStakedAmount();
+  //     useGetNativeBalances();
+  //     useGetNativePrice();
+  //     return;
+  //   }
+  // }
+  // router.push("../stake");
+});
+
+//test remove
+watch(accounts, async () => {
+  console.log("testttt");
+  fromAccount.value = accounts.value[2];
+  updateStakedAmount();
+  useGetNativeBalances();
+  useGetNativePrice();
+});
+
+const updateStakedAmount = async () => {
+  if (!fromAccount.value) {
+    return;
+  }
+
+  const api = await apiPromise.value;
+  const stakerState = await loadStakerState(api, fromAccount.value.address);
+
+  console.log("state", stakerState);
+  if (!stakerState?.stakingLedger) {
+    return;
+  }
+
+  console.log(
+    "wow",
+    fromBase(
+      stakerState.stakingLedger.active.unwrap().toString(),
+      nativeToken.value.decimals
+    )
+  );
+  stakedBalance.value = new BigNumber(
+    fromBase(
+      stakerState.stakingLedger.active.unwrap().toString(),
+      nativeToken.value.decimals
+    )
+  );
+};
+
+// Update fees values
+watch(
+  [amount, stakedBalance],
+  async () => {
+    if (!amount.value || !fromAccount.value?.address) {
+      return;
+    }
+
+    if (!isValidDecimals(amount.value.toString(), nativeToken.value.decimals)) {
+      hasEnough.value = false;
+      return;
+    }
+
+    const api = await apiPromise.value;
+
+    const rawAmount = toBN(
+      toBase(amount.value?.toString() || "0", nativeToken.value.decimals)
+    );
+
+    const rawBalance = toBN(
+      toBase(stakedBalance.value?.toString() || "0", nativeToken.value.decimals)
+    );
+
+    if (rawAmount.gt(rawBalance)) {
+      hasEnough.value = false;
+    } else {
+      hasEnough.value = true;
+    }
+
+    const tx = await unbondExtrinsic(api, rawAmount.toString());
+
+    fee.value = await getGasFeeInfo(tx, fromAccount.value.address);
+  },
+  { deep: true }
+);
+
+const isValid = computed<boolean>(() => {
+  return (
+    (Number(amount.value) > 0 &&
+      hasEnough.value &&
+      fee.value?.nativeValue.lte(
+        nativeBalances.value[
+          fromAccount.value?.address || ""
+        ]?.available.toString() || "0"
+      )) ||
+    false
+  );
+});
 
 const nextAction = () => {
-  router.push({ name: "stake-unbound-confirm" });
+  router.push({
+    name: "stake-unbound-confirm",
+    query: {
+      address: fromAccount.value?.address || "",
+      amount: amount.value,
+    },
+  });
 };
 
 const back = () => {

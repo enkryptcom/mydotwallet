@@ -49,9 +49,8 @@ import {
   Validator,
   ValidatorInfo,
 } from "@/types/staking";
-import { u8aConcat, u8aToHex } from "@polkadot/util";
 import { fromBase } from "@/utils/units";
-import { loadValidatorData } from "@/utils/staking";
+import { getStakerState, loadValidatorData } from "@/utils/staking";
 import { gql, request } from "graphql-request";
 
 const router = useRouter();
@@ -252,67 +251,6 @@ const getAccountsRewardsMap = async (
   }
 
   return resultMap;
-};
-
-const getStakerState = (
-  stashId: string,
-  allAccounts: string[],
-  [isOwnStash, aaa, validateInfo]: [
-    boolean,
-    DeriveStakingAccount,
-    ValidatorInfo
-  ]
-): StakerState => {
-  const {
-    controllerId: _controllerId,
-    exposure,
-    nextSessionIds: _nextSessionIds,
-    nominators,
-    rewardDestination,
-    sessionIds: _sessionIds,
-    stakingLedger,
-    validatorPrefs,
-  } = aaa;
-  const isStashNominating = !!nominators?.length;
-  const isStashValidating = !(Array.isArray(validateInfo)
-    ? validateInfo[1].isEmpty
-    : validateInfo.isEmpty);
-  const nextSessionIds =
-    _nextSessionIds instanceof Map
-      ? [..._nextSessionIds.values()]
-      : _nextSessionIds;
-  const nextConcat = u8aConcat(...nextSessionIds.map((id) => id.toU8a()));
-  const sessionIds =
-    _sessionIds instanceof Map ? [..._sessionIds.values()] : _sessionIds;
-  const currConcat = u8aConcat(...sessionIds.map((id) => id.toU8a()));
-  const toIdString = (id?: AccountId | null): string | null => {
-    return id ? id.toString() : null;
-  };
-  const controllerId = toIdString(_controllerId);
-
-  return {
-    controllerId,
-    destination: rewardDestination,
-    exposure,
-    hexSessionIdNext: u8aToHex(nextConcat, 48),
-    hexSessionIdQueue: u8aToHex(
-      currConcat.length ? currConcat : nextConcat,
-      48
-    ),
-    isLoading: false,
-    isOwnController: allAccounts.includes(controllerId || ""),
-    isOwnStash,
-    isStashNominating,
-    isStashValidating,
-    // we assume that all ids are non-null
-    nominating: nominators?.map(toIdString) as string[],
-    sessionIds: (nextSessionIds.length ? nextSessionIds : sessionIds).map(
-      toIdString
-    ) as string[],
-    stakingLedger,
-    stashId,
-    validatorPrefs,
-  };
 };
 
 const stakeMoreAction = () => {
