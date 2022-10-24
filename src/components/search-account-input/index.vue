@@ -44,7 +44,7 @@ import { Account } from "@/types/account";
 import { PropType, ref, computed, ComponentPublicInstance } from "vue";
 import { onClickOutside } from "@vueuse/core";
 import { formatAddress } from "@/utils/filters";
-import createIcon from "@/libs/polkadot-identicon";
+import createIcon from "@/libs/identicon/polkadot";
 import { encodeSubstrateAddress } from "@/utils";
 const isOpenDropdown = ref<boolean>(false);
 const isFocus = ref<boolean>(false);

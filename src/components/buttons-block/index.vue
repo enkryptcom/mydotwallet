@@ -12,7 +12,7 @@
 .buttons-block {
   display: flex;
   flex-direction: row;
-  justify-content: flex-end;
+  justify-content: center;
   align-items: center;
   padding: 16px 32px 32px;
   width: calc(~"100% + 32px");

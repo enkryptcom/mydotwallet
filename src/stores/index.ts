@@ -6,6 +6,8 @@ import type { Signer } from "@polkadot/api/types";
 import { Account } from "@/types/account";
 import { dot, ksm } from "@/types/tokens";
 import { Balance } from "@/types/balance";
+import { WalletItem } from "@/types/wallet-list";
+import { walletConnect } from "@/types/wallets";
 
 const POLKADOT_ENDPOINTS = [
   "wss://rpc.polkadot.io",
@@ -28,6 +30,10 @@ export const apiPromise = computed(() => {
 
   return ApiPromise.create({ provider }).then((api) => api);
 });
+
+export const walletSelected = ref<WalletItem>(walletConnect);
+
+export const shouldOpenWalletSelector = ref<boolean>(false);
 
 export const accounts = ref<Account[]>([]);
 

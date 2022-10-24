@@ -36,6 +36,8 @@ import AccountSelect from "@/components/account-select/index.vue";
 import { Account } from "@/types/account";
 import { PropType, ref, computed } from "vue";
 import { onClickOutside } from "@vueuse/core";
+import { Token } from "@/types/token";
+import { dot } from "@/types/tokens";
 import { nativeBalances } from "@/stores";
 
 const isOpenDropdown = ref<boolean>(false);
@@ -58,6 +60,14 @@ const props = defineProps({
   title: {
     type: String,
     default: "From",
+  },
+  amount: {
+    type: Number,
+    default: 0,
+  },
+  token: {
+    type: Object as PropType<Token>,
+    default: dot,
   },
   isAmount: {
     type: Boolean,
