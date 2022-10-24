@@ -48,7 +48,7 @@ import AmountInput from "@/components/amount-input/index.vue";
 import FeeInfo from "@/components/fee-info/index.vue";
 import { computed, onMounted, ref, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
-import { accounts, apiPromise, nativeBalances, nativeToken } from "@/stores";
+import { accounts, apiPromise, nativeBalances, nativeToken, selectedNetwork } from "@/stores";
 import { Account } from "@/types/account";
 import { loadStakerState } from "@/utils/staking";
 import BigNumber from "bignumber.js";
@@ -107,7 +107,7 @@ const updateStakedAmount = async () => {
 
 // Update fees values
 watch(
-  [amount, stakedBalance],
+  [amount, stakedBalance, selectedNetwork],
   async () => {
     if (!amount.value || !fromAccount.value?.address) {
       return;

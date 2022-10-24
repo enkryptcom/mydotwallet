@@ -175,7 +175,14 @@ const nextAction = () => {
 };
 
 watch(
-  [selectedAsset, amount, nativeBalances, fromAccount, toAccount],
+  [
+    selectedAsset,
+    amount,
+    nativeBalances,
+    fromAccount,
+    toAccount,
+    selectedNetwork,
+  ],
   async () => {
     if (amount.value && selectedAsset.value && toAccount.value) {
       if (
