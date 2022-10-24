@@ -18,9 +18,9 @@ import WhiteWrapper from "@/components/white-wrapper/index.vue";
 import EnkryptBanner from "@/components/enkrypt-banner/index.vue";
 import AccountsBalance from "./components/accounts-balance.vue";
 import AccountsItem from "./components/accounts-item.vue";
-import { accounts, apiPromise, nativeBalances, nativeToken } from "@/stores";
+import { accounts, nativeBalances, nativeToken } from "@/stores";
 import { useGetNativeBalances } from "@/libs/balances";
-import { computed, onMounted, watch } from "vue";
+import { computed, onMounted } from "vue";
 import { useGetNativePrice } from "@/libs/prices";
 import BigNumber from "bignumber.js";
 

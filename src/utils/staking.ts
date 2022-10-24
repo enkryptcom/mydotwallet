@@ -1,7 +1,6 @@
 import { nativeToken } from "@/stores";
 import {
   NominatedByMap,
-  Queried,
   StakerState,
   Validator,
   ValidatorInfo,
@@ -17,7 +16,6 @@ import {
   AccountId,
   IndividualExposure,
   Nominations,
-  StakingLedger,
 } from "@polkadot/types/interfaces";
 import { BN, BN_ZERO, u8aConcat, u8aToHex } from "@polkadot/util";
 import { fromBase } from "./units";
