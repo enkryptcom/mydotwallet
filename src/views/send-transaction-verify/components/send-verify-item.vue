@@ -6,7 +6,6 @@
       <div v-if="!!account?.name" class="send-verify-item__info-address">
         {{ account.name }}
         <span>{{ $filters.replaceWithEllipsis(account?.address, 6, 6) }}</span>
-        <span>{{ $filters.cryptoCurrencyFormat(15.9) }} <span>dot</span></span>
       </div>
       <div v-else class="send-verify-item__info-address">
         {{ account?.address }}
