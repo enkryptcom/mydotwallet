@@ -6,7 +6,7 @@
     </p>
     <p class="fee-info__amount">
       {{ $filters.cryptoCurrencyFormat(fee.nativeValue) }}
-      <span>{{ nativeToken.symbol }}</span>
+      <span>{{ fee.nativeSymbol }}</span>
     </p>
   </div>
 </template>
@@ -15,7 +15,6 @@
 import { GasFeeInfo } from "@/types/transaction";
 import BigNumber from "bignumber.js";
 import { PropType } from "vue";
-import { nativeToken } from "@/stores";
 
 defineProps({
   fee: {

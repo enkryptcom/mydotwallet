@@ -22,7 +22,7 @@ import { PropType } from "vue";
 defineProps({
   token: {
     type: Object as PropType<Token>,
-    default: nativeToken,
+    default: nativeToken.value,
   },
 });
 </script>

@@ -258,7 +258,7 @@ const nextAction = async () => {
     isMyAccountLoading.value = false;
     isSend.value = true;
   } catch (err) {
-    console.log("Unexpected error when trying to claim", err);
+    console.error("Unexpected error when trying to claim", err);
     isMyAccountLoading.value = false;
     isError.value = true;
   }

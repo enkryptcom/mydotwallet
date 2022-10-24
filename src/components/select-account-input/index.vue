@@ -10,9 +10,9 @@
           <span>
             {{ $filters.replaceWithEllipsis(account?.address, 6, 6) }}
           </span>
-          <span v-if="isAmount && availableBalance">
-            {{ $filters.cryptoCurrencyFormat(availableBalance) }}
-            <span>dot</span>
+          <span v-if="isAmount">
+            {{ $filters.cryptoCurrencyFormat(amount || availableBalance) }}
+            <span>{{ token.symbol }}</span>
           </span>
         </p>
         <p v-else>Select an account to send from</p>
@@ -34,11 +34,10 @@ import ChevronSmallDown from "@/icons/common/chevron-small-down.vue";
 import DropdownWrapper from "@/components/dropdown-wrapper/index.vue";
 import AccountSelect from "@/components/account-select/index.vue";
 import { Account } from "@/types/account";
-import { PropType, ref, computed } from "vue";
+import { computed, PropType, ref } from "vue";
 import { onClickOutside } from "@vueuse/core";
 import { Token } from "@/types/token";
-import { dot } from "@/types/tokens";
-import { nativeBalances } from "@/stores";
+import { nativeBalances, nativeToken } from "@/stores";
 
 const isOpenDropdown = ref<boolean>(false);
 const dropdown = ref(null);
@@ -67,22 +66,12 @@ const props = defineProps({
   },
   token: {
     type: Object as PropType<Token>,
-    default: dot,
+    default: nativeToken.value,
   },
   isAmount: {
     type: Boolean,
     default: false,
   },
-});
-
-const availableBalance = computed(() => {
-  if (props.account) {
-    const balance = nativeBalances.value[props.account.address];
-
-    if (balance) return balance.available.toString();
-  }
-
-  return null;
 });
 
 const toggleAccounts = () => {
@@ -93,6 +82,16 @@ const selectAccount = (account: Account) => {
   emit("update:select", account);
   toggleAccounts();
 };
+
+const availableBalance = computed(() => {
+  if (props.isAmount && props.account) {
+    const balance = nativeBalances.value[props.account.address];
+
+    if (balance) return Number(balance.available);
+  }
+
+  return 0;
+});
 
 onClickOutside(
   dropdown,

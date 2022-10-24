@@ -60,21 +60,15 @@ import { ref, computed, watch, onMounted } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { useGetAccountNativeBalance } from "@/libs/balances";
 import { useGetNativePrice } from "@/libs/prices";
-import { fromBase, isValidDecimals, toBase } from "@/utils/units";
-import BigNumber from "bignumber.js";
+import { isValidDecimals, toBase } from "@/utils/units";
 import { GasFeeInfo } from "@/types/transaction";
 import { sendExtrinsic } from "@/utils/extrinsic";
 import { toBN } from "web3-utils";
+import { getGasFeeInfo } from "@/utils/fee";
 const router = useRouter();
 const route = useRoute();
 
-const fromAccount = ref<Account>(
-  route.query.address
-    ? accounts.value.find(
-        (acc) => acc.address === (route.query.address as string)
-      ) ?? accounts.value[0]
-    : accounts.value[0]
-);
+const fromAccount = ref<Account>(accounts.value[0]);
 const toAccount = ref<Account>();
 const amount = ref<string>("");
 const fee = ref<GasFeeInfo>();
@@ -139,7 +133,7 @@ const edWarn = computed(() => {
   );
   const ed = toBN(
     toBase(
-      selectedAsset.value.existentialDeposit || "0",
+      selectedAsset.value.existentialDeposit.toString() || "0",
       selectedAsset.value.decimals
     )
   );
@@ -181,7 +175,14 @@ const nextAction = () => {
 };
 
 watch(
-  [selectedAsset, amount, nativeBalances, fromAccount, toAccount],
+  [
+    selectedAsset,
+    amount,
+    nativeBalances,
+    fromAccount,
+    toAccount,
+    selectedNetwork,
+  ],
   async () => {
     if (amount.value && selectedAsset.value && toAccount.value) {
       if (
@@ -192,7 +193,6 @@ watch(
       }
 
       const api = await apiPromise.value;
-      await api.isReady;
 
       const rawAmount = toBN(
         toBase(amount.value?.toString() || "0", selectedAsset.value.decimals)
@@ -221,24 +221,8 @@ watch(
         rawAmount.toString(),
         transferType
       );
-      const { partialFee } = (
-        await tx.paymentInfo(fromAccount.value.address)
-      ).toJSON();
 
-      const txFeeHuman = new BigNumber(
-        fromBase(partialFee?.toString() ?? "", selectedAsset.value.decimals)
-      );
-
-      const txPrice = new BigNumber(selectedAsset.value.price).times(
-        txFeeHuman
-      );
-
-      fee.value = {
-        fiatSymbol: "USD",
-        fiatValue: txPrice,
-        nativeSymbol: selectedAsset.value.symbol ?? "",
-        nativeValue: txFeeHuman,
-      };
+      fee.value = await getGasFeeInfo(tx, fromAccount.value.address);
     }
   }
 );

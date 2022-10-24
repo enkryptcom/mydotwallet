@@ -1,41 +1,260 @@
 <template>
-  <white-wrapper class="stake__wrap">
+  <stake-intro v-if="showStakeIntro" />
+  <white-wrapper
+    v-else
+    class="stake__wrap"
+    :style="{
+      marginTop: '32px',
+    }"
+  >
     <h2 class="stake__title">Stake DOT and earn rewards</h2>
-    <div class="stake__block stake__block--start">
-      <stake-start-image />
-      <h3>
-        You can earn rewards by bonding assets and then nominating your
-        validators.
-      </h3>
-      <more-link title="Lear more about how it works" :action="moreAction" />
+    <div class="stake__block stake__block--staked">
+      <stake-staked-overview :totat="1000" :overall="1.473" :yield="14.46" />
+      <base-button title="Stake more" :action="stakeMoreAction" />
     </div>
-    <div class="stake__calculate">
-      <div class="stake__calculate-header">
-        <h4>Calculate investments</h4>
-      </div>
+
+    <div class="stake__staked-list">
+      <stake-staked-account
+        v-for="(item, index) in stakingAccounts"
+        :key="index"
+        :account="item"
+      />
     </div>
-    <buttons-block>
-      <base-button title="Start staking" :action="nextAction" :send="true" />
-    </buttons-block>
   </white-wrapper>
 </template>
 
 <script setup lang="ts">
 import WhiteWrapper from "@/components/white-wrapper/index.vue";
-import ButtonsBlock from "@/components/buttons-block/index.vue";
 import BaseButton from "@/components/base-button/index.vue";
-import StakeStartImage from "@/icons/stake/stake-start-image.vue";
-import MoreLink from "@/components/more-link/index.vue";
+import StakeStakedOverview from "./components/stake-staked-overview.vue";
+import StakeStakedAccount from "./components/stake-staked-account.vue";
+import StakeIntro from "./components/stake-intro.vue";
 import { useRouter } from "vue-router";
+import { onMounted, ref } from "vue";
+import {
+  accounts,
+  apiPromise,
+  nativeToken,
+  subsquidExplorerUrl,
+} from "@/stores";
+import type { Option } from "@polkadot/types";
+import { AccountId, StakingLedger } from "@polkadot/types/interfaces";
+import BigNumber from "bignumber.js";
+import { DeriveStakingAccount } from "@polkadot/api-derive/types";
+import {
+  Queried,
+  StakedTotalState,
+  StakerState,
+  StakingAccountWithValidators,
+  Validator,
+  ValidatorInfo,
+} from "@/types/staking";
+import { fromBase } from "@/utils/units";
+import { getStakerState, loadValidatorData } from "@/utils/staking";
+import { gql, request } from "graphql-request";
 
 const router = useRouter();
 
-const nextAction = () => {
-  // router.push({ name: "claiming" });
+const showStakeIntro = ref<boolean>(false);
+const stakingAccounts = ref<Array<StakingAccountWithValidators>>([]);
+
+onMounted(async () => {
+  stakingAccounts.value = await loadStakingAccounts();
+});
+
+const loadStakingAccounts = async () => {
+  if (!accounts.value.length) {
+    return [];
+  }
+
+  const api = await apiPromise.value;
+  const addresses = accounts.value.map((item) => item.address);
+  const resultBonded: Option<AccountId>[] =
+    await api.query.staking?.bonded.multi(addresses);
+  const resultLedger: Option<StakingLedger>[] =
+    await api.query.staking?.ledger.multi(addresses);
+  const ownStashes: [string, boolean][] = [];
+
+  resultBonded.forEach((value, index): void => {
+    value.isSome && ownStashes.push([addresses[index], true]);
+  });
+
+  resultLedger.forEach((ledger): void => {
+    if (ledger.isSome) {
+      const stashId = ledger.unwrap().stash.toString();
+
+      !ownStashes.some(([accountId]) => accountId === stashId) &&
+        ownStashes.push([stashId, false]);
+    }
+  });
+
+  if (!ownStashes.length) {
+    return [];
+  }
+
+  const stashIds = ownStashes.map(([stashId]) => stashId);
+  const resAccounts: DeriveStakingAccount[] = await api.derive.staking.accounts(
+    stashIds
+  );
+  const resValidators: ValidatorInfo[] =
+    await api.query.staking.validators.multi(stashIds);
+
+  const queried = ownStashes.reduce(
+    (queried: Queried, [stashId, isOwnStash], index): Queried => ({
+      ...queried,
+      [stashId]: [isOwnStash, resAccounts[index], resValidators[index]],
+    }),
+    {}
+  );
+
+  if (!ownStashes.length) {
+    return [];
+  }
+
+  const stakerStates = ownStashes
+    .filter(([stashId]) => queried[stashId])
+    .map(([stashId]) => getStakerState(stashId, addresses, queried[stashId]));
+
+  // Staker totals
+  let bondedNoms = new BigNumber(0);
+  let bondedNone = new BigNumber(0);
+  let bondedVals = new BigNumber(0);
+  let bondedTotal = new BigNumber(0);
+
+  stakerStates.forEach(
+    ({ isStashNominating, isStashValidating, stakingLedger }): void => {
+      const value =
+        stakingLedger && stakingLedger.total
+          ? fromBase(
+              stakingLedger.total.unwrap().toString(),
+              nativeToken.value.decimals
+            )
+          : new BigNumber(0);
+
+      bondedTotal = bondedTotal.plus(value);
+
+      if (isStashNominating) {
+        bondedNoms = bondedNoms.plus(value);
+      } else if (isStashValidating) {
+        bondedVals = bondedVals.plus(value);
+      } else {
+        bondedNone = bondedNone.plus(value);
+      }
+    }
+  );
+
+  const assignValue = ({
+    isStashNominating,
+    isStashValidating,
+  }: StakerState): number => {
+    return isStashValidating ? 1 : isStashNominating ? 5 : 99;
+  };
+
+  const sortStashes = (a: StakerState, b: StakerState): number => {
+    return assignValue(a) - assignValue(b);
+  };
+
+  const totals: StakedTotalState = {
+    bondedNoms,
+    bondedNone,
+    bondedTotal,
+    bondedVals,
+    foundStashes: stakerStates.sort(sortStashes),
+  };
+
+  const validators = await loadValidatorData(api);
+
+  let validatorsAddress: string[] = stakerStates.reduce(
+    (prev, current): string[] => {
+      return prev.concat(current.nominating || []);
+    },
+    [] as string[]
+  );
+  validatorsAddress = [...new Set(validatorsAddress)];
+
+  const validatorInfoMap: Record<string, Validator> = {};
+  for (const auxAddress of validatorsAddress) {
+    for (const auxValidator of validators) {
+      if (auxValidator.address.toLowerCase() === auxAddress.toLowerCase()) {
+        validatorInfoMap[auxAddress] = auxValidator;
+        break;
+      }
+    }
+  }
+
+  const accountRewardsMap = await getAccountsRewardsMap(
+    accounts.value.map((item) => item.address)
+  );
+
+  const finalResult: StakingAccountWithValidators[] = [];
+  for (const auxStaker of totals.foundStashes || []) {
+    finalResult.push({
+      ...accounts.value.find((item) => item.address === auxStaker.stashId),
+      totalStaked:
+        auxStaker.stakingLedger && auxStaker.stakingLedger.total
+          ? new BigNumber(
+              fromBase(
+                auxStaker.stakingLedger.total.unwrap().toString(),
+                nativeToken.value.decimals
+              )
+            )
+          : new BigNumber(0),
+      earnings: accountRewardsMap[auxStaker.stashId] || new BigNumber(0),
+      withdrawable: new BigNumber(0),
+      unbonding: new BigNumber(0),
+      validators:
+        auxStaker.nominating?.map((item) => validatorInfoMap[item]) || [],
+    } as StakingAccountWithValidators);
+  }
+  console.log("result", finalResult);
+  return finalResult;
 };
 
-const moreAction = () => {
-  console.log("moreAction");
+const getAccountsRewardsMap = async (
+  accounts: string[]
+): Promise<Record<string, BigNumber>> => {
+  let addressesStringQuery = accounts.reduce((prevValue, current) => {
+    return `, OR: { id_eq: "${current}"${prevValue} }`;
+  }, "");
+
+  const queryResult = await request(
+    subsquidExplorerUrl.value,
+    gql`
+      query MyQuery {
+        stakers(
+          where: {
+            id_eq: ""
+            ${addressesStringQuery}
+          }
+        ) {
+          totalSlash
+          totalReward
+          stashId
+          role
+          payeeType
+          payeeId
+          id
+          controllerId
+          commission
+          activeBond
+        }
+      }
+    `
+  );
+
+  const resultMap: Record<string, BigNumber> = {};
+
+  for (const auxStaker of queryResult.stakers) {
+    resultMap[auxStaker.id] = new BigNumber(
+      fromBase(auxStaker.totalReward, nativeToken.value.decimals)
+    );
+  }
+
+  return resultMap;
+};
+
+const stakeMoreAction = () => {
+  router.push({ name: "stake-enter-amount" });
 };
 </script>
 
@@ -72,16 +291,18 @@ const moreAction = () => {
         padding: 0 8px;
       }
     }
-  }
-  &__calculate {
-    &-header {
-      margin: 0 0 8px 0;
-      h4 {
-        .body1__Bold();
-        color: @primaryLabel;
-        margin: 0;
-      }
+
+    &--staked {
+      padding: 16px 44px;
+      display: flex;
+      flex-direction: row;
+      justify-content: space-between;
+      align-items: center;
+      text-align: center;
     }
+  }
+  &__staked-list {
+    padding: 8px 0 16px 0;
   }
 }
 </style>

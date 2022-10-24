@@ -6,6 +6,10 @@
       <div v-if="!!account?.name" class="send-verify-item__info-address">
         {{ account.name }}
         <span>{{ $filters.replaceWithEllipsis(account?.address, 6, 6) }}</span>
+        <span
+          >{{ $filters.cryptoCurrencyFormat(amount) }}
+          <span>{{ token.symbol }}</span></span
+        >
       </div>
       <div v-else class="send-verify-item__info-address">
         {{ account?.address }}
@@ -15,7 +19,9 @@
 </template>
 
 <script setup lang="ts">
+import { nativeToken } from "@/stores";
 import { Account } from "@/types/account";
+import { Token } from "@/types/token";
 import { PropType } from "vue";
 
 defineProps({
@@ -23,9 +29,17 @@ defineProps({
     type: Object as PropType<Account>,
     default: null,
   },
+  amount: {
+    type: Number,
+    default: 0,
+  },
   title: {
     type: String,
     default: "",
+  },
+  token: {
+    type: Object as PropType<Token>,
+    default: nativeToken,
   },
 });
 </script>
