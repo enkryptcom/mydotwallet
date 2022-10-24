@@ -11,7 +11,8 @@
             {{ $filters.replaceWithEllipsis(account?.address, 6, 6) }}
           </span>
           <span v-if="isAmount && availableBalance">
-            {{ $filters.cryptoCurrencyFormat(availableBalance) }} <span>dot</span>
+            {{ $filters.cryptoCurrencyFormat(availableBalance) }}
+            <span>dot</span>
           </span>
         </p>
         <p v-else>Select an account to send from</p>
@@ -71,7 +72,7 @@ const availableBalance = computed(() => {
     if (balance) return balance.available.toString();
   }
 
-  return undefined;
+  return null;
 });
 
 const toggleAccounts = () => {
