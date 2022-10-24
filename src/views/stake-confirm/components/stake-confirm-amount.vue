@@ -14,13 +14,14 @@
 </template>
 
 <script setup lang="ts">
+import { nativeToken } from "@/stores";
 import { Token } from "@/types/token";
 import { PropType } from "vue";
 
 defineProps({
   token: {
     type: Object as PropType<Token>,
-    default: null,
+    default: nativeToken,
   },
   amount: {
     type: Number,

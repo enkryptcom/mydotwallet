@@ -9,10 +9,22 @@
     </p>
     <div class="send-verify__block">
       <div class="send-verify__block-item">
-        <send-verify-item :account="fromAccount" title="From" />
+        <send-verify-item
+          :account="fromAccount"
+          :amount="
+            nativeBalances[fromAccount?.address || '']?.available?.toNumber()
+          "
+          title="From"
+        />
       </div>
       <div class="send-verify__block-item">
-        <send-verify-item :account="toAccount" title="To" />
+        <send-verify-item
+          :account="toAccount"
+          :amount="
+            nativeBalances[toAccount?.address || '']?.available?.toNumber()
+          "
+          title="To"
+        />
       </div>
       <div class="send-verify__block-item">
         <send-verify-amount :token="selectedAsset" :amount="amount" />
@@ -57,16 +69,15 @@ import { encodeSubstrateAddress } from "@/utils";
 import { formatAddress } from "@/utils/filters";
 import createIcon from "@/libs/identicon/polkadot";
 import { GasFeeInfo } from "@/types/transaction";
-import { fromBase, isValidDecimals, toBase } from "@/utils/units";
+import { isValidDecimals, toBase } from "@/utils/units";
 import { sendExtrinsic } from "@/utils/extrinsic";
-import BigNumber from "bignumber.js";
 import { toBN } from "web3-utils";
 import { getGasFeeInfo } from "@/utils/fee";
 
 const router = useRouter();
 const route = useRoute();
 
-const fromAccount = ref<Account>(accounts.value[0]);
+const fromAccount = ref<Account>();
 const toAccount = ref<Account>();
 const amount = ref<string>();
 const fee = ref<GasFeeInfo>();
@@ -109,11 +120,12 @@ onMounted(() => {
 });
 
 const edWarn = computed(() => {
-  if (!fee.value || !amount.value) {
-    return false;
-  }
-
-  if (!isValidDecimals(amount.value, selectedAsset.value.decimals)) {
+  if (
+    !fee.value ||
+    !amount.value ||
+    !fromAccount.value ||
+    !isValidDecimals(amount.value, selectedAsset.value.decimals)
+  ) {
     return false;
   }
 
@@ -141,7 +153,12 @@ const edWarn = computed(() => {
 });
 
 watch([selectedAsset, amount, nativeBalances, toAccount], async () => {
-  if (amount.value && selectedAsset.value && toAccount.value) {
+  if (
+    amount.value &&
+    selectedAsset.value &&
+    toAccount.value &&
+    fromAccount.value
+  ) {
     if (
       !isValidDecimals(amount.value.toString(), selectedAsset.value.decimals)
     ) {
@@ -183,7 +200,7 @@ watch([selectedAsset, amount, nativeBalances, toAccount], async () => {
 });
 
 const nextAction = async () => {
-  if (!toAccount.value?.address || !amount.value) {
+  if (!toAccount.value?.address || !amount.value || !fromAccount.value) {
     return;
   }
 

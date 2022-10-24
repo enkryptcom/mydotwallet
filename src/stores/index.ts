@@ -24,20 +24,20 @@ const WESTEND_ENDPOINTS = [
   "wss://rpc.pinknode.io/westend/explorer",
 ];
 
-export const selectedNetwork = ref(Network.Polkadot);
+export const selectedNetwork = ref(Network.Westend);
 
 export const apiPromise = computed(async () => {
   let endpoints;
 
   switch (selectedNetwork.value) {
     case Network.Polkadot:
-      endpoints = POLKADOT_ENDPOINTS;
+      endpoints = WESTEND_ENDPOINTS;
     case Network.Kusama:
       endpoints = KUSAMA_ENDPOINTS;
     case Network.Westend:
       endpoints = WESTEND_ENDPOINTS;
     default:
-      endpoints = POLKADOT_ENDPOINTS;
+      endpoints = WESTEND_ENDPOINTS;
   }
 
   const provider = new WsProvider(endpoints);

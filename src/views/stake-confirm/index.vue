@@ -106,7 +106,6 @@ const fee = ref<GasFeeInfo>();
 defineExpose({ blockScrollRef, blockRef });
 
 onMounted(() => {
-  console.log(fromAccount);
   window.addEventListener("resize", onResize);
   setTimeout(() => {
     onResize();
@@ -188,7 +187,6 @@ const back = () => {
 };
 
 const loadPreviousStakingOptions = () => {
-  console.log(stakingWizardOptions.value);
   isCompounding.value = stakingWizardOptions.value.isCompounding;
   if (
     !stakingWizardOptions.value.amount ||

@@ -70,28 +70,19 @@ const stakedBalance = ref<BigNumber>(new BigNumber(0));
 const hasEnough = ref(true);
 
 onMounted(() => {
-  // if (route.query.account) {
-  //   const found = accounts.value.find(
-  //     (item) => item.address === route.query.account
-  //   );
-  //   if (found) {
-  //     fromAccount.value = found;
-  //     updateStakedAmount();
-  //     useGetNativeBalances();
-  //     useGetNativePrice();
-  //     return;
-  //   }
-  // }
-  // router.push("../stake");
-});
-
-//test remove
-watch(accounts, async () => {
-  console.log("testttt");
-  fromAccount.value = accounts.value[2];
-  updateStakedAmount();
-  useGetNativeBalances();
-  useGetNativePrice();
+  if (route.query.account) {
+    const found = accounts.value.find(
+      (item) => item.address === route.query.account
+    );
+    if (found) {
+      fromAccount.value = found;
+      updateStakedAmount();
+      useGetNativeBalances();
+      useGetNativePrice();
+      return;
+    }
+  }
+  router.push("../stake");
 });
 
 const updateStakedAmount = async () => {
@@ -102,18 +93,10 @@ const updateStakedAmount = async () => {
   const api = await apiPromise.value;
   const stakerState = await loadStakerState(api, fromAccount.value.address);
 
-  console.log("state", stakerState);
   if (!stakerState?.stakingLedger) {
     return;
   }
 
-  console.log(
-    "wow",
-    fromBase(
-      stakerState.stakingLedger.active.unwrap().toString(),
-      nativeToken.value.decimals
-    )
-  );
   stakedBalance.value = new BigNumber(
     fromBase(
       stakerState.stakingLedger.active.unwrap().toString(),
@@ -176,7 +159,7 @@ const nextAction = () => {
     name: "stake-unbound-confirm",
     query: {
       address: fromAccount.value?.address || "",
-      amount: amount.value,
+      amount: amount.value.toString(),
     },
   });
 };

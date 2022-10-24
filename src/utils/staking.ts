@@ -200,7 +200,7 @@ export const loadStakerState = async (api: ApiPromise, address: string) => {
   const resultBonded = await api.query.staking?.bonded<Option<AccountId>>(
     address
   );
-  console.log("queryy", resultBonded, resultBonded.isSome);
+
   if (!resultBonded.isSome) {
     return undefined;
   }
@@ -217,7 +217,6 @@ export const loadStakerState = async (api: ApiPromise, address: string) => {
     [true, resAccounts, resValidator]
   );
 
-  console.log("staker states", stakerState);
   return stakerState;
 };
 
