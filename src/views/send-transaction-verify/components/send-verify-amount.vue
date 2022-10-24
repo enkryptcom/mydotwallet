@@ -7,7 +7,7 @@
         <span>{{ token.symbol }}</span>
       </h2>
       <div class="send-verify-amount__info-fiat">
-        ~{{ $filters.currencyFormat(token.price * amount, "USD") }}
+        ~{{ $filters.currencyFormat(verifyAmount, "USD") }}
       </div>
     </div>
   </div>
@@ -15,17 +15,22 @@
 
 <script setup lang="ts">
 import { Token } from "@/types/token";
-import { PropType } from "vue";
+import { computed, PropType } from "vue";
+import BigNumber from "bignumber.js";
 
-defineProps({
+const props = defineProps({
   token: {
     type: Object as PropType<Token>,
     default: null,
   },
   amount: {
-    type: Number,
-    default: 0,
+    type: String,
+    default: "",
   },
+});
+
+const verifyAmount = computed(() => {
+  return new BigNumber(props.amount || 0).times(props.token.price);
 });
 </script>
 

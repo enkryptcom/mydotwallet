@@ -1,15 +1,14 @@
 <template>
   <div class="send-verify-item">
-    <img class="send-verify-item__icon" :src="account.image" />
+    <img class="send-verify-item__icon" :src="account?.image" />
     <div class="send-verify-item__info">
       <h5 class="send-verify-item__info-title">{{ title }}</h5>
-      <div v-if="!!account.name" class="send-verify-item__info-address">
+      <div v-if="!!account?.name" class="send-verify-item__info-address">
         {{ account.name }}
-        <span>{{ $filters.replaceWithEllipsis(account.address, 6, 6) }}</span>
-        <span>{{ $filters.cryptoCurrencyFormat(15.9) }} <span>dot</span></span>
+        <span>{{ $filters.replaceWithEllipsis(account?.address, 6, 6) }}</span>
       </div>
       <div v-else class="send-verify-item__info-address">
-        {{ account.address }}
+        {{ account?.address }}
       </div>
     </div>
   </div>

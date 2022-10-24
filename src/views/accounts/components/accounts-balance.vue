@@ -13,7 +13,12 @@
       </div>
       <div class="col-4 row justify-content-end">
         <base-button title="Stake" :stroke="true" :small="true" />
-        <base-button title="Send" :stroke="true" :small="true" />
+        <base-button
+          title="Send"
+          :stroke="true"
+          :small="true"
+          :action="navigateToSend"
+        />
       </div>
     </div>
   </div>
@@ -23,22 +28,32 @@
 import BaseButton from "@/components/base-button/index.vue";
 import { computed, PropType } from "vue";
 import { Token } from "@/types/token";
+import BigNumber from "bignumber.js";
+import { nativeToken } from "@/stores";
+import { useRouter } from "vue-router";
+
+const router = useRouter();
 
 const props = defineProps({
   balance: {
-    type: Number,
-    default: 0,
+    type: Object as PropType<BigNumber>,
+    default: new BigNumber(0),
   },
   token: {
     type: Object as PropType<Token>,
-    default: undefined,
+    default: nativeToken,
   },
 });
 
 const totalUsdValue = computed(() => {
-  // TODO get price of tokens so we can calculate usd value
-  return props.balance * (props.token?.price || 0);
+  return props.balance.times(props.token.price);
 });
+
+const navigateToSend = () => {
+  router.push({
+    name: "send",
+  });
+};
 </script>
 
 <style lang="less" scoped>
