@@ -5,6 +5,7 @@
       <select-account-input
         :account="fromAccount"
         :accounts="accounts"
+        :is-amount="true"
         title="From"
         @update:select="selectFromAccount"
       />
@@ -64,10 +65,12 @@ import BigNumber from "bignumber.js";
 import { GasFeeInfo } from "@/types/transaction";
 import { sendExtrinsic } from "@/utils/extrinsic";
 import { toBN } from "web3-utils";
+import { Balance } from "@/types/balance";
 const router = useRouter();
 const route = useRoute();
 
 const fromAccount = ref<Account>(accounts.value[0]);
+const fromBalance = ref<Balance>();
 const toAccount = ref<Account>();
 const amount = ref<string>("");
 const fee = ref<GasFeeInfo>();
