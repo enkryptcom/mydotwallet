@@ -5,16 +5,17 @@
       <div v-else class="select-account-input__info-icon"></div>
       <div class="select-account-input__info-name">
         <h5 class="select-account-input__title">{{ title }}</h5>
-        <p>
+        <p v-if="account">
           {{ account?.name }}
           <span>
             {{ $filters.replaceWithEllipsis(account?.address, 6, 6) }}
           </span>
-          <span v-if="isAmount">
-            {{ $filters.cryptoCurrencyFormat(amount) }}
-            <span>{{ token.symbol }}</span>
+          <span v-if="isAmount && availableBalance">
+            {{ $filters.cryptoCurrencyFormat(availableBalance) }}
+            <span>dot</span>
           </span>
         </p>
+        <p v-else>Select an account to send from</p>
       </div>
       <chevron-small-down />
     </a>
@@ -33,10 +34,11 @@ import ChevronSmallDown from "@/icons/common/chevron-small-down.vue";
 import DropdownWrapper from "@/components/dropdown-wrapper/index.vue";
 import AccountSelect from "@/components/account-select/index.vue";
 import { Account } from "@/types/account";
-import { PropType, ref } from "vue";
+import { PropType, ref, computed } from "vue";
 import { onClickOutside } from "@vueuse/core";
 import { Token } from "@/types/token";
 import { dot } from "@/types/tokens";
+import { nativeBalances } from "@/stores";
 
 const isOpenDropdown = ref<boolean>(false);
 const dropdown = ref(null);
@@ -46,7 +48,7 @@ const emit = defineEmits<{
   (e: "update:select", account: Account): void;
 }>();
 
-defineProps({
+const props = defineProps({
   account: {
     type: Object as PropType<Account>,
     default: null,
@@ -71,6 +73,16 @@ defineProps({
     type: Boolean,
     default: false,
   },
+});
+
+const availableBalance = computed(() => {
+  if (props.account) {
+    const balance = nativeBalances.value[props.account.address];
+
+    if (balance) return balance.available.toString();
+  }
+
+  return null;
 });
 
 const toggleAccounts = () => {

@@ -68,7 +68,12 @@
           </div>
           <div class="col-3 row justify-content-end">
             <base-button title="Stake" :stroke="true" :small="true" />
-            <base-button title="Send" :stroke="true" :small="true" />
+            <base-button
+              title="Send"
+              :stroke="true"
+              :small="true"
+              :action="navigateToSend"
+            />
           </div>
         </div>
       </div>
@@ -181,6 +186,12 @@ import { Account } from "@/types/account";
 import { Token } from "@/types/token";
 import { Balance } from "@/types/balance";
 import VueCountdown from "@chenfengyuan/vue-countdown";
+<<<<<<< HEAD
+=======
+import { useRouter } from "vue-router";
+
+const router = useRouter();
+>>>>>>> develop
 
 const isOpen = ref<boolean>(false);
 
@@ -232,6 +243,18 @@ const valuesBreakdown = computed(() => {
     },
   };
 });
+<<<<<<< HEAD
+=======
+
+const navigateToSend = () => {
+  router.push({
+    name: "send",
+    query: {
+      address: props.account.address,
+    },
+  });
+};
+>>>>>>> develop
 </script>
 
 <style lang="less" scoped>

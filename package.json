@@ -18,7 +18,10 @@
     "@vueuse/core": "^9.1.1",
     "bignumber.js": "^9.1.0",
     "localforage": "^1.10.0",
+<<<<<<< HEAD
     "lodash": "^4.17.21",
+=======
+>>>>>>> develop
     "moment": "^2.29.4",
     "vue": "^3.2.37",
     "vue-router": "^4.1.3",
