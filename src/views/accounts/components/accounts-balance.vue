@@ -13,7 +13,12 @@
       </div>
       <div class="col-4 row justify-content-end">
         <base-button title="Stake" :stroke="true" :small="true" />
-        <base-button title="Send" :stroke="true" :small="true" />
+        <base-button
+          title="Send"
+          :stroke="true"
+          :small="true"
+          :action="navigateToSend"
+        />
       </div>
     </div>
   </div>
@@ -40,6 +45,12 @@ const props = defineProps({
 const totalUsdValue = computed(() => {
   return props.balance.times(props.token.price);
 });
+
+const navigateToSend = () => {
+  router.push({
+    name: "send",
+  });
+};
 </script>
 
 <style lang="less" scoped>

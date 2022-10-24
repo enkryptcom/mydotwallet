@@ -68,7 +68,12 @@
           </div>
           <div class="col-3 row justify-content-end">
             <base-button title="Stake" :stroke="true" :small="true" />
-            <base-button title="Send" :stroke="true" :small="true" />
+            <base-button
+              title="Send"
+              :stroke="true"
+              :small="true"
+              :action="navigateToSend"
+            />
           </div>
         </div>
       </div>
@@ -181,6 +186,9 @@ import { Account } from "@/types/account";
 import { Token } from "@/types/token";
 import { Balance } from "@/types/balance";
 import VueCountdown from "@chenfengyuan/vue-countdown";
+import { useRouter } from "vue-router";
+
+const router = useRouter();
 
 const isOpen = ref<boolean>(false);
 
@@ -208,30 +216,39 @@ const toggle = () => {
 };
 
 const valuesBreakdown = computed(() => {
-  const numAvailable = Number(props.balance?.available || 0);
-  const numStaked = Number(props.balance?.staked || 0);
-  const numBonded = Number(props.balance?.bonded || 0);
-  const numVested = Number(props.balance?.vested || 0);
+  const numAvailable = props.balance?.available?.toNumber() || 0;
+  const numStaked = props.balance?.staked?.toNumber() || 0;
+  const numBonded = props.balance?.bonded?.toNumber() || 0;
+  const numVested = props.balance?.vested?.toNumber() || 0;
 
   return {
     available: {
       balance: numAvailable,
-      usdValue: numAvailable * (props.token?.price || 0),
+      usdValue: numAvailable * (props.token?.price?.toNumber() || 0),
     },
     staked: {
       balance: numStaked,
-      usdValue: numStaked * (props.token?.price || 0),
+      usdValue: numStaked * (props.token?.price?.toNumber() || 0),
     },
     bonded: {
       balance: numBonded,
-      usdValue: numBonded * (props.token?.price || 0),
+      usdValue: numBonded * (props.token?.price?.toNumber() || 0),
     },
     vested: {
       balance: numVested,
-      usdValue: numVested * (props.token?.price || 0),
+      usdValue: numVested * (props.token?.price?.toNumber() || 0),
     },
   };
 });
+
+const navigateToSend = () => {
+  router.push({
+    name: "send",
+    query: {
+      address: props.account.address,
+    },
+  });
+};
 </script>
 
 <style lang="less" scoped>

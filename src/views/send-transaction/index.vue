@@ -5,6 +5,7 @@
       <select-account-input
         :account="fromAccount"
         :accounts="accounts"
+        :is-amount="true"
         title="From"
         @update:select="selectFromAccount"
       />

@@ -5,7 +5,7 @@
       <div v-else class="select-account-input__info-icon"></div>
       <div class="select-account-input__info-name">
         <h5 class="select-account-input__title">{{ title }}</h5>
-        <p>
+        <p v-if="account">
           {{ account?.name }}
           <span>
             {{ $filters.replaceWithEllipsis(account?.address, 6, 6) }}
@@ -15,6 +15,7 @@
             <span>{{ token.symbol }}</span>
           </span>
         </p>
+        <p v-else>Select an account to send from</p>
       </div>
       <chevron-small-down />
     </a>
