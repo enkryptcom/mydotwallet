@@ -5,10 +5,7 @@
       <select-account-input
         :account="fromAccount"
         :accounts="accounts"
-<<<<<<< HEAD
-=======
         :is-amount="true"
->>>>>>> develop
         title="From"
         @update:select="selectFromAccount"
       />
@@ -71,9 +68,6 @@ import { toBN } from "web3-utils";
 const router = useRouter();
 const route = useRoute();
 
-<<<<<<< HEAD
-const fromAccount = ref<Account>(accounts.value[0]);
-=======
 const fromAccount = ref<Account>(
   route.query.address
     ? accounts.value.find(
@@ -81,7 +75,6 @@ const fromAccount = ref<Account>(
       ) ?? accounts.value[0]
     : accounts.value[0]
 );
->>>>>>> develop
 const toAccount = ref<Account>();
 const amount = ref<string>("");
 const fee = ref<GasFeeInfo>();

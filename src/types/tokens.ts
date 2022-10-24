@@ -6,11 +6,7 @@ export const dot: Token = {
   image: require("@/assets/pic/polkadot.token.svg"),
   symbol: "dot",
   price: 0,
-<<<<<<< HEAD
-  decimals: 12,
-=======
   decimals: 10,
->>>>>>> develop
   existentialDeposit: 1,
   coingeckoID: "polkadot",
 };

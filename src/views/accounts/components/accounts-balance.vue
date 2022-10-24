@@ -30,12 +30,9 @@ import { computed, PropType } from "vue";
 import { Token } from "@/types/token";
 import BigNumber from "bignumber.js";
 import { nativeToken } from "@/stores";
-<<<<<<< HEAD
-=======
 import { useRouter } from "vue-router";
 
 const router = useRouter();
->>>>>>> develop
 
 const props = defineProps({
   balance: {
