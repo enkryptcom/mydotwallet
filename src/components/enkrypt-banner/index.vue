@@ -1,5 +1,9 @@
 <template>
-  <div v-if="isLeft" class="enkrypt-banner left">
+  <div
+    v-show="extension?.name != 'enkrypt'"
+    v-if="isLeft"
+    class="enkrypt-banner left"
+  >
     <enkrypt-logo-white />
     <h3>Multi-chain web3 extension.</h3>
     <p>
@@ -7,7 +11,7 @@
     </p>
     <base-button title="Get extenion" :small="true" :action="action" />
   </div>
-  <div v-else class="enkrypt-banner">
+  <div v-show="extension?.name != 'enkrypt'" v-else class="enkrypt-banner">
     <h3>Enkrypt: multi-chain web3 extension.</h3>
     <p>
       Enkrypt is a wallet extension that allows you to use all networks. Most
@@ -21,6 +25,7 @@
 <script setup lang="ts">
 import BaseButton from "@/components/base-button/index.vue";
 import EnkryptLogoWhite from "@/icons/common/enkrypt-logo-white.vue";
+import { extension } from "@/stores";
 
 defineProps({
   isLeft: {

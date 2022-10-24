@@ -19,7 +19,6 @@ import {
 } from "@polkadot/extension-inject/types";
 import { WalletItem } from "@/types/wallet-list";
 import createIcon from "@/libs/polkadot-identicon";
-import { encodeAddress } from "@polkadot/keyring";
 import { formatAddress } from "@/utils/filters";
 
 const walletSelected = ref<SelectItem>(walletConnect);
