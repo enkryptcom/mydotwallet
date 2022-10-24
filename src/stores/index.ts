@@ -24,20 +24,20 @@ const WESTEND_ENDPOINTS = [
   "wss://rpc.pinknode.io/westend/explorer",
 ];
 
-export const selectedNetwork = ref(Network.Westend);
+export const selectedNetwork = ref(Network.Polkadot);
 
 export const apiPromise = computed(async () => {
   let endpoints;
 
   switch (selectedNetwork.value) {
     case Network.Polkadot:
-      endpoints = WESTEND_ENDPOINTS;
+      endpoints = POLKADOT_ENDPOINTS;
     case Network.Kusama:
       endpoints = KUSAMA_ENDPOINTS;
     case Network.Westend:
       endpoints = WESTEND_ENDPOINTS;
     default:
-      endpoints = WESTEND_ENDPOINTS;
+      endpoints = POLKADOT_ENDPOINTS;
   }
 
   const provider = new WsProvider(endpoints);
@@ -88,7 +88,6 @@ export const subsquidExplorerUrl = computed(() => {
       return "https://squid.subsquid.io/kusama-explorer/v/v3/graphql";
     default:
       return "https://squid.subsquid.io/polkadot-explorer/v/v3/graphql";
-      // return undefined;
   }
 });
 
