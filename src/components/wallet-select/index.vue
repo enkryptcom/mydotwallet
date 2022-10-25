@@ -2,14 +2,19 @@
   <select-list
     ref="selectRef"
     :select="walletSelected"
-    :items="walletConnectItems"
+    :items="availableExtensions"
     :is-list-image="true"
     @update:select="selectItem"
   />
 </template>
 
 <script setup lang="ts">
-import { walletConnect, walletConnectItems } from "@/types/wallets";
+import {
+  walletConnect,
+  walletConnectItems,
+  walletDisconnect,
+  walletGetEnkrypt,
+} from "@/types/wallets";
 import SelectList from "@/components/select-list/index.vue";
 import {
   accounts,
@@ -31,9 +36,11 @@ import { WalletItem } from "@/types/wallet-list";
 const lastExtensionState = new LastExtensionState();
 
 const selectRef = ref<ComponentPublicInstance<any>>();
+const availableExtensions = ref<WalletItem[]>([]);
 
 onMounted(async () => {
   const lastExtension = await lastExtensionState.getLastExtensionName();
+  getAvailableWallets();
 
   if (lastExtension) {
     try {
@@ -58,6 +65,29 @@ watch(shouldOpenWalletSelector, () => {
   }
 });
 
+const getAvailableWallets = () => {
+  const injectedWindow = window as Window & InjectedWindow;
+  const injectedExtensions = injectedWindow?.injectedWeb3;
+
+  let extensions = [];
+
+  if (injectedExtensions) {
+    for (const extension of Object.keys(injectedExtensions)) {
+      const e = walletConnectItems.find(
+        (wallet) => wallet.extensionName === extension
+      );
+
+      if (e) {
+        extensions.push(e);
+      }
+    }
+
+    availableExtensions.value = [...extensions, walletDisconnect];
+  } else {
+    availableExtensions.value = [walletGetEnkrypt];
+  }
+};
+
 const selectItem = async (item: WalletItem) => {
   // If disconnecting
   if (item.id === 1) {
@@ -65,6 +95,8 @@ const selectItem = async (item: WalletItem) => {
     signer.value = undefined;
     extension.value = undefined;
     accounts.value = [];
+  } else if (item.id === 2) {
+    window.open("https://www.enkrypt.com", "_blank");
   } else {
     // If connecting
     try {
