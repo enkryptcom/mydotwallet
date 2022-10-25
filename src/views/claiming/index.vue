@@ -4,19 +4,25 @@
       <back-button :action="back" />
     </div>
     <h2 class="claiming__title">Claiming</h2>
-    <claiming-amount :token="token" :amount="amount" />
+    <claiming-amount :token="nativeToken" :amount="claimable.toNumber()" />
     <h3 class="claiming__sub-title">Select your Polkadot account</h3>
     <select-account-input
       :account="myAccount"
       :accounts="accounts"
+      :amount="claimable.toNumber()"
       :is-amount="true"
+      :token="nativeToken"
       title="Claim to account"
       @update:select="selectMyAccount"
     />
+    <claiming-preclaim
+      v-if="preclaimedAddress"
+      :preclaim-address="preclaimedAddress"
+    />
     <h3 class="claiming__sub-title">Sign message with your Ethereum address</h3>
     <claim-address-input
-      :account="account"
-      :value="address"
+      :account="ethAccount"
+      :value="ethAddress"
       @update:address="addressInput"
     />
     <h4 class="claiming__third-title">
@@ -24,23 +30,29 @@
       used during the pre-sale:
     </h4>
     <div class="claiming__textarea">
-      Pay DOTs to the Polkadot account:<br />e08ea504bf28771d0c3c78dac78c0876246eea19fc3017debe2142999b617056
+      {{ messagePart1 }}<br />{{ messagePart2 }}
       <a class="claiming__copy" @click="copy"><copy-icon /></a>
     </div>
     <h4 class="claiming__third-title">
       2. Paste the signed message into the field below:
     </h4>
     <textarea
+      v-model="signedMessage"
       class="claiming__textarea claiming__textarea--paste"
       placeholder="Paste here"
     ></textarea>
-    <claiming-error />
+    <claiming-error v-if="isError" />
     <buttons-block>
-      <base-button :title="buttonTitle" :action="nextAction" :send="true" />
+      <base-button
+        :title="buttonTitle"
+        :action="nextAction"
+        :send="true"
+        :disabled="isEthLoading || isMyAccountLoading || !signature || !isValid"
+      />
     </buttons-block>
   </white-wrapper>
   <white-wrapper v-else>
-    <claiming-success :token="token" :amount="amount" />
+    <claiming-success :token="nativeToken" :amount="claimable.toNumber()" />
   </white-wrapper>
 </template>
 
@@ -56,24 +68,200 @@ import ClaimingAmount from "./components/claiming-amount.vue";
 import ClaimingError from "./components/claiming-error.vue";
 import ClaimingSuccess from "./components/claiming-success.vue";
 import { Account } from "@/types/account";
-import { Token } from "@/types/token";
-import { ref, computed } from "vue";
-import { useRouter } from "vue-router";
-import { accounts, recent } from "@/types/mock";
-import { dot } from "@/types/tokens";
+import { ref, computed, onMounted, watch } from "vue";
+import { useRoute, useRouter } from "vue-router";
+import {
+  accounts,
+  apiPromise,
+  nativeToken,
+  selectedNetwork,
+  signer,
+  walletSelected,
+} from "@/stores";
+import { isAddress } from "web3-utils";
+import createIcon from "@/libs/identicon/ethereum";
+import type { Option } from "@polkadot/types";
+import type { BalanceOf, StatementKind } from "@polkadot/types/interfaces";
+import BigNumber from "bignumber.js";
+import { fromBase } from "@/utils/units";
+import { BN_ZERO } from "@polkadot/util";
+import { decodeAddress } from "@polkadot/util-crypto";
+import { Buffer } from "buffer";
+import { Network } from "@/types/network";
+import ClaimingPreclaim from "./components/claiming-preclaim.vue";
 
 const router = useRouter();
+const route = useRoute();
 
-const myAccount = ref<Account>(accounts[0]);
-const amount = ref<number>(84.556);
-const token = ref<Token>(dot);
+const myAccount = ref<Account>();
+const isMyAccountLoading = ref<boolean>(false);
+const preclaimedAddress = ref<string>();
+const signedMessage = ref<string>("");
 const isSend = ref<boolean>(false);
+const isError = ref<boolean>(false);
 
-const account = ref<Account | null>(null);
-const address = ref<string>("");
+const ethAccount = ref<Account>();
+const ethAddress = ref<string>("");
+const isValid = ref<boolean>(false);
+const isEthLoading = ref<boolean>(false);
+const claimable = ref<BigNumber>(new BigNumber(0));
 
-const nextAction = () => {
-  isSend.value = true;
+onMounted(() => {
+  const trimmed = route.query.ethAddress?.toString().trim() || "";
+  ethAddress.value = trimmed;
+  const isValidAddress = isAddress(trimmed);
+
+  if (!isValidAddress || walletSelected.value.id === 1) {
+    router.push({ name: "claim" });
+    return;
+  }
+
+  addressInput(trimmed);
+});
+
+watch(myAccount, async () => {
+  if (myAccount.value) {
+    try {
+      isMyAccountLoading.value = true;
+      const api = await apiPromise.value;
+      // Get preclaim address info
+      if (api.query.claims.preclaims) {
+        const preclaims = await api.query.claims.preclaims<Option<BalanceOf>>(
+          myAccount.value.address
+        );
+        const result = preclaims.unwrapOr(null);
+        preclaimedAddress.value = result ? result.toString() : undefined;
+      }
+
+      isMyAccountLoading.value = false;
+    } catch (err) {
+      console.error(
+        "Unexpected error when querying if account has preclaims",
+        err
+      );
+      isMyAccountLoading.value = false;
+    }
+  }
+});
+
+watch(ethAccount, async () => {
+  if (ethAccount.value) {
+    try {
+      isEthLoading.value = true;
+      const api = await apiPromise.value;
+
+      // Get claimable amount info
+      const claims = await api.query.claims.claims<Option<BalanceOf>>(
+        ethAccount.value.address
+      );
+      claimable.value = new BigNumber(
+        fromBase(
+          claims.unwrapOr(BN_ZERO).toString(),
+          nativeToken.value.decimals
+        )
+      );
+      isValid.value = claimable.value.gt(0);
+
+      isEthLoading.value = false;
+    } catch (err) {
+      console.error(
+        "Unexpected error when querying if account has claimable balance",
+        err
+      );
+      isEthLoading.value = false;
+    }
+  }
+});
+
+const nextAction = async () => {
+  if (!myAccount.value || !ethAccount.value) {
+    return;
+  }
+
+  try {
+    isMyAccountLoading.value = true;
+    isError.value = false;
+    const api = await apiPromise.value;
+    const statement =
+      "I hereby agree to the terms of the statement whose SHA-256 multihash is Qmc1XYqT6S39WNp2UeiRUrZichUWUPpGEThDE6dAb3f6Ny. (This may be found at the URL: https://statement.polkadot.network/regular.html)";
+
+    if (preclaimedAddress.value) {
+      const unsubscribe = await api.tx.claims.attest(statement).signAndSend(
+        myAccount.value.address,
+        {
+          signer: signer.value,
+          nonce: -1,
+        },
+        async (result) => {
+          if (!result || !result.status) {
+            return;
+          }
+
+          if (result.status.isFinalized || result.status.isInBlock) {
+            result.events
+              .filter(({ event: { section } }) => section === "system")
+              .forEach(({ event: { method } }): void => {
+                if (method === "ExtrinsicFailed") {
+                  // Handle error
+                } else if (method === "ExtrinsicSuccess") {
+                  // Handle succes
+                }
+              });
+          } else if (result.isError) {
+            // Handle error
+          }
+
+          if (result.isCompleted) {
+            unsubscribe();
+          }
+        }
+      );
+    } else {
+      // Check if it is claim only or claim and attest
+      const typeRes = await api.query.claims.signing<Option<StatementKind>>(
+        ethAccount.value.address
+      );
+      const claimOnly = !typeRes.unwrapOr(null) || !api.tx.claims.claimAttest;
+      const transaction = claimOnly
+        ? api.tx.claims.claim(myAccount.value.address, signature.value)
+        : api.tx.claims.claimAttest(
+            myAccount.value.address,
+            signature.value,
+            statement
+          );
+
+      const unsubscribe = await transaction.send(async (result) => {
+        if (!result || !result.status) {
+          return;
+        }
+
+        if (result.status.isFinalized || result.status.isInBlock) {
+          result.events
+            .filter(({ event: { section } }) => section === "system")
+            .forEach(({ event: { method } }): void => {
+              if (method === "ExtrinsicFailed") {
+                // Handle error
+              } else if (method === "ExtrinsicSuccess") {
+                // Handle succes
+              }
+            });
+        } else if (result.isError) {
+          // Handle error
+        }
+
+        if (result.isCompleted) {
+          unsubscribe();
+        }
+      });
+    }
+
+    isMyAccountLoading.value = false;
+    isSend.value = true;
+  } catch (err) {
+    console.error("Unexpected error when trying to claim", err);
+    isMyAccountLoading.value = false;
+    isError.value = true;
+  }
 };
 
 const back = () => {
@@ -85,22 +273,57 @@ const selectMyAccount = (account: Account) => {
 };
 
 const addressInput = (newVal: string) => {
-  address.value = newVal;
-  account.value = address.value.length > 41 ? recent[0] : null;
+  const trimmed = newVal.trim();
+  ethAddress.value = trimmed;
+  const isValidAddress = isAddress(trimmed);
+  ethAccount.value = isValidAddress
+    ? {
+        id: Number.MAX_SAFE_INTEGER,
+        name: "",
+        image: createIcon(trimmed),
+        address: trimmed,
+        isLedger: false,
+      }
+    : undefined;
 };
 
 const copy = () => {
-  navigator.clipboard.writeText(
-    "e08ea504bf28771d0c3c78dac78c0876246eea19fc3017debe2142999b617056"
-  );
+  navigator.clipboard.writeText(messagePart1.value + messagePart2.value);
 };
 
 const buttonTitle = computed(() => {
   let title = "Claim ";
-  title += amount.value;
-  title += " " + token.value.symbol.toLocaleUpperCase();
+  title += claimable.value;
+  title += " " + nativeToken.value.symbol.toLocaleUpperCase();
 
   return title;
+});
+
+const messagePart1 = computed(
+  () =>
+    `Pay ${nativeToken.value.symbol.toLocaleUpperCase()}s to the ${
+      Network[selectedNetwork.value]
+    } account:`
+);
+
+const messagePart2 = computed(() => {
+  if (!myAccount.value?.address) {
+    return "";
+  }
+
+  const decoded = decodeAddress(myAccount.value.address);
+  const stringFormatted = Buffer.from(decoded).toString("hex");
+  return stringFormatted;
+});
+const signature = computed(() => {
+  try {
+    const { sig } = JSON.parse(signedMessage.value || "");
+
+    return sig;
+  } catch (err) {
+    console.warn("Could not extract signature from signed message", err);
+    return undefined;
+  }
 });
 </script>
 

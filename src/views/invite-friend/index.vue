@@ -2,7 +2,7 @@
   <modal-wrapper title="Send invite to your friend">
     <div class="invite-friend__textarea">
       Hey! You should check out *Polkadapp*. It is an easy to use and secure
-      Polkadot dapp with the most useful features.<br />*polkadapp.com*
+      Polkadot dapp with the most useful features.<br /><br />*polkadapp.com*
       <a class="invite-friend__copy" @click="copy"><copy-icon /></a>
     </div>
   </modal-wrapper>

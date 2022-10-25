@@ -29,7 +29,7 @@
           {{
             balance === undefined
               ? "--"
-              : $filters.cryptoCurrencyFormat(balance)
+              : $filters.cryptoCurrencyFormat(balance.total)
           }}
           <span>{{ token?.symbol || "dot" }}</span>
         </h3>
@@ -49,62 +49,128 @@
             <h4>Available</h4>
           </div>
           <div class="col-3 row justify-content-end">
-            <p>{{ $filters.currencyFormat(3745.24, "USD") }}</p>
+            <p>
+              {{
+                $filters.currencyFormat(
+                  valuesBreakdown.available.usdValue,
+                  "USD"
+                )
+              }}
+            </p>
           </div>
           <div class="col-3 row justify-content-end">
             <h3>
-              {{ $filters.cryptoCurrencyFormat(180.943) }} <span>dot</span>
+              {{
+                $filters.cryptoCurrencyFormat(valuesBreakdown.available.balance)
+              }}
+              <span>{{ token?.symbol || "dot" }}</span>
             </h3>
           </div>
           <div class="col-3 row justify-content-end">
             <base-button title="Stake" :stroke="true" :small="true" />
-            <base-button title="Send" :stroke="true" :small="true" />
+            <base-button
+              title="Send"
+              :stroke="true"
+              :small="true"
+              :action="navigateToSend"
+            />
           </div>
         </div>
       </div>
-      <div class="accounts-item__detail-info">
+      <div
+        v-if="valuesBreakdown.staked.balance"
+        class="accounts-item__detail-info"
+      >
         <div class="row justify-content-beetwen align-items-center">
           <div class="col-3 row justify-content-start">
             <h4>Staked</h4>
           </div>
           <div class="col-3 row justify-content-end">
-            <p>{{ $filters.currencyFormat(7945.95, "USD") }}</p>
+            <p>
+              {{
+                $filters.currencyFormat(valuesBreakdown.staked.usdValue, "USD")
+              }}
+            </p>
           </div>
           <div class="col-3 row justify-content-end">
-            <h3>{{ $filters.cryptoCurrencyFormat(1000) }} <span>dot</span></h3>
+            <h3>
+              {{
+                $filters.cryptoCurrencyFormat(valuesBreakdown.staked.balance)
+              }}
+              <span>{{ token?.symbol || "dot" }}</span>
+            </h3>
           </div>
           <div class="col-3 row justify-content-end"></div>
         </div>
       </div>
-      <div class="accounts-item__detail-info">
+      <div
+        v-if="valuesBreakdown.bonded.balance"
+        class="accounts-item__detail-info"
+      >
         <div class="row justify-content-beetwen align-items-center">
           <div class="col-3 row justify-content-start">
             <h4>Bonded</h4>
           </div>
           <div class="col-3 row justify-content-end">
-            <p>{{ $filters.currencyFormat(1344.28, "USD") }}</p>
+            <p>
+              {{
+                $filters.currencyFormat(valuesBreakdown.bonded.usdValue, "USD")
+              }}
+            </p>
           </div>
           <div class="col-3 row justify-content-end">
-            <h3>{{ $filters.cryptoCurrencyFormat(168) }} <span>dot</span></h3>
+            <h3>
+              {{
+                $filters.cryptoCurrencyFormat(valuesBreakdown.bonded.balance)
+              }}
+              <span>{{ token?.symbol || "dot" }}</span>
+            </h3>
           </div>
           <div class="col-3 row justify-content-end">
             <base-button title="Unbond" :stroke="true" :small="true" />
           </div>
         </div>
       </div>
-      <div class="accounts-item__detail-info">
+      <div
+        v-if="valuesBreakdown.vested.balance"
+        class="accounts-item__detail-info"
+      >
         <div class="row justify-content-beetwen align-items-center">
           <div class="col-3 row justify-content-start">
             <h4>Vested</h4>
           </div>
           <div class="col-3 row justify-content-end">
-            <p>{{ $filters.currencyFormat(678.32, "USD") }}</p>
+            <p>
+              {{
+                $filters.currencyFormat(valuesBreakdown.vested.usdValue, "USD")
+              }}
+            </p>
           </div>
           <div class="col-3 row justify-content-end">
-            <h3>{{ $filters.cryptoCurrencyFormat(82) }} <span>dot</span></h3>
+            <h3>
+              {{
+                $filters.cryptoCurrencyFormat(valuesBreakdown.vested.balance)
+              }}
+              <span>{{ token?.symbol || "dot" }}</span>
+            </h3>
           </div>
           <div class="col-3 row justify-content-end">
-            <span class="accounts-item__detail-info-ends">Ends in 45d 15h</span>
+            <span
+              v-if="balance && balance.vestingEndMillisecondsLeft"
+              class="accounts-item__detail-info-ends"
+            >
+              <vue-countdown
+                v-slot="{ days, hours, minutes }"
+                :interval="60000"
+                :time="balance.vestingEndMillisecondsLeft"
+              >
+                Ends in{{
+                  `${days ? ` ${days}d` : ""}${
+                    hours ? ` ${hours}h` : ""
+                  } ${minutes}m`
+                }}
+              </vue-countdown>
+            </span>
           </div>
         </div>
       </div>
@@ -113,15 +179,20 @@
 </template>
 
 <script setup lang="ts">
-import { PropType, ref } from "vue";
+import { computed, PropType, ref } from "vue";
 import BaseButton from "@/components/base-button/index.vue";
 import Expand from "@/icons/common/expand.vue";
 import { Account } from "@/types/account";
 import { Token } from "@/types/token";
+import { Balance } from "@/types/balance";
+import VueCountdown from "@chenfengyuan/vue-countdown";
+import { useRouter } from "vue-router";
+
+const router = useRouter();
 
 const isOpen = ref<boolean>(false);
 
-defineProps({
+const props = defineProps({
   account: {
     type: Object as PropType<Account>,
     default: () => ({}),
@@ -131,7 +202,7 @@ defineProps({
     default: false,
   },
   balance: {
-    type: Number,
+    type: Object as PropType<Balance>,
     default: undefined,
   },
   token: {
@@ -142,6 +213,41 @@ defineProps({
 
 const toggle = () => {
   isOpen.value = !isOpen.value;
+};
+
+const valuesBreakdown = computed(() => {
+  const numAvailable = props.balance?.available?.toNumber() || 0;
+  const numStaked = props.balance?.staked?.toNumber() || 0;
+  const numBonded = props.balance?.bonded?.toNumber() || 0;
+  const numVested = props.balance?.vested?.toNumber() || 0;
+
+  return {
+    available: {
+      balance: numAvailable,
+      usdValue: numAvailable * (props.token?.price?.toNumber() || 0),
+    },
+    staked: {
+      balance: numStaked,
+      usdValue: numStaked * (props.token?.price?.toNumber() || 0),
+    },
+    bonded: {
+      balance: numBonded,
+      usdValue: numBonded * (props.token?.price?.toNumber() || 0),
+    },
+    vested: {
+      balance: numVested,
+      usdValue: numVested * (props.token?.price?.toNumber() || 0),
+    },
+  };
+});
+
+const navigateToSend = () => {
+  router.push({
+    name: "send",
+    query: {
+      address: props.account.address,
+    },
+  });
 };
 </script>
 
