@@ -27,15 +27,22 @@ const WESTEND_ENDPOINTS = [
 export const selectedNetwork = ref(Network.Polkadot);
 
 export const apiPromise = computed(async () => {
+  if (apiPromise.value) {
+    await (await apiPromise.value).disconnect();
+  }
+
   let endpoints;
 
   switch (selectedNetwork.value) {
     case Network.Polkadot:
       endpoints = POLKADOT_ENDPOINTS;
+      break;
     case Network.Kusama:
       endpoints = KUSAMA_ENDPOINTS;
+      break;
     case Network.Westend:
       endpoints = WESTEND_ENDPOINTS;
+      break;
     default:
       endpoints = POLKADOT_ENDPOINTS;
   }
@@ -43,6 +50,7 @@ export const apiPromise = computed(async () => {
   const provider = new WsProvider(endpoints);
 
   const api = await ApiPromise.create({ provider });
+
   return api;
 });
 
