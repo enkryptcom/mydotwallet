@@ -142,8 +142,7 @@ const edWarn = computed(() => {
   );
   const userBalance = toBN(
     toBase(
-      nativeBalances.value[fromAccount.value.address]?.available.toString() ||
-        "0",
+      nativeBalances[fromAccount.value.address]?.available.toString() || "0",
       selectedAsset.value.decimals
     )
   );
@@ -176,8 +175,7 @@ watch([selectedAsset, amount, nativeBalances, toAccount], async () => {
 
     const rawBalance = toBN(
       toBase(
-        nativeBalances.value[fromAccount.value.address]?.available.toString() ||
-          "0",
+        nativeBalances[fromAccount.value.address]?.available.toString() || "0",
         selectedAsset.value.decimals
       )
     );

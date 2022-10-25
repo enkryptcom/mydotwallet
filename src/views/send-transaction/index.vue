@@ -47,7 +47,6 @@ import FeeInfo from "@/components/fee-info/index.vue";
 import ButtonsBlock from "@/components/buttons-block/index.vue";
 import BaseButton from "@/components/base-button/index.vue";
 import SendError from "./components/send-error.vue";
-import { recent } from "@/types/mock";
 import {
   accounts,
   apiPromise,
