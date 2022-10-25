@@ -13,7 +13,7 @@
       <search-account-input
         :account="toAccount"
         :accounts="accounts"
-        :recent="recent"
+        :recent="recentAccounts"
         @update:select="selectToAccount"
       />
       <amount-input
@@ -47,7 +47,6 @@ import FeeInfo from "@/components/fee-info/index.vue";
 import ButtonsBlock from "@/components/buttons-block/index.vue";
 import BaseButton from "@/components/base-button/index.vue";
 import SendError from "./components/send-error.vue";
-import { recent } from "@/types/mock";
 import {
   accounts,
   apiPromise,
@@ -66,8 +65,11 @@ import { GasFeeInfo } from "@/types/transaction";
 import { sendExtrinsic } from "@/utils/extrinsic";
 import { toBN } from "web3-utils";
 import { getGasFeeInfo } from "@/utils/fee";
+import AccountsState from "@/state/accounts";
+
 const router = useRouter();
 const route = useRoute();
+const accountsState = new AccountsState();
 
 const fromAccount = ref<Account>(accounts.value[0]);
 const toAccount = ref<Account>();
@@ -75,6 +77,8 @@ const amount = ref<string>("");
 const fee = ref<GasFeeInfo>();
 const selectedAsset = ref<Token>(nativeToken.value);
 const hasEnough = ref(true);
+const recentAccounts = ref<Account[]>([]);
+
 const isValid = computed<boolean>(() => {
   return (
     !!fromAccount.value &&
@@ -95,7 +99,7 @@ watch(selectedNetwork, () => {
   selectedAsset.value = nativeToken.value;
 });
 
-onMounted(() => {
+onMounted(async () => {
   if (route.query.from) {
     const found = accounts.value.find(
       (item) => item.address === route.query.from
@@ -118,6 +122,8 @@ onMounted(() => {
       amount.value = converted.toString();
     }
   }
+
+  recentAccounts.value = await accountsState.getRecentAccounts();
 });
 
 const edWarn = computed(() => {

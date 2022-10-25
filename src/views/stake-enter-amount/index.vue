@@ -113,8 +113,7 @@ watch(
 
     const rawBalance = toBN(
       toBase(
-        nativeBalances.value[fromAccount.value.address]?.available.toString() ||
-          "0",
+        nativeBalances[fromAccount.value.address]?.available.toString() || "0",
         nativeToken.value.decimals
       )
     );
@@ -150,13 +149,11 @@ const isValid = computed<boolean>(() => {
 });
 
 const availableBalance = computed(() => {
-  if (!nativeBalances.value || !fromAccount.value) {
+  if (!nativeBalances || !fromAccount.value) {
     return 0;
   }
 
-  return (
-    nativeBalances.value[fromAccount.value.address]?.available.toNumber() || 0
-  );
+  return nativeBalances[fromAccount.value.address]?.available.toNumber() || 0;
 });
 
 const nextAction = () => {
