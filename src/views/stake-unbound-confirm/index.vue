@@ -21,7 +21,10 @@
         />
       </div>
       <div class="stake-unbound-confirm__block-item">
-        <stake-confirm-amount :token="nativeToken" :amount="amount" />
+        <stake-confirm-amount
+          :token="nativeToken"
+          :amount="amount ? Number(amount) : 0"
+        />
       </div>
       <div class="stake-unbound-confirm__block-item">
         <stake-confirm-fee :fee="fee" />
@@ -37,7 +40,7 @@
     </buttons-block>
   </white-wrapper>
   <white-wrapper v-else class="stake-confirm__wrap">
-    <stake-confirm-process :is-done="isSendDone" />
+    <stake-unbound-confirm-process :is-done="isSendDone" />
   </white-wrapper>
 </template>
 
@@ -49,6 +52,7 @@ import BackButton from "@/components/back-button/index.vue";
 import StakeConfirmAmount from "../stake-confirm/components/stake-confirm-amount.vue";
 import StakeConfirmAccount from "../stake-confirm/components/stake-confirm-account.vue";
 import StakeConfirmFee from "../stake-confirm/components/stake-confirm-fee.vue";
+import StakeUnboundConfirmProcess from "./components/stake-unbound-confirm-process.vue";
 import { Account } from "@/types/account";
 import { onMounted, ref, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
@@ -57,6 +61,7 @@ import {
   apiPromise,
   nativeBalances,
   nativeToken,
+  selectedNetwork,
   signer,
 } from "@/stores";
 import BigNumber from "bignumber.js";
@@ -70,8 +75,9 @@ import { unbondExtrinsic } from "@/utils/extrinsic";
 import { getGasFeeInfo } from "@/utils/fee";
 
 const router = useRouter();
-const fee = ref<GasFeeInfo>();
 const route = useRoute();
+
+const fee = ref<GasFeeInfo>();
 const fromAccount = ref<Account>();
 const stakedBalance = ref<BigNumber>(new BigNumber(0));
 const amount = ref<string>();
@@ -123,7 +129,7 @@ const updateStakedAmount = async () => {
 };
 
 watch(
-  [amount, stakedBalance],
+  [amount, stakedBalance, selectedNetwork],
   async () => {
     if (!amount.value || !fromAccount.value?.address) {
       return;
@@ -199,8 +205,6 @@ const nextAction = async () => {
       }
     }
   );
-
-  isSend.value = true;
 };
 
 const back = () => {

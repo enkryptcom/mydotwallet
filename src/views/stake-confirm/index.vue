@@ -71,12 +71,14 @@ import {
   onMounted,
   onUnmounted,
   computed,
+  watch,
 } from "vue";
 import { useRouter } from "vue-router";
 import {
   apiPromise,
   nativeBalances,
   nativeToken,
+  selectedNetwork,
   signer,
   stakingWizardOptions,
 } from "@/stores";
@@ -201,7 +203,6 @@ const loadPreviousStakingOptions = () => {
   amount.value = stakingWizardOptions.value.amount;
   fromAccount.value = stakingWizardOptions.value.fromAccount;
   validators.value = stakingWizardOptions.value.validators;
-  loadFeeInfo();
 };
 
 const availableBalance = computed(() => {
@@ -214,7 +215,11 @@ const availableBalance = computed(() => {
   );
 });
 
-const loadFeeInfo = async () => {
+watch([amount, nativeBalances, selectedNetwork], async () => {
+  if (!amount.value || !fromAccount.value) {
+    return;
+  }
+
   const api = await apiPromise.value;
 
   const rawAmount = toBN(
@@ -230,7 +235,7 @@ const loadFeeInfo = async () => {
   );
 
   fee.value = await getGasFeeInfo(tx, fromAccount.value?.address || "");
-};
+});
 </script>
 
 <style lang="less" scoped>

@@ -93,6 +93,7 @@ export interface StakerState {
   isStashNominating: boolean;
   isStashValidating: boolean;
   nominating?: string[];
+  redeemable: string;
   sessionIds: string[];
   stakingLedger?: StakingLedger;
   stashId: string;
@@ -109,8 +110,10 @@ export interface StakedTotalState {
 
 export interface StakingAccountWithValidators extends Account {
   totalStaked: BigNumber;
+  activeStaked: BigNumber;
   earnings: BigNumber;
   withdrawable: BigNumber;
+  redeemable: BigNumber;
   unbonding: BigNumber;
   validators: Validator[];
 }

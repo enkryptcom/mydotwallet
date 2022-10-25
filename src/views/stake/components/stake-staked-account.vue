@@ -25,8 +25,11 @@
           :action="unbondAction"
         />
         <base-button
+          v-if="!account.withdrawable.isZero()"
           title="Withdraw"
-          subtitle="800 DOT"
+          :subtitle="`${$filters.cryptoCurrencyFormat(
+            account.withdrawable.toNumber()
+          )} ${nativeToken.symbol.toLocaleUpperCase()}`"
           :stroke="true"
           :small="true"
           :action="withdrawAction"
@@ -38,13 +41,13 @@
         <p>Total staked</p>
         <div class="stake-staked-account__stats-block-amount">
           <h5>
-            {{ $filters.cryptoCurrencyFormat(account.totalStaked.toNumber()) }}
+            {{ $filters.cryptoCurrencyFormat(account.activeStaked.toNumber()) }}
             <span>{{ nativeToken.symbol }}</span>
           </h5>
           <h6>
             {{
               $filters.currencyFormat(
-                account.totalStaked.toNumber() * nativeToken.price.toNumber(),
+                account.activeStaked.toNumber() * nativeToken.price.toNumber(),
                 "USD"
               )
             }}
@@ -82,7 +85,7 @@
     <div v-show="isOpen" class="stake-staked-account__validators-list">
       <stake-staked-validators
         :validators="account.validators"
-        :bonded-amount="account.totalStaked"
+        :bonded-amount="account.activeStaked"
       />
     </div>
   </div>
@@ -120,11 +123,21 @@ const toggle = () => {
 };
 
 const unbondAction = () => {
-  router.push({ name: "stake-unbound" });
+  router.push({
+    name: "stake-unbound",
+    query: {
+      account: props.account?.address,
+    },
+  });
 };
 
 const withdrawAction = () => {
-  router.push({ name: "stake-withdraw" });
+  router.push({
+    name: "stake-withdraw",
+    query: {
+      address: props.account?.address,
+    },
+  });
 };
 </script>
 

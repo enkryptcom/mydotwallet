@@ -9,7 +9,11 @@
   >
     <h2 class="stake__title">Stake DOT and earn rewards</h2>
     <div class="stake__block stake__block--staked">
-      <stake-staked-overview :totat="1000" :overall="1.473" :yield="14.46" />
+      <stake-staked-overview
+        :total="totals.totalStaked.toNumber()"
+        :earnings="totals.earnings.toNumber()"
+        :yield="totals.yield.toNumber()"
+      />
       <base-button title="Stake more" :action="stakeMoreAction" />
     </div>
 
@@ -30,7 +34,7 @@ import StakeStakedOverview from "./components/stake-staked-overview.vue";
 import StakeStakedAccount from "./components/stake-staked-account.vue";
 import StakeIntro from "./components/stake-intro.vue";
 import { useRouter } from "vue-router";
-import { onMounted, ref } from "vue";
+import { computed, onMounted, ref, watch } from "vue";
 import {
   accounts,
   apiPromise,
@@ -52,6 +56,7 @@ import {
 import { fromBase } from "@/utils/units";
 import { getStakerState, loadValidatorData } from "@/utils/staking";
 import { gql, request } from "graphql-request";
+import { useGetNativePrice } from "@/libs/prices";
 
 const router = useRouter();
 
@@ -59,8 +64,17 @@ const showStakeIntro = ref<boolean>(false);
 const stakingAccounts = ref<Array<StakingAccountWithValidators>>([]);
 
 onMounted(async () => {
+  useGetNativePrice();
   stakingAccounts.value = await loadStakingAccounts();
 });
+
+watch(
+  accounts,
+  async () => {
+    stakingAccounts.value = await loadStakingAccounts();
+  },
+  { deep: true }
+);
 
 const loadStakingAccounts = async () => {
   if (!accounts.value.length) {
@@ -91,7 +105,6 @@ const loadStakingAccounts = async () => {
   if (!ownStashes.length) {
     return [];
   }
-
   const stashIds = ownStashes.map(([stashId]) => stashId);
   const resAccounts: DeriveStakingAccount[] = await api.derive.staking.accounts(
     stashIds
@@ -110,7 +123,6 @@ const loadStakingAccounts = async () => {
   if (!ownStashes.length) {
     return [];
   }
-
   const stakerStates = ownStashes
     .filter(([stashId]) => queried[stashId])
     .map(([stashId]) => getStakerState(stashId, addresses, queried[stashId]));
@@ -199,8 +211,19 @@ const loadStakingAccounts = async () => {
               )
             )
           : new BigNumber(0),
+      activeStaked:
+        auxStaker.stakingLedger && auxStaker.stakingLedger.active
+          ? new BigNumber(
+              fromBase(
+                auxStaker.stakingLedger.active.unwrap().toString(),
+                nativeToken.value.decimals
+              )
+            )
+          : new BigNumber(0),
       earnings: accountRewardsMap[auxStaker.stashId] || new BigNumber(0),
-      withdrawable: new BigNumber(0),
+      withdrawable: new BigNumber(
+        fromBase(auxStaker.redeemable, nativeToken.value.decimals)
+      ),
       unbonding: new BigNumber(0),
       validators:
         auxStaker.nominating?.map((item) => validatorInfoMap[item]) || [],
@@ -213,13 +236,14 @@ const loadStakingAccounts = async () => {
 const getAccountsRewardsMap = async (
   accounts: string[]
 ): Promise<Record<string, BigNumber>> => {
-  let addressesStringQuery = accounts.reduce((prevValue, current) => {
-    return `, OR: { id_eq: "${current}"${prevValue} }`;
-  }, "");
+  try {
+    let addressesStringQuery = accounts.reduce((prevValue, current) => {
+      return `, OR: { id_eq: "${current}"${prevValue} }`;
+    }, "");
 
-  const queryResult = await request(
-    subsquidExplorerUrl.value,
-    gql`
+    const queryResult = await request(
+      subsquidExplorerUrl.value,
+      gql`
       query MyQuery {
         stakers(
           where: {
@@ -240,18 +264,49 @@ const getAccountsRewardsMap = async (
         }
       }
     `
-  );
-
-  const resultMap: Record<string, BigNumber> = {};
-
-  for (const auxStaker of queryResult.stakers) {
-    resultMap[auxStaker.id] = new BigNumber(
-      fromBase(auxStaker.totalReward, nativeToken.value.decimals)
     );
+
+    const resultMap: Record<string, BigNumber> = {};
+
+    for (const auxStaker of queryResult.stakers) {
+      resultMap[auxStaker.id] = new BigNumber(
+        fromBase(auxStaker.totalReward, nativeToken.value.decimals)
+      );
+    }
+
+    return resultMap;
+  } catch (err) {
+    console.error(err);
+    return {};
+  }
+};
+
+const totals = computed(() => {
+  const finalResult = {
+    totalStaked: new BigNumber(0),
+    earnings: new BigNumber(0),
+    withdrawable: new BigNumber(0),
+    unbonding: new BigNumber(0),
+    yield: new BigNumber(0),
+  };
+
+  for (const item of stakingAccounts.value) {
+    finalResult.totalStaked = finalResult.totalStaked.plus(item.totalStaked);
+    finalResult.earnings = finalResult.earnings.plus(item.earnings);
+    finalResult.withdrawable = finalResult.withdrawable.plus(item.withdrawable);
+    finalResult.unbonding = finalResult.unbonding.plus(item.unbonding);
   }
 
-  return resultMap;
-};
+  finalResult.yield = finalResult.earnings
+    .div(finalResult.totalStaked)
+    .times(100);
+
+  finalResult.yield = finalResult.yield.isNaN()
+    ? new BigNumber(0)
+    : finalResult.yield;
+
+  return finalResult;
+});
 
 const stakeMoreAction = () => {
   router.push({ name: "stake-enter-amount" });

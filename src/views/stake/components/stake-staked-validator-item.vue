@@ -36,7 +36,7 @@
     </div>
     <div class="stake-staked-validator-item__block">
       <span
-        >{{ $filters.cryptoCurrencyFormat(validator.returns || 0) }}
+        >{{ $filters.cryptoCurrencyFormat(approxBondedAmount || 0) }}
         {{ nativeToken.symbol.toLocaleUpperCase() }}</span
       >
     </div>

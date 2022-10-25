@@ -15,6 +15,9 @@
 import DoneAnimation from "@/icons/animation/done.vue";
 import SpinnerAnimation from "@/icons/animation/spinner.vue";
 import BaseButton from "@/components/base-button/index.vue";
+import { useRouter } from "vue-router";
+
+const router = useRouter();
 
 defineProps({
   isDone: {
@@ -24,7 +27,7 @@ defineProps({
 });
 
 const detailsAction = () => {
-  console.log("detailsAction");
+  router.push({ name: "stake" });
 };
 </script>
 

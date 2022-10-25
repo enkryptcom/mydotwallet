@@ -232,6 +232,7 @@ export const getStakerState = (
       sessionIds: _sessionIds,
       stakingLedger,
       validatorPrefs,
+      redeemable,
     },
     validateInfo,
   ]: [boolean, DeriveStakingAccount, ValidatorInfo]
@@ -269,6 +270,7 @@ export const getStakerState = (
     isStashValidating,
     // we assume that all ids are non-null
     nominating: nominators?.map(toIdString) as string[],
+    redeemable: redeemable?.toString() || "0",
     sessionIds: (nextSessionIds.length ? nextSessionIds : sessionIds).map(
       toIdString
     ) as string[],

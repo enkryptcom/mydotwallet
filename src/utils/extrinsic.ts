@@ -47,3 +47,10 @@ export const unbondExtrinsic = async (
 ): Promise<SubmittableExtrinsic<"promise", ISubmittableResult>> => {
   return api.tx.staking.unbond(amount);
 };
+
+export const withdrawExtrinsic = async (
+  api: any,
+  numberOfSpans = 0
+): Promise<SubmittableExtrinsic<"promise", ISubmittableResult>> => {
+  return api.tx.staking.withdrawUnbonded(numberOfSpans);
+};

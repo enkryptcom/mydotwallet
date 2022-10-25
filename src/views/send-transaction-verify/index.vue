@@ -63,6 +63,7 @@ import {
   apiPromise,
   nativeBalances,
   nativeToken,
+  selectedNetwork,
   signer,
 } from "@/stores";
 import { encodeSubstrateAddress } from "@/utils";
@@ -152,52 +153,56 @@ const edWarn = computed(() => {
   return userBalance.sub(txFee).sub(rawAmount).lt(ed);
 });
 
-watch([selectedAsset, amount, nativeBalances, toAccount], async () => {
-  if (
-    amount.value &&
-    selectedAsset.value &&
-    toAccount.value &&
-    fromAccount.value
-  ) {
+watch(
+  [selectedAsset, amount, nativeBalances, toAccount, selectedNetwork],
+  async () => {
     if (
-      !isValidDecimals(amount.value.toString(), selectedAsset.value.decimals)
+      amount.value &&
+      selectedAsset.value &&
+      toAccount.value &&
+      fromAccount.value
     ) {
-      hasEnough.value = false;
-      return;
+      if (
+        !isValidDecimals(amount.value.toString(), selectedAsset.value.decimals)
+      ) {
+        hasEnough.value = false;
+        return;
+      }
+
+      const api = await apiPromise.value;
+
+      const rawAmount = toBN(
+        toBase(amount.value?.toString() || "0", selectedAsset.value.decimals)
+      );
+
+      const rawBalance = toBN(
+        toBase(
+          nativeBalances.value[
+            fromAccount.value.address
+          ]?.available.toString() || "0",
+          selectedAsset.value.decimals
+        )
+      );
+
+      if (rawAmount.gt(rawBalance)) {
+        hasEnough.value = false;
+      } else {
+        hasEnough.value = true;
+      }
+
+      const transferType = "all";
+
+      const tx = await sendExtrinsic(
+        api,
+        toAccount.value.address,
+        rawAmount.toString(),
+        transferType
+      );
+
+      fee.value = await getGasFeeInfo(tx, fromAccount.value.address);
     }
-
-    const api = await apiPromise.value;
-
-    const rawAmount = toBN(
-      toBase(amount.value?.toString() || "0", selectedAsset.value.decimals)
-    );
-
-    const rawBalance = toBN(
-      toBase(
-        nativeBalances.value[fromAccount.value.address]?.available.toString() ||
-          "0",
-        selectedAsset.value.decimals
-      )
-    );
-
-    if (rawAmount.gt(rawBalance)) {
-      hasEnough.value = false;
-    } else {
-      hasEnough.value = true;
-    }
-
-    const transferType = "all";
-
-    const tx = await sendExtrinsic(
-      api,
-      toAccount.value.address,
-      rawAmount.toString(),
-      transferType
-    );
-
-    fee.value = await getGasFeeInfo(tx, fromAccount.value.address);
   }
-});
+);
 
 const nextAction = async () => {
   if (!toAccount.value?.address || !amount.value || !fromAccount.value) {

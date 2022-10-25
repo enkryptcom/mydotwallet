@@ -32,12 +32,16 @@ export const apiPromise = computed(async () => {
   switch (selectedNetwork.value) {
     case Network.Polkadot:
       endpoints = POLKADOT_ENDPOINTS;
+      break;
     case Network.Kusama:
       endpoints = KUSAMA_ENDPOINTS;
+      break;
     case Network.Westend:
       endpoints = WESTEND_ENDPOINTS;
+      break;
     default:
       endpoints = POLKADOT_ENDPOINTS;
+      break;
   }
 
   const provider = new WsProvider(endpoints);

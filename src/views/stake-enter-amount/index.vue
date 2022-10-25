@@ -66,6 +66,7 @@ import {
   apiPromise,
   nativeBalances,
   nativeToken,
+  selectedNetwork,
   stakingWizardOptions,
 } from "@/stores";
 import { useGetNativeBalances } from "@/libs/balances";
@@ -94,7 +95,7 @@ onMounted(() => {
 });
 
 watch(
-  [amount, nativeBalances, fromAccount],
+  [amount, nativeBalances, fromAccount, selectedNetwork],
   async () => {
     if (!amount.value || !fromAccount.value?.address) {
       return;
