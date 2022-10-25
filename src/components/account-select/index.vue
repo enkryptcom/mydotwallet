@@ -11,7 +11,9 @@
         @click="selectAccount(item)"
       />
     </div>
-    <div class="account-select__link top-inset">Recent</div>
+    <div v-show="recent.length > 0" class="account-select__link top-inset">
+      Recent
+    </div>
     <account-select-item
       v-for="(item, index) in recent"
       :key="index"
@@ -35,26 +37,30 @@ import { PropType, ref } from "vue";
 import ExpandSmall from "@/icons/common/expand-small.vue";
 import AccountSelectItem from "./components/account-select-item.vue";
 
-const isOpen = ref<boolean>(false);
-
 const emit = defineEmits<{
   (e: "update:selectAccount", account: Account): void;
 }>();
 
-defineProps({
+const props = defineProps({
   account: {
     type: Object as PropType<Account>,
     default: null,
   },
   accounts: {
     type: Object as PropType<Array<Account>>,
-    default: null,
+    default: () => {
+      return [];
+    },
   },
   recent: {
     type: Object as PropType<Array<Account>>,
-    default: null,
+    default: () => {
+      return [];
+    },
   },
 });
+
+const isOpen = ref<boolean>(props.recent.length === 0);
 
 const selectAccount = (account: Account) => {
   emit("update:selectAccount", account);
