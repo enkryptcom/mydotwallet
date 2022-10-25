@@ -1,4 +1,4 @@
-import { ref, computed } from "vue";
+import { ref, computed, reactive } from "vue";
 import { Network } from "@/types/network";
 import { ApiPromise, WsProvider } from "@polkadot/api";
 import { InjectedExtension } from "@polkadot/extension-inject/types";
@@ -27,10 +27,6 @@ const WESTEND_ENDPOINTS = [
 export const selectedNetwork = ref(Network.Polkadot);
 
 export const apiPromise = computed(async () => {
-  if (apiPromise.value) {
-    await (await apiPromise.value).disconnect();
-  }
-
   let endpoints;
 
   switch (selectedNetwork.value) {
@@ -60,7 +56,11 @@ export const shouldOpenWalletSelector = ref<boolean>(false);
 
 export const accounts = ref<Account[]>([]);
 
-export const nativeBalances = ref<Record<string, Balance>>({});
+export let nativeBalances = reactive<Record<string, Balance>>({});
+
+export const clearNativeBalances = () => {
+  nativeBalances = {};
+};
 
 export const ss58Format = computed(() => {
   switch (selectedNetwork.value) {

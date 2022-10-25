@@ -1,6 +1,7 @@
 import {
   accounts,
   apiPromise,
+  clearNativeBalances,
   isBalancesLoading,
   nativeBalances,
 } from "@/stores";
@@ -43,21 +44,20 @@ export const useGetNativeBalances = async () => {
 
     addresses.forEach((_, index) => {
       // Set balance values to store
-      nativeBalances.value[accounts.value[index].address] =
-        buildBalanceFromResults(
-          balanceResult[index],
-          stakingResult[index],
-          unboundProgress,
-          expectedBlockTime,
-          lastBlockNumber,
-          api.registry.chainDecimals[0]
-        );
+      nativeBalances[accounts.value[index].address] = buildBalanceFromResults(
+        balanceResult[index],
+        stakingResult[index],
+        unboundProgress,
+        expectedBlockTime,
+        lastBlockNumber,
+        api.registry.chainDecimals[0]
+      );
     });
 
     isBalancesLoading.value = false;
   } catch (err) {
     isBalancesLoading.value = false;
-    nativeBalances.value = {};
+    clearNativeBalances();
     console.error(err);
   }
 };
@@ -80,7 +80,7 @@ export const useGetAccountNativeBalance = async (address: string) => {
     const lastBlockNumber = lastBlock.number.toNumber();
 
     // Set balance values to store
-    nativeBalances.value[address] = buildBalanceFromResults(
+    nativeBalances[address] = buildBalanceFromResults(
       balanceResult,
       stakingResult,
       unboundProgress,
@@ -92,7 +92,7 @@ export const useGetAccountNativeBalance = async (address: string) => {
     isBalancesLoading.value = false;
   } catch (err) {
     isBalancesLoading.value = false;
-    delete nativeBalances.value[address];
+    delete nativeBalances[address];
     console.error(err);
   }
 };

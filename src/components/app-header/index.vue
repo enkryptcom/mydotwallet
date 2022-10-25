@@ -28,7 +28,7 @@ import {
   selectedNetwork,
   apiPromise,
   accounts,
-  nativeBalances,
+  clearNativeBalances,
 } from "@/stores";
 import { useGetNativePrice } from "@/libs/prices";
 import { useGetNativeBalances } from "@/libs/balances";
@@ -44,7 +44,7 @@ onUnmounted(() => {
 });
 
 watch([apiPromise, accounts], () => {
-  nativeBalances.value = {};
+  clearNativeBalances;
   useGetNativeBalances();
   useGetNativePrice();
 });

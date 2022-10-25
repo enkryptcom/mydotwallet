@@ -85,7 +85,7 @@ const selectAccount = (account: Account) => {
 
 const availableBalance = computed(() => {
   if (props.isAmount && props.account) {
-    const balance = nativeBalances.value[props.account.address];
+    const balance = nativeBalances[props.account.address];
 
     if (balance) return Number(balance.available);
   }
