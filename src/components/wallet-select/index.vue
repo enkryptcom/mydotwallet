@@ -23,12 +23,34 @@ import {
   InjectedExtension,
   InjectedWindow,
 } from "@polkadot/extension-inject/types";
-import { WalletItem } from "@/types/wallet-list";
 import createIcon from "@/libs/identicon/polkadot";
 import { formatAddress } from "@/utils/filters";
-import { ComponentPublicInstance, ref, watch } from "vue";
+import { ComponentPublicInstance, onMounted, ref, watch } from "vue";
+import LastExtensionState from "@/state/extension";
+import { WalletItem } from "@/types/wallet-list";
+
+const lastExtensionState = new LastExtensionState();
 
 const selectRef = ref<ComponentPublicInstance<any>>();
+
+onMounted(async () => {
+  const lastExtension = await lastExtensionState.getLastExtensionName();
+
+  if (lastExtension) {
+    try {
+      await connectToWallet(lastExtension);
+      const walletItem = walletConnectItems.find(
+        (wallet) => wallet.extensionName === lastExtension
+      );
+
+      if (walletItem) {
+        walletSelected.value = walletItem;
+      }
+    } catch {
+      console.error("Could not connect to previous wallet");
+    }
+  }
+});
 
 watch(shouldOpenWalletSelector, () => {
   if (shouldOpenWalletSelector && selectRef) {
@@ -37,7 +59,7 @@ watch(shouldOpenWalletSelector, () => {
   }
 });
 
-const selectItem = async (item: SelectItem) => {
+const selectItem = async (item: WalletItem) => {
   // If disconnecting
   if (item.id === 1) {
     walletSelected.value = walletConnect;
@@ -47,7 +69,7 @@ const selectItem = async (item: SelectItem) => {
   } else {
     // If connecting
     try {
-      const accounts = await connectToWallet(item);
+      const accounts = await connectToWallet(item.extensionName);
       if (accounts) {
         walletSelected.value = item;
       } else {
@@ -59,24 +81,26 @@ const selectItem = async (item: SelectItem) => {
   }
 };
 
-const connectToWallet = async (wallet: WalletItem) => {
-  if (!wallet.extensionName) {
+const connectToWallet = async (wallet: string | undefined) => {
+  if (!wallet) {
     return;
   }
 
+  wallet = wallet.toLowerCase();
+
   const injectedWindow = window as Window & InjectedWindow;
-  const injectedExtension =
-    injectedWindow?.injectedWeb3?.[wallet.extensionName];
+  const injectedExtension = injectedWindow?.injectedWeb3?.[wallet];
   const rawExtension = await injectedExtension.enable("mydotwallet");
   const foundExtension: InjectedExtension = {
     ...rawExtension,
-    name: wallet.extensionName,
+    name: wallet,
     version: injectedExtension.version,
   };
   const foundAccounts = await foundExtension.accounts.get();
 
   signer.value = foundExtension.signer;
   extension.value = foundExtension;
+  await lastExtensionState.setLastExtension(foundExtension.name);
 
   accounts.value = foundAccounts
     .filter((item) => item.type !== "ethereum")
