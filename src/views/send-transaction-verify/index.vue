@@ -74,9 +74,11 @@ import { isValidDecimals, toBase } from "@/utils/units";
 import { sendExtrinsic } from "@/utils/extrinsic";
 import { toBN } from "web3-utils";
 import { getGasFeeInfo } from "@/utils/fee";
+import AccountsState from "@/state/accounts";
 
 const router = useRouter();
 const route = useRoute();
+const accountsState = new AccountsState();
 
 const fromAccount = ref<Account>();
 const toAccount = ref<Account>();
@@ -141,8 +143,7 @@ const edWarn = computed(() => {
   );
   const userBalance = toBN(
     toBase(
-      nativeBalances.value[fromAccount.value.address]?.available.toString() ||
-        "0",
+      nativeBalances[fromAccount.value.address]?.available.toString() || "0",
       selectedAsset.value.decimals
     )
   );
@@ -212,6 +213,8 @@ const nextAction = async () => {
   const api = await apiPromise.value;
   const sendAmount = toBase(amount.value, selectedAsset.value.decimals);
   const transferType = "transfer";
+
+  await accountsState.addRecentAccount(toAccount.value);
 
   const tx = await sendExtrinsic(
     api,

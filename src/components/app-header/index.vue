@@ -24,7 +24,12 @@ import SelectList from "@/components/select-list/index.vue";
 import WalletSelect from "@/components/wallet-select/index.vue";
 import { selectNetwork, selectNetworkItems } from "@/types/mock";
 import { SelectItem, NetworkSelectItem } from "@/types/select-list";
-import { selectedNetwork, apiPromise, accounts } from "@/stores";
+import {
+  selectedNetwork,
+  apiPromise,
+  accounts,
+  clearNativeBalances,
+} from "@/stores";
 import { useGetNativePrice } from "@/libs/prices";
 import { useGetNativeBalances } from "@/libs/balances";
 
@@ -39,6 +44,7 @@ onUnmounted(() => {
 });
 
 watch([apiPromise, accounts], () => {
+  clearNativeBalances;
   useGetNativeBalances();
   useGetNativePrice();
 });

@@ -206,13 +206,11 @@ const loadPreviousStakingOptions = () => {
 };
 
 const availableBalance = computed(() => {
-  if (!nativeBalances.value || !fromAccount.value) {
+  if (!nativeBalances || !fromAccount.value) {
     return 0;
   }
 
-  return (
-    nativeBalances.value[fromAccount.value.address]?.available.toNumber() || 0
-  );
+  return nativeBalances[fromAccount.value.address]?.available.toNumber() || 0;
 });
 
 watch([amount, nativeBalances, selectedNetwork], async () => {

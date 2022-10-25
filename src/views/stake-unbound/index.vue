@@ -152,7 +152,7 @@ const isValid = computed<boolean>(() => {
     (Number(amount.value) > 0 &&
       hasEnough.value &&
       fee.value?.nativeValue.lte(
-        nativeBalances.value[
+        nativeBalances[
           fromAccount.value?.address || ""
         ]?.available.toString() || "0"
       )) ||
