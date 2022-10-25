@@ -11,7 +11,6 @@
 <script setup lang="ts">
 import { walletConnect, walletConnectItems } from "@/types/wallets";
 import SelectList from "@/components/select-list/index.vue";
-import { SelectItem } from "@/types/select-list";
 import {
   accounts,
   extension,
