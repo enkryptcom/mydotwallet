@@ -2,31 +2,28 @@
   <div class="amount-input" :class="{ error: isError }">
     <img :src="token.image" class="amount-input__icon" />
     <base-button
-      :stroke="true"
       class="amount-input__max"
-      :class="{ error: !hasEnoughBalance }"
       title="Max"
+      :stroke="true"
       :small="true"
-      @click="setMaxValue"
     />
     <div class="amount-input__wrapper">
       <input
         ref="inputRef"
-        v-model="amountValue"
+        v-model="textValue"
         type="text"
         class="amount-input__input"
-        placeholder="0"
-        :class="{ error: !hasEnoughBalance }"
+        placeholder="0 DOT"
         :style="{ width: size + 'ch' }"
       />
       <span v-show="props.value != '0'" @click="focus">{{ token.symbol }}</span>
     </div>
 
-    <p v-if="props.value !== '0'" class="amount-input__fiat">
-      ~{{ $filters.currencyFormat(amountInFiat, "USD") }}
+    <p v-if="props.value == '0'" class="amount-input__fiat">
+      {{ $filters.currencyFormat(0, "USD") }}
     </p>
     <p v-else class="amount-input__fiat">
-      {{ $filters.currencyFormat(0, "USD") }}
+      ~{{ $filters.currencyFormat(3.1, "USD") }}
     </p>
   </div>
 </template>
@@ -35,8 +32,6 @@
 import { PropType, computed, ref, ComponentPublicInstance } from "vue";
 import { Token } from "@/types/token";
 import BaseButton from "@/components/base-button/index.vue";
-import { nativeToken } from "@/stores";
-import BigNumber from "bignumber.js";
 
 const inputRef = ref<ComponentPublicInstance<HTMLInputElement>>();
 defineExpose({ inputRef });
@@ -44,11 +39,7 @@ defineExpose({ inputRef });
 const props = defineProps({
   token: {
     type: Object as PropType<Token>,
-    default: nativeToken,
-  },
-  hasEnoughBalance: {
-    type: Boolean,
-    default: false,
+    default: null,
   },
   isError: {
     type: Boolean,
@@ -56,30 +47,21 @@ const props = defineProps({
   },
   value: {
     type: String,
-    default: "",
-  },
-  maxValue: {
-    type: Object as PropType<BigNumber>,
-    default: new BigNumber(0),
+    default: () => {
+      return "";
+    },
   },
 });
 
 const emit = defineEmits(["update:amount"]);
 
-const setMaxValue = () => {
-  emit("update:amount", props.maxValue?.toString() || "0");
-};
-
-const amountValue = computed({
+const textValue = computed({
   get: () => (props.value != "0" ? props.value.replace(/[^0-9.-]+/g, "") : ""),
   set: (value) => emit("update:amount", value.replace(/[^0-9.-]+/g, "")),
 });
-const size = computed(() => {
-  return amountValue.value.length == 0 ? 70 : amountValue.value.length;
-});
 
-const amountInFiat = computed(() => {
-  return new BigNumber(props.value || 0).times(props.token.price);
+const size = computed(() => {
+  return textValue.value.length == 0 ? 70 : textValue.value.length;
 });
 
 const focus = () => {
@@ -132,15 +114,6 @@ const focus = () => {
     margin-bottom: 4px;
     max-width: 100%;
 
-    &[type="number"]::-webkit-outer-spin-button,
-    &[type="number"]::-webkit-inner-spin-button {
-      -webkit-appearance: none;
-      margin: 0;
-    }
-    &[type="number"] {
-      -moz-appearance: textfield;
-    }
-
     &::placeholder {
       color: @tertiaryLabel;
     }
@@ -170,10 +143,6 @@ const focus = () => {
     letter-spacing: 0.25px;
     color: @tertiaryLabel;
     margin: 0;
-  }
-
-  .error {
-    color: @error !important;
   }
 }
 </style>

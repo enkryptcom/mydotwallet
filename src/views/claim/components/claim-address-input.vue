@@ -58,7 +58,6 @@ const textValue = computed({
   padding: 0 16px;
   border: 1px solid @gray01;
   border-radius: 16px;
-  margin-bottom: 16px;
 
   &__title {
     font-style: normal;

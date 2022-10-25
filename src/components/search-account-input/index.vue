@@ -1,18 +1,17 @@
 <template>
-  <div ref="container" class="search-account-input">
+  <div class="search-account-input">
     <div class="search-account-input__info">
-      <img v-if="account?.image" :src="account.image" />
+      <img v-if="account" :src="account.image" />
       <div v-else class="search-account-input__info-icon"></div>
       <div class="search-account-input__info-name">
         <h5 class="search-account-input__title">To</h5>
         <input
           ref="inputRef"
-          v-model="addressValue"
           type="text"
           class="search-account-input__input"
           :class="{ sized: size != 1 && !isFocus }"
           placeholder="Search or paste Polkadot address"
-          :style="{ color: !isAddress ? 'red' : 'black' }"
+          :value="value"
           :size="size"
           @focus="changeFocus"
           @blur="changeFocus"
@@ -43,12 +42,9 @@ import AccountSelect from "@/components/account-select/index.vue";
 import { Account } from "@/types/account";
 import { PropType, ref, computed, ComponentPublicInstance } from "vue";
 import { onClickOutside } from "@vueuse/core";
-import { formatAddress } from "@/utils/filters";
-import createIcon from "@/libs/identicon/polkadot";
-import { encodeSubstrateAddress } from "@/utils";
+
 const isOpenDropdown = ref<boolean>(false);
 const isFocus = ref<boolean>(false);
-const container = ref(null);
 const dropdown = ref(null);
 const inputRef = ref<ComponentPublicInstance<HTMLInputElement>>();
 defineExpose({ inputRef });
@@ -72,41 +68,10 @@ const props = defineProps({
   },
 });
 
-const addressValue = computed({
-  get: () => {
-    try {
-      const auxAddress = props.account?.address || "";
-      if (isFocus.value && isAddress.value) {
-        return auxAddress;
-      } else if (isAddress.value) {
-        return props.account?.name ? props.account.name : auxAddress;
-      }
-
-      return auxAddress;
-    } catch {
-      return props.account?.address || "";
-    }
-  },
-  set: (value) => {
-    if (value) {
-      const isValidAddress = encodeSubstrateAddress(value);
-      const formatted = isValidAddress ? formatAddress(value) : value;
-      const name =
-        props.accounts.find((item) => item.address === formatted)?.name || "";
-
-      emit("update:select", {
-        id: Number.MAX_SAFE_INTEGER,
-        name,
-        address: formatted,
-        image: isValidAddress ? createIcon(value) : undefined,
-        isLedger: false,
-      });
-    }
-  },
-});
-
-const isAddress = computed(() => {
-  return !!encodeSubstrateAddress(props.account?.address);
+const value = computed(() => {
+  if (props.account == null) return null;
+  if (isFocus.value) return props.account.address;
+  return props.account.name ? props.account.name : props.account.address;
 });
 
 const size = computed(() => {
@@ -136,7 +101,7 @@ const focus = () => {
   if (inputRef.value) inputRef.value.focus();
 };
 
-onClickOutside(container, () => {
+onClickOutside(dropdown, () => {
   isFocus.value = false;
   closeAccounts();
 });

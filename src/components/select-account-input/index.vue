@@ -1,21 +1,19 @@
 <template>
   <div class="select-account-input">
     <a ref="toggle" class="select-account-input__info" @click="toggleAccounts">
-      <img v-if="account?.image" :src="account.image" />
+      <img v-if="account.image" :src="account.image" />
       <div v-else class="select-account-input__info-icon"></div>
       <div class="select-account-input__info-name">
         <h5 class="select-account-input__title">{{ title }}</h5>
-        <p v-if="account">
-          {{ account?.name }}
+        <p>
+          {{ account.name }}
           <span>
-            {{ $filters.replaceWithEllipsis(account?.address, 6, 6) }}
+            {{ $filters.replaceWithEllipsis(account.address, 6, 6) }}
           </span>
           <span v-if="isAmount">
-            {{ $filters.cryptoCurrencyFormat(amount || availableBalance) }}
-            <span>{{ token.symbol }}</span>
+            {{ $filters.cryptoCurrencyFormat(15.9) }} <span>dot</span>
           </span>
         </p>
-        <p v-else>Select an account to send from</p>
       </div>
       <chevron-small-down />
     </a>
@@ -34,10 +32,8 @@ import ChevronSmallDown from "@/icons/common/chevron-small-down.vue";
 import DropdownWrapper from "@/components/dropdown-wrapper/index.vue";
 import AccountSelect from "@/components/account-select/index.vue";
 import { Account } from "@/types/account";
-import { computed, PropType, ref } from "vue";
+import { PropType, ref } from "vue";
 import { onClickOutside } from "@vueuse/core";
-import { Token } from "@/types/token";
-import { nativeBalances, nativeToken } from "@/stores";
 
 const isOpenDropdown = ref<boolean>(false);
 const dropdown = ref(null);
@@ -47,7 +43,7 @@ const emit = defineEmits<{
   (e: "update:select", account: Account): void;
 }>();
 
-const props = defineProps({
+defineProps({
   account: {
     type: Object as PropType<Account>,
     default: null,
@@ -59,14 +55,6 @@ const props = defineProps({
   title: {
     type: String,
     default: "From",
-  },
-  amount: {
-    type: Number,
-    default: 0,
-  },
-  token: {
-    type: Object as PropType<Token>,
-    default: nativeToken.value,
   },
   isAmount: {
     type: Boolean,
@@ -82,16 +70,6 @@ const selectAccount = (account: Account) => {
   emit("update:select", account);
   toggleAccounts();
 };
-
-const availableBalance = computed(() => {
-  if (props.isAmount && props.account) {
-    const balance = nativeBalances[props.account.address];
-
-    if (balance) return Number(balance.available);
-  }
-
-  return 0;
-});
 
 onClickOutside(
   dropdown,

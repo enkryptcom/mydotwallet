@@ -1,19 +1,11 @@
 import {
   accounts,
   apiPromise,
-  clearNativeBalances,
   isBalancesLoading,
   nativeBalances,
 } from "@/stores";
-import {
-  DeriveBalancesAll,
-  DeriveSessionProgress,
-  DeriveStakingAccount,
-  DeriveUnlocking,
-} from "@polkadot/api-derive/types";
-import { fromBase } from "../../utils/units";
-import { BN, BN_ONE, BN_ZERO } from "@polkadot/util";
-import BigNumber from "bignumber.js";
+import { AccountInfoWithRefCount } from "@polkadot/types/interfaces";
+import { fromBase } from "../utils/units";
 
 export const useGetNativeBalances = async () => {
   try {
@@ -22,159 +14,18 @@ export const useGetNativeBalances = async () => {
 
     const addresses = accounts.value.map((acc) => acc.address);
 
-    const balanceResult = await Promise.all(
-      addresses.map((addr) => {
-        return api.derive.balances.all(addr);
-      })
-    );
+    const result =
+      await api.query.system.account.multi<AccountInfoWithRefCount>(addresses);
 
-    const stakingResult = await Promise.all(
-      addresses.map((addr) => {
-        return api.derive.staking.account(addr);
-      })
-    );
-
-    const unboundProgress = await api.derive.session.progress();
-
-    const expectedBlockTime = Number(
-      api.consts?.babe?.expectedBlockTime?.toString() || 6000
-    );
-    const lastBlock = await api.rpc.chain.getHeader();
-    const lastBlockNumber = lastBlock.number.toNumber();
-
-    addresses.forEach((_, index) => {
-      // Set balance values to store
-      nativeBalances[accounts.value[index].address] = buildBalanceFromResults(
-        balanceResult[index],
-        stakingResult[index],
-        unboundProgress,
-        expectedBlockTime,
-        lastBlockNumber,
-        api.registry.chainDecimals[0]
+    result.forEach((item, index) => {
+      nativeBalances.value[addresses[index]] = Number(
+        fromBase(item.data.free.toString(), api.registry.chainDecimals[0])
       );
     });
-
     isBalancesLoading.value = false;
   } catch (err) {
     isBalancesLoading.value = false;
-    clearNativeBalances();
+    nativeBalances.value = {};
     console.error(err);
   }
-};
-
-export const useGetAccountNativeBalance = async (address: string) => {
-  try {
-    isBalancesLoading.value = true;
-    const api = await apiPromise.value;
-
-    const balanceResult = await api.derive.balances.all(address);
-
-    const stakingResult = await api.derive.staking.account(address);
-
-    const unboundProgress = await api.derive.session.progress();
-
-    const expectedBlockTime = Number(
-      api.consts?.babe?.expectedBlockTime?.toString() || 6000
-    );
-    const lastBlock = await api.rpc.chain.getHeader();
-    const lastBlockNumber = lastBlock.number.toNumber();
-
-    // Set balance values to store
-    nativeBalances[address] = buildBalanceFromResults(
-      balanceResult,
-      stakingResult,
-      unboundProgress,
-      expectedBlockTime,
-      lastBlockNumber,
-      api.registry.chainDecimals[0]
-    );
-
-    isBalancesLoading.value = false;
-  } catch (err) {
-    isBalancesLoading.value = false;
-    delete nativeBalances[address];
-    console.error(err);
-  }
-};
-
-const buildBalanceFromResults = (
-  balanceResult: DeriveBalancesAll,
-  stakingResult: DeriveStakingAccount,
-  unboundProgress: DeriveSessionProgress,
-  expectedBlockTime: number,
-  lastBlockNumber: number,
-  decimals: number
-) => {
-  // Calculate vesting end
-  const vestingEndBlock = balanceResult.vesting.reduce((prev, current) => {
-    return current.endBlock.toNumber() > prev
-      ? current.endBlock.toNumber()
-      : prev;
-  }, 0);
-  const timeToEnd = (vestingEndBlock - lastBlockNumber) * expectedBlockTime;
-  // Calculate unbounding amount
-  const unboundingCalc =
-    !stakingResult.unlocking || !unboundProgress
-      ? BN_ZERO
-      : (stakingResult.unlocking as DeriveUnlocking[])
-          .filter(
-            ({ remainingEras, value }) =>
-              value.gt(BN_ZERO) && remainingEras.gt(BN_ZERO)
-          )
-          .map((unlock): [any, BN, BN] => [
-            unlock,
-            unlock.remainingEras,
-            unlock.remainingEras
-              .sub(BN_ONE)
-              .imul(unboundProgress.eraLength)
-              .iadd(unboundProgress.eraLength)
-              .isub(unboundProgress.eraProgress),
-          ])
-          .reduce((total, [{ value }]) => total.iadd(value), new BN(0));
-
-  return {
-    free: new BigNumber(
-      fromBase(balanceResult.freeBalance.toString(), decimals)
-    ),
-    available: new BigNumber(
-      fromBase(balanceResult.availableBalance.toString(), decimals)
-    ),
-    locked: new BigNumber(
-      fromBase(balanceResult.lockedBalance.toString(), decimals)
-    ),
-    reserved: new BigNumber(
-      fromBase(balanceResult.reservedBalance.toString(), decimals)
-    ),
-    vested: new BigNumber(
-      fromBase(balanceResult.vestedBalance.toString(), decimals)
-    ),
-    vestingEndBlock: vestingEndBlock > lastBlockNumber ? vestingEndBlock : 0,
-    vestingEndMillisecondsLeft:
-      vestingEndBlock > lastBlockNumber ? timeToEnd : 0,
-    total: new BigNumber(
-      fromBase(
-        balanceResult.freeBalance.add(balanceResult.reservedBalance).toString(),
-        decimals
-      )
-    ),
-    staked:
-      stakingResult &&
-      stakingResult.stakingLedger &&
-      stakingResult.stakingLedger.active &&
-      stakingResult.accountId.eq(stakingResult.stashId)
-        ? new BigNumber(
-            fromBase(stakingResult.stakingLedger.active.unwrap(), decimals)
-          )
-        : new BigNumber(0),
-    redeemable: new BigNumber(
-      fromBase(stakingResult.redeemable?.toString() || "0", decimals)
-    ),
-    unbounding: new BigNumber(fromBase(unboundingCalc.toString(), decimals)),
-    bonded: new BigNumber(
-      fromBase(
-        unboundingCalc.add(stakingResult.redeemable || BN_ZERO).toString(),
-        decimals
-      )
-    ),
-  };
 };

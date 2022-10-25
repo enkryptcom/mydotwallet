@@ -1,7 +1,6 @@
 import moment from "moment";
 import { encodeAddress } from "@polkadot/keyring";
 import { ss58Format } from "@/stores";
-import BigNumber from "bignumber.js";
 
 export const replaceWithEllipsis = (
   value: string,
@@ -16,35 +15,24 @@ export const replaceWithEllipsis = (
     value.substring(value.length - keepRight, value.length)
   );
 };
-export const currencyFormat = (
-  value: number | BigNumber,
-  currency: string
-): string => {
+export const currencyFormat = (value: number, currency: string): string => {
+  if (typeof value !== "number") {
+    return value;
+  }
   const formatter = new Intl.NumberFormat("en-US", {
     style: "currency",
     currency: currency,
   });
-
-  if (typeof value === "number") {
-    return formatter.format(value);
-  } else if ((value as any) instanceof BigNumber) {
-    return formatter.format(value.toNumber());
-  }
-
-  return value.toString();
+  return formatter.format(value);
 };
-export const cryptoCurrencyFormat = (value: number | BigNumber): string => {
+export const cryptoCurrencyFormat = (value: number): string => {
+  if (typeof value !== "number") {
+    return value;
+  }
   const formatter = new Intl.NumberFormat("en-US", {
     style: "decimal",
   });
-
-  if (typeof value === "number") {
-    return formatter.format(value);
-  } else if ((value as any) instanceof BigNumber) {
-    return formatter.format(value.toNumber());
-  }
-
-  return value.toString();
+  return formatter.format(value);
 };
 export const formatDuration = (
   duration: moment.Duration,

@@ -1,27 +1,22 @@
 <template>
   <div class="send-verify-item">
-    <img class="send-verify-item__icon" :src="account?.image" />
+    <img class="send-verify-item__icon" :src="account.image" />
     <div class="send-verify-item__info">
       <h5 class="send-verify-item__info-title">{{ title }}</h5>
-      <div v-if="!!account?.name" class="send-verify-item__info-address">
+      <div v-if="!!account.name" class="send-verify-item__info-address">
         {{ account.name }}
-        <span>{{ $filters.replaceWithEllipsis(account?.address, 6, 6) }}</span>
-        <span
-          >{{ $filters.cryptoCurrencyFormat(amount) }}
-          <span>{{ token.symbol }}</span></span
-        >
+        <span>{{ $filters.replaceWithEllipsis(account.address, 6, 6) }}</span>
+        <span>{{ $filters.cryptoCurrencyFormat(15.9) }} <span>dot</span></span>
       </div>
       <div v-else class="send-verify-item__info-address">
-        {{ account?.address }}
+        {{ account.address }}
       </div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { nativeToken } from "@/stores";
 import { Account } from "@/types/account";
-import { Token } from "@/types/token";
 import { PropType } from "vue";
 
 defineProps({
@@ -29,17 +24,9 @@ defineProps({
     type: Object as PropType<Account>,
     default: null,
   },
-  amount: {
-    type: Number,
-    default: 0,
-  },
   title: {
     type: String,
     default: "",
-  },
-  token: {
-    type: Object as PropType<Token>,
-    default: nativeToken,
   },
 });
 </script>

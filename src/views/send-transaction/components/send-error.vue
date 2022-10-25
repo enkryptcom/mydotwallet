@@ -3,11 +3,7 @@
     <alert-icon />
     <p>
       If you send this transaction your balance will drop below the Existential
-      Limit of {{ token?.existentialDeposit?.toString() }}
-      <span>{{ token?.symbol || "dot" }}</span
-      >. This will cause your remaining balance to drop to 0
-      <span>{{ token?.symbol || "dot" }}</span
-      >.
+      Limit of 1 DOT. This will cause your remaining balance to drop to 0 DOT.
     </p>
     <p><a href="#">What is Existential Limit?</a></p>
   </div>
@@ -15,16 +11,6 @@
 
 <script setup lang="ts">
 import AlertIcon from "@/icons/common/alert-icon.vue";
-import { nativeToken } from "@/stores";
-import { Token } from "@/types/token";
-import { PropType } from "vue";
-
-defineProps({
-  token: {
-    type: Object as PropType<Token>,
-    default: nativeToken.value,
-  },
-});
 </script>
 
 <style lang="less" scoped>
@@ -62,10 +48,6 @@ defineProps({
       &:hover {
         text-decoration: none;
       }
-    }
-
-    span {
-      text-transform: uppercase;
     }
   }
 }

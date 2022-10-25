@@ -18,26 +18,19 @@ import WhiteWrapper from "@/components/white-wrapper/index.vue";
 import EnkryptBanner from "@/components/enkrypt-banner/index.vue";
 import AccountsBalance from "./components/accounts-balance.vue";
 import AccountsItem from "./components/accounts-item.vue";
-import { accounts, nativeBalances, nativeToken } from "@/stores";
+import { accounts, apiPromise, nativeBalances, nativeToken } from "@/stores";
 import { useGetNativeBalances } from "@/libs/balances";
-import { computed, onMounted } from "vue";
-import { useGetNativePrice } from "@/libs/prices";
-import BigNumber from "bignumber.js";
+import { computed, watch } from "vue";
 
-onMounted(() => {
+watch([accounts, apiPromise], () => {
   useGetNativeBalances();
-  useGetNativePrice();
 });
 
 const totalBalance = computed(() => {
-  if (nativeBalances) {
-    return Object.values(nativeBalances).reduce(
-      (previous, current) => previous.plus(current?.total || 0),
-      new BigNumber(0)
-    );
-  }
-
-  return new BigNumber(0);
+  return Object.values(nativeBalances.value).reduce(
+    (previous, current) => previous + (current || 0),
+    0
+  );
 });
 </script>
 

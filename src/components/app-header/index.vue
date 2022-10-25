@@ -18,20 +18,13 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, ref, onUnmounted, watch } from "vue";
+import { onMounted, ref, onUnmounted } from "vue";
 import Logo from "@/icons/common/logo.vue";
 import SelectList from "@/components/select-list/index.vue";
 import WalletSelect from "@/components/wallet-select/index.vue";
 import { selectNetwork, selectNetworkItems } from "@/types/mock";
 import { SelectItem, NetworkSelectItem } from "@/types/select-list";
-import {
-  selectedNetwork,
-  apiPromise,
-  accounts,
-  clearNativeBalances,
-} from "@/stores";
-import { useGetNativePrice } from "@/libs/prices";
-import { useGetNativeBalances } from "@/libs/balances";
+import { selectedNetwork, apiPromise } from "@/stores";
 
 const isScroll = ref<boolean>(false);
 const network = ref<SelectItem>(selectNetwork);
@@ -41,12 +34,6 @@ onMounted(() => {
 });
 onUnmounted(() => {
   window.removeEventListener("scroll", onScroll);
-});
-
-watch([apiPromise, accounts], () => {
-  clearNativeBalances;
-  useGetNativeBalances();
-  useGetNativePrice();
 });
 
 const onScroll = () => {
@@ -84,7 +71,7 @@ const selectNetworkAction = async (item: NetworkSelectItem) => {
     border-radius: 32px;
     display: flex;
     flex-direction: row;
-    margin-right: -4px;
+
     & > .select-list {
       margin-left: 16px;
 

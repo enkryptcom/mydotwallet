@@ -34,8 +34,6 @@ const isOpen = ref<boolean>(false);
 const dropdown = ref(null);
 const toggle = ref(null);
 
-defineExpose({ isOpen });
-
 const emit = defineEmits<{
   (e: "update:select", asset: SelectItem): void;
 }>();
