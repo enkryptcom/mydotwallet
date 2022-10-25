@@ -178,9 +178,8 @@ watch(
 
       const rawBalance = toBN(
         toBase(
-          nativeBalances.value[
-            fromAccount.value.address
-          ]?.available.toString() || "0",
+          nativeBalances[fromAccount.value.address]?.available.toString() ||
+            "0",
           selectedAsset.value.decimals
         )
       );
