@@ -14,6 +14,7 @@ import {
   walletConnectItems,
   walletDisconnect,
   walletGetEnkrypt,
+  WalletId,
 } from "@/types/wallets";
 import SelectList from "@/components/select-list/index.vue";
 import {
@@ -90,12 +91,12 @@ const getAvailableWallets = () => {
 
 const selectItem = async (item: WalletItem) => {
   // If disconnecting
-  if (item.id === 1) {
+  if (item.id === WalletId.DISCONNECT) {
     walletSelected.value = walletConnect;
     signer.value = undefined;
     extension.value = undefined;
     accounts.value = [];
-  } else if (item.id === 2) {
+  } else if (item.id === WalletId.GET_ENKRYPT) {
     window.open("https://www.enkrypt.com", "_blank");
   } else {
     // If connecting

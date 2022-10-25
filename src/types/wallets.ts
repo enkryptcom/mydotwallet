@@ -1,44 +1,53 @@
 import { WalletItem } from "./wallet-list";
 
+export enum WalletId {
+  DISCONNECT = 1,
+  GET_ENKRYPT,
+  ENKRYPT,
+  POLKADOT_JS,
+  TALISMAN,
+  SUBWALLET,
+}
+
 export const walletConnect: WalletItem = {
-  id: 1,
+  id: WalletId.DISCONNECT,
   name: "Connect",
   image: require("@/assets/pic/turn-on.svg"),
 };
 
 export const walletDisconnect: WalletItem = {
-  id: 1,
+  id: WalletId.DISCONNECT,
   name: "Disconnect",
   image: require("@/assets/pic/turn-on.svg"),
 };
 
 export const walletGetEnkrypt: WalletItem = {
-  id: 2,
+  id: WalletId.GET_ENKRYPT,
   name: "Enkrypt",
   image: require("@/assets/pic/enkrypt-logo.png"),
 };
 
 export const walletConnectItems: WalletItem[] = [
   {
-    id: 3,
+    id: WalletId.ENKRYPT,
     name: "Enkrypt",
     image: require("@/assets/pic/enkrypt-logo.png"),
     extensionName: "enkrypt",
   },
   {
-    id: 4,
+    id: WalletId.POLKADOT_JS,
     name: "Polkadot.js",
     image: require("@/assets/pic/polkadotjs-logo.svg"),
     extensionName: "polkadot-js",
   },
   {
-    id: 5,
+    id: WalletId.TALISMAN,
     name: "Talisman",
     image: require("@/assets/pic/talisman-logo.svg"),
     extensionName: "talisman",
   },
   {
-    id: 6,
+    id: WalletId.SUBWALLET,
     name: "SubWallet",
     image: require("@/assets/pic/subwallet-logo.svg"),
     extensionName: "subwallet-js",
