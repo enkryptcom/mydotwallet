@@ -30,10 +30,14 @@ onMounted(() => {
 });
 
 const totalBalance = computed(() => {
-  return Object.values(nativeBalances.value).reduce(
-    (previous, current) => previous.plus(current?.total || 0),
-    new BigNumber(0)
-  );
+  if (nativeBalances) {
+    return Object.values(nativeBalances).reduce(
+      (previous, current) => previous.plus(current?.total || 0),
+      new BigNumber(0)
+    );
+  }
+
+  return new BigNumber(0);
 });
 </script>
 

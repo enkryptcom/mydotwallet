@@ -6,6 +6,7 @@
         :account="fromAccount"
         :accounts="accounts"
         :is-amount="true"
+        :token="nativeToken"
         title="From"
         @update:select="selectFromAccount"
       />
@@ -139,8 +140,7 @@ const edWarn = computed(() => {
   );
   const userBalance = toBN(
     toBase(
-      nativeBalances.value[fromAccount.value.address]?.available.toString() ||
-        "0",
+      nativeBalances[fromAccount.value.address]?.available.toString() || "0",
       selectedAsset.value.decimals
     )
   );
@@ -200,9 +200,8 @@ watch(
 
       const rawBalance = toBN(
         toBase(
-          nativeBalances.value[
-            fromAccount.value.address
-          ]?.available.toString() || "0",
+          nativeBalances[fromAccount.value.address]?.available.toString() ||
+            "0",
           selectedAsset.value.decimals
         )
       );

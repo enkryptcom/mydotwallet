@@ -1,4 +1,4 @@
-import { isPricesLoading, nativeBalances, nativeToken } from "@/stores";
+import { isPricesLoading, clearNativeBalances, nativeToken } from "@/stores";
 import BigNumber from "bignumber.js";
 import MarketData from "../market-data";
 
@@ -13,7 +13,7 @@ export const useGetNativePrice = async () => {
     isPricesLoading.value = false;
   } catch (err) {
     isPricesLoading.value = false;
-    nativeBalances.value = {};
+    clearNativeBalances();
     console.error(err);
   }
 };
