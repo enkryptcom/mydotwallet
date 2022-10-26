@@ -39,6 +39,7 @@ import {
   accounts,
   apiPromise,
   nativeToken,
+  selectedNetwork,
   subsquidExplorerUrl,
 } from "@/stores";
 import type { Option } from "@polkadot/types";
@@ -54,7 +55,7 @@ import {
   ValidatorInfo,
 } from "@/types/staking";
 import { fromBase } from "@/utils/units";
-import { getStakerState, loadValidatorData } from "@/utils/staking";
+import { getStakerState, loadValidatorDataFromList } from "@/utils/staking";
 import { gql, request } from "graphql-request";
 import { useGetNativePrice } from "@/libs/prices";
 
@@ -69,8 +70,10 @@ onMounted(async () => {
 });
 
 watch(
-  accounts,
+  [accounts, selectedNetwork],
   async () => {
+    useGetNativePrice();
+    stakingAccounts.value = [];
     stakingAccounts.value = await loadStakingAccounts();
   },
   { deep: true }
@@ -80,7 +83,6 @@ const loadStakingAccounts = async () => {
   if (!accounts.value.length) {
     return [];
   }
-
   const api = await apiPromise.value;
   const addresses = accounts.value.map((item) => item.address);
   const resultBonded: Option<AccountId>[] =
@@ -103,7 +105,7 @@ const loadStakingAccounts = async () => {
   });
 
   if (!ownStashes.length) {
-    return [];
+    showStakeIntro.value = true;
   }
   const stashIds = ownStashes.map(([stashId]) => stashId);
   const resAccounts: DeriveStakingAccount[] = await api.derive.staking.accounts(
@@ -120,9 +122,6 @@ const loadStakingAccounts = async () => {
     {}
   );
 
-  if (!ownStashes.length) {
-    return [];
-  }
   const stakerStates = ownStashes
     .filter(([stashId]) => queried[stashId])
     .map(([stashId]) => getStakerState(stashId, addresses, queried[stashId]));
@@ -174,8 +173,6 @@ const loadStakingAccounts = async () => {
     foundStashes: stakerStates.sort(sortStashes),
   };
 
-  const validators = await loadValidatorData(api);
-
   let validatorsAddress: string[] = stakerStates.reduce(
     (prev, current): string[] => {
       return prev.concat(current.nominating || []);
@@ -183,6 +180,7 @@ const loadStakingAccounts = async () => {
     [] as string[]
   );
   validatorsAddress = [...new Set(validatorsAddress)];
+  const validators = await loadValidatorDataFromList(api, validatorsAddress);
 
   const validatorInfoMap: Record<string, Validator> = {};
   for (const auxAddress of validatorsAddress) {
@@ -229,7 +227,6 @@ const loadStakingAccounts = async () => {
         auxStaker.nominating?.map((item) => validatorInfoMap[item]) || [],
     } as StakingAccountWithValidators);
   }
-  console.log("result", finalResult);
   return finalResult;
 };
 

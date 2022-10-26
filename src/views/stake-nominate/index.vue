@@ -80,6 +80,7 @@ import {
   onMounted,
   onUnmounted,
   computed,
+  watch,
 } from "vue";
 import { useRouter } from "vue-router";
 import {
@@ -88,7 +89,7 @@ import {
   Validator,
 } from "@/types/staking";
 import { useGetNativeBalances } from "@/libs/balances";
-import { apiPromise, stakingWizardOptions } from "@/stores";
+import { apiPromise, selectedNetwork, stakingWizardOptions } from "@/stores";
 import { getLastEraReward, loadValidatorData } from "@/utils/staking";
 
 const router = useRouter();
@@ -122,6 +123,12 @@ onMounted(() => {
 });
 onUnmounted(() => {
   window.removeEventListener("resize", onResize);
+});
+
+watch(selectedNetwork, () => {
+  validators.value = [];
+  useGetNativeBalances();
+  loadValidators();
 });
 
 const onResize = () => {

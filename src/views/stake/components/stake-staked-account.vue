@@ -126,7 +126,7 @@ const unbondAction = () => {
   router.push({
     name: "stake-unbound",
     query: {
-      account: props.account?.address,
+      address: props.account?.address,
     },
   });
 };

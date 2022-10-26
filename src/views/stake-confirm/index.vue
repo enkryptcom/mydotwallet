@@ -75,6 +75,7 @@ import {
 } from "vue";
 import { useRouter } from "vue-router";
 import {
+  accounts,
   apiPromise,
   nativeBalances,
   nativeToken,
@@ -213,7 +214,11 @@ const availableBalance = computed(() => {
   return nativeBalances[fromAccount.value.address]?.available.toNumber() || 0;
 });
 
-watch([amount, nativeBalances, selectedNetwork], async () => {
+watch([selectedNetwork, accounts], () => {
+  router.push({ name: "stake-enter-amount" });
+});
+
+watch([amount, nativeBalances], async () => {
   if (!amount.value || !fromAccount.value) {
     return;
   }

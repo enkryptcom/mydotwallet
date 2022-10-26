@@ -9,6 +9,8 @@ import { ApiPromise } from "@polkadot/api";
 import {
   DeriveStakingAccount,
   DeriveStakingElected,
+  DeriveStakingQuery,
+  DeriveStakingValidators,
   DeriveStakingWaiting,
 } from "@polkadot/api-derive/types";
 import { Option, StorageKey } from "@polkadot/types";
@@ -192,6 +194,36 @@ export const loadValidatorData = async (api: ApiPromise) => {
   );
 
   return elected.concat(waiting);
+};
+
+export const loadValidatorDataFromList = async (
+  api: ApiPromise,
+  addresses: string[]
+) => {
+  const elected: DeriveStakingValidators =
+    await api.derive.staking.validators();
+
+  const validators: DeriveStakingQuery[] = await api.derive.staking.queryMulti(
+    addresses,
+    {
+      withController: true,
+      withExposure: true,
+      withPrefs: true,
+    }
+  );
+  const nominatorList = await extractNominatorList(api);
+  const [result] = await extractValidatorData(
+    api,
+    [],
+    {
+      info: validators,
+      nextElected: elected.nextElected,
+      validators: elected.validators,
+    },
+    nominatorList
+  );
+
+  return result;
 };
 
 export const loadStakerState = async (api: ApiPromise, address: string) => {

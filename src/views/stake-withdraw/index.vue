@@ -115,8 +115,14 @@ const updateStakedAmount = async () => {
   );
 };
 
+watch(selectedNetwork, () => {
+  updateStakedAmount();
+  useGetNativeBalances();
+  useGetNativePrice();
+});
+
 watch(
-  [withdrawableBalance, selectedNetwork],
+  [withdrawableBalance],
   async () => {
     if (!withdrawableBalance.value || !fromAccount.value?.address) {
       return;

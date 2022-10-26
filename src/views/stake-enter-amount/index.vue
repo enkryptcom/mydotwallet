@@ -94,8 +94,14 @@ onMounted(() => {
   loadPreviousStakingOptions();
 });
 
+watch(selectedNetwork, () => {
+  useGetNativeBalances();
+  useGetNativePrice();
+  loadPreviousStakingOptions();
+});
+
 watch(
-  [amount, nativeBalances, fromAccount, selectedNetwork],
+  [amount, nativeBalances, fromAccount],
   async () => {
     if (!amount.value || !fromAccount.value?.address) {
       return;

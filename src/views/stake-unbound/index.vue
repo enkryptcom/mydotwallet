@@ -76,9 +76,9 @@ const stakedBalance = ref<BigNumber>(new BigNumber(0));
 const hasEnough = ref(true);
 
 onMounted(() => {
-  if (route.query.account) {
+  if (route.query.address) {
     const found = accounts.value.find(
-      (item) => item.address === route.query.account
+      (item) => item.address === route.query.address
     );
     if (found) {
       fromAccount.value = found;
@@ -88,7 +88,7 @@ onMounted(() => {
       return;
     }
   }
-  router.push("../stake");
+  router.push({ name: "stake" });
 });
 
 const updateStakedAmount = async () => {
@@ -111,9 +111,15 @@ const updateStakedAmount = async () => {
   );
 };
 
+watch(selectedNetwork, () => {
+  updateStakedAmount();
+  useGetNativeBalances();
+  useGetNativePrice();
+});
+
 // Update fees values
 watch(
-  [amount, stakedBalance, selectedNetwork],
+  [amount, stakedBalance],
   async () => {
     if (!amount.value || !fromAccount.value?.address) {
       return;

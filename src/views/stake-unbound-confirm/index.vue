@@ -87,7 +87,7 @@ const isSendDone = ref<boolean>(false);
 
 onMounted(() => {
   if (!route.query.address || !route.query.amount) {
-    router.push({ name: "stake-unbound" });
+    router.push({ name: "stake" });
     return;
   }
 
@@ -101,7 +101,7 @@ onMounted(() => {
     fromAccount.value = found;
     amount.value = convertedAmount.toString();
   } else {
-    router.push({ name: "stake-unbound" });
+    router.push({ name: "stake" });
   }
   updateStakedAmount();
   useGetNativeBalances();
@@ -128,8 +128,17 @@ const updateStakedAmount = async () => {
   );
 };
 
+watch(selectedNetwork, () => {
+  router.push({
+    name: "stake-unbound",
+    query: {
+      address: fromAccount.value?.address,
+    },
+  });
+});
+
 watch(
-  [amount, stakedBalance, selectedNetwork],
+  [amount, stakedBalance],
   async () => {
     if (!amount.value || !fromAccount.value?.address) {
       return;
