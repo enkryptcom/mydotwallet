@@ -245,7 +245,7 @@ const navigateToSend = () => {
   router.push({
     name: "send",
     query: {
-      address: props.account.address,
+      from: props.account.address,
     },
   });
 };
