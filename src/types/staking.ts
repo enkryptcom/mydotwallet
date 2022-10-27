@@ -113,7 +113,7 @@ export interface StakingAccountWithValidators extends Account {
   activeStaked: BigNumber;
   earnings: BigNumber;
   withdrawable: BigNumber;
-  redeemable: BigNumber;
   unbonding: BigNumber;
+  isLoading: boolean;
   validators: Validator[];
 }

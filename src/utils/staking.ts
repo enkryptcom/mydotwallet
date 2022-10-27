@@ -26,8 +26,10 @@ export const getLastEraReward = async (api: ApiPromise): Promise<number> => {
   const currentEra = await api.query.staking.currentEra();
   const lastEra = Number(currentEra.toString()) - 1;
 
-  const lastRewardQuery = await api.query.staking.erasValidatorReward(lastEra);
-  const lastStakeTotalQuery = await api.query.staking.erasTotalStake(lastEra);
+  const [lastRewardQuery, lastStakeTotalQuery] = await api.queryMulti([
+    [api.query.staking.erasValidatorReward, lastEra],
+    [api.query.staking.erasTotalStake, lastEra],
+  ]);
   const lastReward = Number(
     fromBase(lastRewardQuery.toString(), nativeToken.value.decimals)
   );
@@ -167,17 +169,17 @@ export const extractValidatorData = async (
 };
 
 export const loadValidatorData = async (api: ApiPromise) => {
-  const electedInfo: DeriveStakingElected =
-    await api.derive.staking.electedInfo({
+  const [electedInfo, waitingInfo] = await Promise.all([
+    api.derive.staking.electedInfo({
       withController: true,
       withExposure: true,
       withPrefs: true,
-    });
-  const waitingInfo: DeriveStakingWaiting =
-    await api.derive.staking.waitingInfo({
+    }),
+    api.derive.staking.waitingInfo({
       withController: true,
       withPrefs: true,
-    });
+    }),
+  ]);
 
   const nominatorList = await extractNominatorList(api);
   const [elected] = await extractValidatorData(
@@ -234,12 +236,11 @@ export const loadStakerState = async (api: ApiPromise, address: string) => {
   if (!resultBonded.isSome) {
     return undefined;
   }
-  const resAccounts: DeriveStakingAccount = await api.derive.staking.account(
-    address
-  );
-  const resValidator = await api.query.staking.validators<ValidatorInfo>(
-    address
-  );
+
+  const [resAccounts, resValidator] = await Promise.all([
+    api.derive.staking.account(address),
+    api.query.staking.validators<ValidatorInfo>(address),
+  ]);
 
   const stakerState = getStakerState(
     address,

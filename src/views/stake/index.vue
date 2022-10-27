@@ -38,6 +38,7 @@ import { computed, onMounted, ref, watch } from "vue";
 import {
   accounts,
   apiPromise,
+  nativeBalances,
   nativeToken,
   selectedNetwork,
   subsquidExplorerUrl,
@@ -58,6 +59,7 @@ import { fromBase } from "@/utils/units";
 import { getStakerState, loadValidatorDataFromList } from "@/utils/staking";
 import { gql, request } from "graphql-request";
 import { useGetNativePrice } from "@/libs/prices";
+import { useGetNativeBalances } from "@/libs/balances";
 
 const router = useRouter();
 
@@ -66,6 +68,8 @@ const stakingAccounts = ref<Array<StakingAccountWithValidators>>([]);
 
 onMounted(async () => {
   useGetNativePrice();
+  await useGetNativeBalances();
+  setBalancesOnly();
   stakingAccounts.value = await loadStakingAccounts();
 });
 
@@ -73,11 +77,36 @@ watch(
   [accounts, selectedNetwork],
   async () => {
     useGetNativePrice();
-    stakingAccounts.value = [];
+    await useGetNativeBalances();
+    setBalancesOnly();
     stakingAccounts.value = await loadStakingAccounts();
   },
   { deep: true }
 );
+
+const setBalancesOnly = () => {
+  const result = [];
+  for (const auxAccount of accounts.value) {
+    if (
+      nativeBalances[auxAccount.address]?.staked?.gt(0) ||
+      nativeBalances[auxAccount.address]?.redeemable?.gt(0)
+    ) {
+      result.push({
+        ...auxAccount,
+        totalStaked: (
+          nativeBalances[auxAccount.address]?.staked || new BigNumber(0)
+        ).plus(nativeBalances[auxAccount.address]?.redeemable || 0),
+        activeStaked: nativeBalances[auxAccount.address]?.staked,
+        earnings: new BigNumber(0),
+        withdrawable: nativeBalances[auxAccount.address]?.redeemable,
+        unbonding: nativeBalances[auxAccount.address]?.unbounding,
+        isLoading: true,
+        validators: [],
+      });
+    }
+  }
+  stakingAccounts.value = result;
+};
 
 const loadStakingAccounts = async () => {
   if (!accounts.value.length) {
@@ -85,10 +114,10 @@ const loadStakingAccounts = async () => {
   }
   const api = await apiPromise.value;
   const addresses = accounts.value.map((item) => item.address);
-  const resultBonded: Option<AccountId>[] =
-    await api.query.staking?.bonded.multi(addresses);
-  const resultLedger: Option<StakingLedger>[] =
-    await api.query.staking?.ledger.multi(addresses);
+  const [resultBonded, resultLedger] = await Promise.all([
+    api.query.staking?.bonded.multi<Option<AccountId>>(addresses),
+    api.query.staking?.ledger.multi<Option<StakingLedger>>(addresses),
+  ]);
   const ownStashes: [string, boolean][] = [];
 
   resultBonded.forEach((value, index): void => {
@@ -108,11 +137,10 @@ const loadStakingAccounts = async () => {
     showStakeIntro.value = true;
   }
   const stashIds = ownStashes.map(([stashId]) => stashId);
-  const resAccounts: DeriveStakingAccount[] = await api.derive.staking.accounts(
-    stashIds
-  );
-  const resValidators: ValidatorInfo[] =
-    await api.query.staking.validators.multi(stashIds);
+  const [resAccounts, resValidators] = await Promise.all([
+    api.derive.staking.accounts(stashIds),
+    api.query.staking.validators.multi<ValidatorInfo>(stashIds),
+  ]);
 
   const queried = ownStashes.reduce(
     (queried: Queried, [stashId, isOwnStash], index): Queried => ({
@@ -225,6 +253,7 @@ const loadStakingAccounts = async () => {
       unbonding: new BigNumber(0),
       validators:
         auxStaker.nominating?.map((item) => validatorInfoMap[item]) || [],
+      isLoading: false,
     } as StakingAccountWithValidators);
   }
   return finalResult;

@@ -58,15 +58,21 @@
         <p>Overall earnings</p>
         <div class="stake-staked-account__stats-block-amount">
           <h5>
-            {{ $filters.cryptoCurrencyFormat(account.earnings.toNumber()) }}
+            {{
+              account.isLoading
+                ? "--"
+                : $filters.cryptoCurrencyFormat(account.earnings.toNumber())
+            }}
             <span>{{ nativeToken.symbol }}</span>
           </h5>
           <h6>
             {{
-              $filters.currencyFormat(
-                account.earnings.toNumber() * nativeToken.price.toNumber(),
-                "USD"
-              )
+              account.isLoading
+                ? ""
+                : $filters.currencyFormat(
+                    account.earnings.toNumber() * nativeToken.price.toNumber(),
+                    "USD"
+                  )
             }}
           </h6>
         </div>
@@ -74,19 +80,33 @@
       <div class="stake-staked-account__stats-block">
         <p>Overall yield</p>
         <div class="stake-staked-account__stats-block-amount">
-          <h5>{{ $filters.cryptoCurrencyFormat(earningsPercent) }}%</h5>
+          <h5>
+            {{
+              account.isLoading
+                ? "--"
+                : $filters.cryptoCurrencyFormat(earningsPercent)
+            }}%
+          </h5>
         </div>
       </div>
     </div>
-    <div class="stake-staked-account__validators-toggle" @click="toggle">
-      Show {{ account.validators.length }} validator(s)
-      <expand :class="{ open: isOpen }" />
+    <div
+      v-if="account.isLoading"
+      class="stake-staked-account__validators-toggle"
+    >
+      Loading validator info...
     </div>
-    <div v-show="isOpen" class="stake-staked-account__validators-list">
-      <stake-staked-validators
-        :validators="account.validators"
-        :bonded-amount="account.activeStaked"
-      />
+    <div v-else>
+      <div class="stake-staked-account__validators-toggle" @click="toggle">
+        Show {{ account.validators.length }} validator(s)
+        <expand :class="{ open: isOpen }" />
+      </div>
+      <div v-show="isOpen" class="stake-staked-account__validators-list">
+        <stake-staked-validators
+          :validators="account.validators"
+          :bonded-amount="account.activeStaked"
+        />
+      </div>
     </div>
   </div>
 </template>
