@@ -2,7 +2,7 @@
   <div class="stake-nominate__item" @click.stop="toggleSelect">
     <div class="stake-nominate__item-block">
       <div class="stake-nominate__item-info">
-        <img src="@/assets/pic/account1.png" alt="" />
+        <img :src="validator.image" alt="" />
         <div class="stake-nominate__item-info-block">
           <h3>
             {{

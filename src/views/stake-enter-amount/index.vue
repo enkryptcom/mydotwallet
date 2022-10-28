@@ -94,7 +94,7 @@ onMounted(() => {
   loadPreviousStakingOptions();
 });
 
-watch(selectedNetwork, () => {
+watch([accounts, selectedNetwork], () => {
   useGetNativeBalances();
   useGetNativePrice();
   loadPreviousStakingOptions();

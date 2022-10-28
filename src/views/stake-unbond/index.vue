@@ -111,7 +111,7 @@ const updateStakedAmount = async () => {
   );
 };
 
-watch(selectedNetwork, () => {
+watch([accounts, selectedNetwork], () => {
   updateStakedAmount();
   useGetNativeBalances();
   useGetNativePrice();
