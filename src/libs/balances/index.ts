@@ -34,7 +34,7 @@ export const useGetNativeBalances = async () => {
       })
     );
 
-    const unboundProgress = await api.derive.session.progress();
+    const unbondProgress = await api.derive.session.progress();
 
     const expectedBlockTime = Number(
       api.consts?.babe?.expectedBlockTime?.toString() || 6000
@@ -47,7 +47,7 @@ export const useGetNativeBalances = async () => {
       nativeBalances[accounts.value[index].address] = buildBalanceFromResults(
         balanceResult[index],
         stakingResult[index],
-        unboundProgress,
+        unbondProgress,
         expectedBlockTime,
         lastBlockNumber,
         api.registry.chainDecimals[0]
@@ -71,7 +71,7 @@ export const useGetAccountNativeBalance = async (address: string) => {
 
     const stakingResult = await api.derive.staking.account(address);
 
-    const unboundProgress = await api.derive.session.progress();
+    const unbondProgress = await api.derive.session.progress();
 
     const expectedBlockTime = Number(
       api.consts?.babe?.expectedBlockTime?.toString() || 6000
@@ -83,7 +83,7 @@ export const useGetAccountNativeBalance = async (address: string) => {
     nativeBalances[address] = buildBalanceFromResults(
       balanceResult,
       stakingResult,
-      unboundProgress,
+      unbondProgress,
       expectedBlockTime,
       lastBlockNumber,
       api.registry.chainDecimals[0]
@@ -100,7 +100,7 @@ export const useGetAccountNativeBalance = async (address: string) => {
 const buildBalanceFromResults = (
   balanceResult: DeriveBalancesAll,
   stakingResult: DeriveStakingAccount,
-  unboundProgress: DeriveSessionProgress,
+  unbondProgress: DeriveSessionProgress,
   expectedBlockTime: number,
   lastBlockNumber: number,
   decimals: number
@@ -112,9 +112,9 @@ const buildBalanceFromResults = (
       : prev;
   }, 0);
   const timeToEnd = (vestingEndBlock - lastBlockNumber) * expectedBlockTime;
-  // Calculate unbounding amount
-  const unboundingCalc =
-    !stakingResult.unlocking || !unboundProgress
+  // Calculate unbonding amount
+  const unbondingCalc =
+    !stakingResult.unlocking || !unbondProgress
       ? BN_ZERO
       : (stakingResult.unlocking as DeriveUnlocking[])
           .filter(
@@ -126,9 +126,9 @@ const buildBalanceFromResults = (
             unlock.remainingEras,
             unlock.remainingEras
               .sub(BN_ONE)
-              .imul(unboundProgress.eraLength)
-              .iadd(unboundProgress.eraLength)
-              .isub(unboundProgress.eraProgress),
+              .imul(unbondProgress.eraLength)
+              .iadd(unbondProgress.eraLength)
+              .isub(unbondProgress.eraProgress),
           ])
           .reduce((total, [{ value }]) => total.iadd(value), new BN(0));
 
@@ -169,10 +169,10 @@ const buildBalanceFromResults = (
     redeemable: new BigNumber(
       fromBase(stakingResult.redeemable?.toString() || "0", decimals)
     ),
-    unbounding: new BigNumber(fromBase(unboundingCalc.toString(), decimals)),
+    unbonding: new BigNumber(fromBase(unbondingCalc.toString(), decimals)),
     bonded: new BigNumber(
       fromBase(
-        unboundingCalc.add(stakingResult.redeemable || BN_ZERO).toString(),
+        unbondingCalc.add(stakingResult.redeemable || BN_ZERO).toString(),
         decimals
       )
     ),

@@ -144,7 +144,7 @@ const toggle = () => {
 
 const unbondAction = () => {
   router.push({
-    name: "stake-unbound",
+    name: "stake-unbond",
     query: {
       address: props.account?.address,
     },

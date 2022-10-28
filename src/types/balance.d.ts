@@ -11,6 +11,6 @@ export interface Balance {
   total: BigNumber;
   staked: BigNumber;
   redeemable: BigNumber;
-  unbounding: BigNumber;
+  unbonding: BigNumber;
   bonded: BigNumber;
 }

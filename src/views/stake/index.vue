@@ -46,7 +46,6 @@ import {
 import type { Option } from "@polkadot/types";
 import { AccountId, StakingLedger } from "@polkadot/types/interfaces";
 import BigNumber from "bignumber.js";
-import { DeriveStakingAccount } from "@polkadot/api-derive/types";
 import {
   Queried,
   StakedTotalState,
@@ -99,7 +98,7 @@ const setBalancesOnly = () => {
         activeStaked: nativeBalances[auxAccount.address]?.staked,
         earnings: new BigNumber(0),
         withdrawable: nativeBalances[auxAccount.address]?.redeemable,
-        unbonding: nativeBalances[auxAccount.address]?.unbounding,
+        unbonding: nativeBalances[auxAccount.address]?.unbonding,
         isLoading: true,
         validators: [],
       });

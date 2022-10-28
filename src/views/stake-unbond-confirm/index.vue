@@ -52,7 +52,7 @@ import BackButton from "@/components/back-button/index.vue";
 import StakeConfirmAmount from "../stake-confirm/components/stake-confirm-amount.vue";
 import StakeConfirmAccount from "../stake-confirm/components/stake-confirm-account.vue";
 import StakeConfirmFee from "../stake-confirm/components/stake-confirm-fee.vue";
-import StakeUnboundConfirmProcess from "./components/stake-unbound-confirm-process.vue";
+import StakeUnboundConfirmProcess from "./components/stake-unbond-confirm-process.vue";
 import { Account } from "@/types/account";
 import { onMounted, ref, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
