@@ -1,3 +1,4 @@
+import createIcon from "@/libs/identicon/polkadot";
 import { nativeToken } from "@/stores";
 import {
   NominatedByMap,
@@ -121,6 +122,7 @@ export const extractValidatorData = async (
 
     list[i] = {
       address: key,
+      image: createIcon(key),
       bonded: bondOwn,
       total,
       commission: validatorPrefs.commission.unwrap().toNumber() / 10_000_000,

@@ -2,7 +2,7 @@
   <div class="stake-staked-validator-item">
     <div class="stake-staked-validator-item__block">
       <div class="stake-staked-validator-item__info">
-        <img src="@/assets/pic/account1.png" alt="" />
+        <img :src="validator.image" alt="" />
         <div class="stake-staked-validator-item__info-block">
           <h3>
             {{
