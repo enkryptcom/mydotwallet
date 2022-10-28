@@ -65,20 +65,28 @@ const router = useRouter();
 const showStakeIntro = ref<boolean>(false);
 const stakingAccounts = ref<Array<StakingAccountWithValidators>>([]);
 
+const isDataLoading = ref<boolean>(false);
+
 onMounted(async () => {
-  useGetNativePrice();
+  isDataLoading.value = true;
   await useGetNativeBalances();
   setBalancesOnly();
+  useGetNativePrice();
   stakingAccounts.value = await loadStakingAccounts();
+  isDataLoading.value = false;
 });
 
 watch(
   [accounts, selectedNetwork],
   async () => {
-    useGetNativePrice();
-    await useGetNativeBalances();
-    setBalancesOnly();
-    stakingAccounts.value = await loadStakingAccounts();
+    if (!isDataLoading.value) {
+      isDataLoading.value = true;
+      useGetNativePrice();
+      await useGetNativeBalances();
+      setBalancesOnly();
+      stakingAccounts.value = await loadStakingAccounts();
+      isDataLoading.value = false;
+    }
   },
   { deep: true }
 );
