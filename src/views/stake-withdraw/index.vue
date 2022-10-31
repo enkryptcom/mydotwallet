@@ -115,10 +115,16 @@ const updateStakedAmount = async () => {
   );
 };
 
-watch([accounts, selectedNetwork], () => {
+watch(selectedNetwork, () => {
   updateStakedAmount();
   useGetNativeBalances();
   useGetNativePrice();
+});
+
+watch(accounts, () => {
+  router.push({
+    name: "stake",
+  });
 });
 
 watch(

@@ -137,6 +137,12 @@ watch(selectedNetwork, () => {
   });
 });
 
+watch(accounts, () => {
+  router.push({
+    name: "stake",
+  });
+});
+
 watch(
   [amount, stakedBalance],
   async () => {

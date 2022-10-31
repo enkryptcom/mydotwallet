@@ -89,7 +89,7 @@ import {
   Validator,
 } from "@/types/staking";
 import { useGetNativeBalances } from "@/libs/balances";
-import { apiPromise, selectedNetwork, stakingWizardOptions } from "@/stores";
+import { accounts, apiPromise, selectedNetwork, stakingWizardOptions } from "@/stores";
 import { getLastEraReward, loadValidatorData } from "@/utils/staking";
 
 const router = useRouter();
@@ -125,10 +125,8 @@ onUnmounted(() => {
   window.removeEventListener("resize", onResize);
 });
 
-watch(selectedNetwork, () => {
-  validators.value = [];
-  useGetNativeBalances();
-  loadValidators();
+watch([selectedNetwork, accounts], () => {
+  router.push({ name: "stake-enter-amount" });
 });
 
 const onResize = () => {

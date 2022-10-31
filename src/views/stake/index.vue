@@ -136,6 +136,8 @@ const loadStakingAccounts = async () => {
       const stashId = ledger.unwrap().stash.toString();
 
       !ownStashes.some(([accountId]) => accountId === stashId) &&
+        // This filters only stashes where a connected account is a controller
+        addresses.includes(stashId) &&
         ownStashes.push([stashId, false]);
     }
   });

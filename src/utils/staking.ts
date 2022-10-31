@@ -46,7 +46,7 @@ const isWaitingDerive = (
   return !(derive as DeriveStakingElected).nextElected;
 };
 
-export const extractNominatorList = async (api: ApiPromise) => {
+export const extractNominators = async (api: ApiPromise) => {
   const result: [StorageKey, Option<Nominations>][] =
     await api.query.staking.nominators.entries();
 
@@ -183,7 +183,7 @@ export const loadValidatorData = async (api: ApiPromise) => {
     }),
   ]);
 
-  const nominatorList = await extractNominatorList(api);
+  const nominatorList = await extractNominators(api);
   const [elected] = await extractValidatorData(
     api,
     [],
@@ -215,7 +215,7 @@ export const loadValidatorDataFromList = async (
       withPrefs: true,
     }
   );
-  const nominatorList = await extractNominatorList(api);
+  const nominatorList = await extractNominators(api);
   const [result] = await extractValidatorData(
     api,
     [],
