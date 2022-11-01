@@ -28,17 +28,42 @@ export const stakeExtrinsic = async (
   nominating: string[],
   isCompounding: boolean
 ): Promise<SubmittableExtrinsic<"promise", ISubmittableResult>> => {
-  if (api.tx.utility.batchAll) {
-    return api.tx.utility.batchAll([
-      api.tx.staking.bond(address, amount, isCompounding ? "Staked" : "Stash"),
-      api.tx.staking.nominate(nominating),
-    ]);
-  } else {
-    return api.tx.utility.batch([
-      api.tx.staking.bond(address, amount, isCompounding ? "Staked" : "Stash"),
-      api.tx.staking.nominate(nominating),
-    ]);
-  }
+  return api.tx.utility.batchAll
+    ? api.tx.utility.batchAll([
+        api.tx.staking.bond(
+          address,
+          amount,
+          isCompounding ? "Staked" : "Stash"
+        ),
+        api.tx.staking.nominate(nominating),
+      ])
+    : api.tx.utility.batch([
+        api.tx.staking.bond(
+          address,
+          amount,
+          isCompounding ? "Staked" : "Stash"
+        ),
+        api.tx.staking.nominate(nominating),
+      ]);
+};
+
+export const stakeExtraExtrinsic = async (
+  api: any,
+  amount: string,
+  nominating: string[],
+  isCompounding: boolean
+): Promise<SubmittableExtrinsic<"promise", ISubmittableResult>> => {
+  return api.tx.utility.batchAll
+    ? api.tx.utility.batchAll([
+        api.tx.staking.setPayee(isCompounding ? "Staked" : "Stash"),
+        api.tx.staking.bondExtra(amount),
+        api.tx.staking.nominate(nominating),
+      ])
+    : api.tx.utility.batch([
+        api.tx.staking.setPayee(isCompounding ? "Staked" : "Stash"),
+        api.tx.staking.bondExtra(amount),
+        api.tx.staking.nominate(nominating),
+      ]);
 };
 
 export const unbondExtrinsic = async (

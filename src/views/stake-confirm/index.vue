@@ -9,7 +9,10 @@
       and confirm transaction.
     </p>
 
-    <div class="stake-confirm__block">
+    <div v-if="isLoading" class="stake-confirm__loading">
+      <spinner-animation />
+    </div>
+    <div v-else class="stake-confirm__block">
       <div class="stake-confirm__block-item">
         <stake-confirm-account
           :account="fromAccount"
@@ -44,6 +47,7 @@
           amount
         )} ${nativeToken.symbol.toLocaleUpperCase()}`"
         :action="nextAction"
+        :disabled="isLoading"
         :send="true"
       />
     </buttons-block>
@@ -87,9 +91,10 @@ import { Validator } from "@/types/staking";
 import { GasFeeInfo } from "@/types/transaction";
 import { toBN } from "web3-utils";
 import { toBase } from "@/utils/units";
-import { stakeExtrinsic } from "@/utils/extrinsic";
+import { stakeExtraExtrinsic, stakeExtrinsic } from "@/utils/extrinsic";
 import { getGasFeeInfo } from "@/utils/fee";
 import { ISubmittableResult } from "@polkadot/types/types";
+import { queryHasStash } from "@/utils/staking";
 
 const router = useRouter();
 
@@ -100,6 +105,8 @@ const height = ref<number>(0);
 const fromAccount = ref<Account>();
 const amount = ref<number>(0);
 const validators = ref<Array<Validator>>([]);
+const isLoading = ref<boolean>(false);
+const hasStash = ref<boolean>(false);
 const isSend = ref<boolean>(false);
 const isSendDone = ref<boolean>(false);
 const isCompounding = ref<boolean>(true);
@@ -144,13 +151,20 @@ const nextAction = async () => {
     toBase(amount.value?.toString() || "0", nativeToken.value.decimals)
   );
 
-  const tx = await stakeExtrinsic(
-    api,
-    fromAccount.value.address || "",
-    rawAmount.toString(),
-    validators.value.map((item) => item.address),
-    isCompounding.value
-  );
+  const tx = await (hasStash.value
+    ? stakeExtraExtrinsic(
+        api,
+        rawAmount.toString(),
+        validators.value.map((item) => item.address),
+        isCompounding.value
+      )
+    : stakeExtrinsic(
+        api,
+        fromAccount.value.address || "",
+        rawAmount.toString(),
+        validators.value.map((item) => item.address),
+        isCompounding.value
+      ));
 
   const unsubscribe = await tx.signAndSend(
     fromAccount.value.address,
@@ -189,7 +203,7 @@ const back = () => {
   router.go(-1);
 };
 
-const loadPreviousStakingOptions = () => {
+const loadPreviousStakingOptions = async () => {
   isCompounding.value = stakingWizardOptions.value.isCompounding;
   if (
     !stakingWizardOptions.value.amount ||
@@ -204,6 +218,10 @@ const loadPreviousStakingOptions = () => {
   amount.value = stakingWizardOptions.value.amount;
   fromAccount.value = stakingWizardOptions.value.fromAccount;
   validators.value = stakingWizardOptions.value.validators;
+  isLoading.value = true;
+  const api = await apiPromise.value;
+  hasStash.value = await queryHasStash(api, fromAccount.value.address);
+  isLoading.value = false;
 };
 
 const availableBalance = computed(() => {
@@ -289,6 +307,13 @@ watch([amount, nativeBalances], async () => {
         }
       }
     }
+  }
+  &__loading {
+    padding: 48px 0 48px 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-direction: column;
   }
   &__scroll-area {
     position: relative;

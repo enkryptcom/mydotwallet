@@ -19,6 +19,7 @@ import {
   AccountId,
   IndividualExposure,
   Nominations,
+  StakingLedger,
 } from "@polkadot/types/interfaces";
 import { BN, BN_ZERO, u8aConcat, u8aToHex } from "@polkadot/util";
 import { fromBase } from "./units";
@@ -313,4 +314,9 @@ export const getStakerState = (
     stashId,
     validatorPrefs,
   };
+};
+
+export const queryHasStash = async (api: ApiPromise, address: string) => {
+  const result = await api.query.staking.ledger<Option<StakingLedger>>(address);
+  return result.isSome;
 };

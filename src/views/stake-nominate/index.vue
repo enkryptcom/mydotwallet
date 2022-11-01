@@ -26,7 +26,6 @@
       <div class="stake-nominate__table-item">Estimated returns</div>
       <div class="stake-nominate__table-item"></div>
     </div>
-
     <div
       ref="blockRef"
       class="stake-nominate__table-block"
@@ -37,8 +36,12 @@
         class="stake-nominate__scroll-area"
         :style="{ maxHeight: height + 'px' }"
       >
+        <div v-if="isLoading" class="stake-nominate__loading">
+          <spinner-animation />
+        </div>
         <stake-nominate-item
           v-for="(item, index) in sortedAndFiltered"
+          v-else
           :key="index"
           :amount-to-stake="amount"
           :validator="item"
@@ -59,7 +62,12 @@
           {{ selectedValidators.length }} selected
         </p>
       </div>
-      <base-button title="Continue" :action="nextAction" :send="true" />
+      <base-button
+        :disabled="selectedValidators.length === 0"
+        title="Continue"
+        :action="nextAction"
+        :send="true"
+      />
     </buttons-block>
   </white-wrapper>
 </template>
@@ -73,6 +81,7 @@ import StakeNominateHeaderInfo from "./components/stake-nominate-header-info.vue
 import StakeNominateControls from "./components/stake-nominate-controls.vue";
 import StakeNominateItem from "./components/stake-nominate-item.vue";
 import CustomScrollbar from "@/components/custom-scrollbar/index.vue";
+import SpinnerAnimation from "@/icons/animation/spinner.vue";
 import { BaseSelectItem } from "@/types/base-select";
 import {
   ComponentPublicInstance,
@@ -89,7 +98,12 @@ import {
   Validator,
 } from "@/types/staking";
 import { useGetNativeBalances } from "@/libs/balances";
-import { accounts, apiPromise, selectedNetwork, stakingWizardOptions } from "@/stores";
+import {
+  accounts,
+  apiPromise,
+  selectedNetwork,
+  stakingWizardOptions,
+} from "@/stores";
 import { getLastEraReward, loadValidatorData } from "@/utils/staking";
 
 const router = useRouter();
@@ -108,6 +122,7 @@ const amount = ref<number>(0);
 const isCompounding = ref<boolean>(true);
 const periodNumberOfDays = ref<number>(365);
 const lastEraReward = ref<number>(0);
+const isLoading = ref<boolean>(false);
 
 defineExpose({ blockScrollRef, blockRef });
 
@@ -174,10 +189,12 @@ const loadPreviousStakingOptions = () => {
 };
 
 const loadValidators = async () => {
+  isLoading.value = true;
   const api = await apiPromise.value;
 
   lastEraReward.value = await getLastEraReward(api);
   validators.value = await loadValidatorData(api);
+  isLoading.value = false;
 };
 
 const sortedAndFiltered = computed(() => {
@@ -306,6 +323,14 @@ const updateSort = (item: BaseSelectItem) => {
         min-width: 24px;
       }
     }
+  }
+
+  &__loading {
+    padding: 48px 0 48px 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-direction: column;
   }
 
   &__count {
