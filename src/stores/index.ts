@@ -89,6 +89,19 @@ export const nativeToken = computed(() => {
   }
 });
 
+export const unbondDuration = computed(() => {
+  switch (selectedNetwork.value) {
+    case Network.Polkadot:
+      return "28 days";
+    case Network.Kusama:
+      return "7 days";
+    case Network.Westend:
+      return "12 hours";
+    default:
+      return "28 days";
+  }
+});
+
 export const subsquidExplorerUrl = computed(() => {
   switch (selectedNetwork.value) {
     case Network.Polkadot:

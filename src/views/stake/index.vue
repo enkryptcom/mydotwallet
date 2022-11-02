@@ -55,7 +55,11 @@ import {
   ValidatorInfo,
 } from "@/types/staking";
 import { fromBase } from "@/utils/units";
-import { getStakerState, loadValidatorDataFromList } from "@/utils/staking";
+import {
+  extractUnbondingData,
+  getStakerState,
+  loadValidatorDataFromList,
+} from "@/utils/staking";
 import { gql, request } from "graphql-request";
 import { useGetNativePrice } from "@/libs/prices";
 import { useGetNativeBalances } from "@/libs/balances";
@@ -107,6 +111,7 @@ const setBalancesOnly = () => {
         earnings: new BigNumber(0),
         withdrawable: nativeBalances[auxAccount.address]?.redeemable,
         unbonding: nativeBalances[auxAccount.address]?.unbonding,
+        unbondingList: nativeBalances[auxAccount.address]?.unbondingList,
         isLoading: true,
         validators: [],
       });
@@ -233,8 +238,20 @@ const loadStakingAccounts = async () => {
     accounts.value.map((item) => item.address)
   );
 
+  const unbondProgress = await api.derive.session.progress();
+
+  const expectedBlockTime = Number(
+    api.consts?.babe?.expectedBlockTime?.toString() || 6000
+  );
+
   const finalResult: StakingAccountWithValidators[] = [];
   for (const auxStaker of totals.foundStashes || []) {
+    const [unbondList, unbondTotal] = extractUnbondingData(
+      auxStaker.unlocking,
+      unbondProgress,
+      expectedBlockTime
+    );
+
     finalResult.push({
       ...accounts.value.find((item) => item.address === auxStaker.stashId),
       totalStaked:
@@ -259,12 +276,14 @@ const loadStakingAccounts = async () => {
       withdrawable: new BigNumber(
         fromBase(auxStaker.redeemable, nativeToken.value.decimals)
       ),
-      unbonding: new BigNumber(0),
+      unbonding: unbondTotal,
+      unbondingList: unbondList,
       validators:
         auxStaker.nominating?.map((item) => validatorInfoMap[item]) || [],
       isLoading: false,
     } as StakingAccountWithValidators);
   }
+
   return finalResult;
 };
 

@@ -55,6 +55,38 @@
         </div>
       </div>
       <div class="stake-staked-account__stats-block">
+        <p>
+          Unbonding
+          <span v-if="account.unbondingList.length > 0">
+            <vue-countdown
+              v-slot="{ days, hours, minutes }"
+              :interval="60000"
+              :time="account.unbondingList[0]?.timeInMs || 0"
+            >
+              {{
+                `(${days ? `${days}d ` : ""}${
+                  hours ? `${hours}h ` : ""
+                }${minutes}m left)`
+              }}
+            </vue-countdown>
+          </span>
+        </p>
+        <div class="stake-staked-account__stats-block-amount">
+          <h5>
+            {{ $filters.cryptoCurrencyFormat(account.unbonding.toNumber()) }}
+            <span>{{ nativeToken.symbol }}</span>
+          </h5>
+          <h6>
+            {{
+              $filters.currencyFormat(
+                account.unbonding.toNumber() * nativeToken.price.toNumber(),
+                "USD"
+              )
+            }}
+          </h6>
+        </div>
+      </div>
+      <div class="stake-staked-account__stats-block">
         <p>Overall earnings</p>
         <div class="stake-staked-account__stats-block-amount">
           <h5>
@@ -119,13 +151,13 @@ import StakeStakedValidators from "./stake-staked-validators.vue";
 import { ref, PropType, computed } from "vue";
 import { useRouter } from "vue-router";
 import { StakingAccountWithValidators } from "@/types/staking";
-import { nativeToken } from "@/stores";
+import VueCountdown from "@chenfengyuan/vue-countdown";
+import { nativeToken, unbondDuration } from "@/stores";
 
 const router = useRouter();
 
 const isOpen = ref<boolean>(false);
-const unbondInfo =
-  "Oversubscribed info will be credited to your bonded balance for compound earning.";
+const unbondInfo = `The unbonding period is approximately ${unbondDuration.value}.`;
 
 const props = defineProps({
   account: {

@@ -3,16 +3,19 @@ import { nativeToken } from "@/stores";
 import {
   NominatedByMap,
   StakerState,
+  UnbondEntry,
   Validator,
   ValidatorInfo,
 } from "@/types/staking";
 import { ApiPromise } from "@polkadot/api";
 import {
+  DeriveSessionProgress,
   DeriveStakingAccount,
   DeriveStakingElected,
   DeriveStakingQuery,
   DeriveStakingValidators,
   DeriveStakingWaiting,
+  DeriveUnlocking,
 } from "@polkadot/api-derive/types";
 import { Option, StorageKey } from "@polkadot/types";
 import {
@@ -21,7 +24,8 @@ import {
   Nominations,
   StakingLedger,
 } from "@polkadot/types/interfaces";
-import { BN, BN_ZERO, u8aConcat, u8aToHex } from "@polkadot/util";
+import { BN, BN_ONE, BN_ZERO, u8aConcat, u8aToHex } from "@polkadot/util";
+import BigNumber from "bignumber.js";
 import { fromBase } from "./units";
 
 export const getLastEraReward = async (api: ApiPromise): Promise<number> => {
@@ -269,6 +273,7 @@ export const getStakerState = (
       stakingLedger,
       validatorPrefs,
       redeemable,
+      unlocking,
     },
     validateInfo,
   ]: [boolean, DeriveStakingAccount, ValidatorInfo]
@@ -312,6 +317,7 @@ export const getStakerState = (
     ) as string[],
     stakingLedger,
     stashId,
+    unlocking,
     validatorPrefs,
   };
 };
@@ -324,4 +330,43 @@ export const queryHasStash = async (api: ApiPromise, address: string) => {
 export const queryMinNominatorBond = async (api: ApiPromise) => {
   const result = await api.query.staking.minNominatorBond();
   return Number(fromBase(result.toString(), nativeToken.value.decimals));
+};
+
+export const extractUnbondingData = (
+  unlockingInfo?: DeriveUnlocking[],
+  progress?: DeriveSessionProgress,
+  expectedBlockTime = 6000
+): [UnbondEntry[], BigNumber] => {
+  if (!unlockingInfo || !progress) {
+    return [[], new BigNumber(0)];
+  }
+
+  const list = unlockingInfo
+    .filter(
+      ({ remainingEras, value }) =>
+        value.gt(BN_ZERO) && remainingEras.gt(BN_ZERO)
+    )
+    .map((unlock) => {
+      const numBlocks = unlock.remainingEras
+        .sub(BN_ONE)
+        .imul(progress.eraLength)
+        .iadd(progress.eraLength)
+        .isub(progress.eraProgress)
+        .toNumber();
+
+      return {
+        value: new BigNumber(
+          fromBase(unlock.value.toString(), nativeToken.value.decimals)
+        ),
+        eras: unlock.remainingEras.toNumber(),
+        blocks: numBlocks,
+        timeInMs: numBlocks * expectedBlockTime,
+      };
+    });
+  const total = list.reduce(
+    (total, { value }) => total.plus(value),
+    new BigNumber(0)
+  );
+
+  return [list, total];
 };

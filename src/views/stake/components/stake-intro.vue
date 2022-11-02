@@ -7,7 +7,7 @@
         You can earn rewards by bonding assets and then nominating your
         validators.
       </h3>
-      <more-link title="Lear more about how it works" :action="moreAction" />
+      <more-link title="Learn more about how it works" :action="moreAction" />
     </div>
     <div class="stake__calculate">
       <div class="stake__calculate-header">

@@ -9,11 +9,10 @@ import {
   DeriveBalancesAll,
   DeriveSessionProgress,
   DeriveStakingAccount,
-  DeriveUnlocking,
 } from "@polkadot/api-derive/types";
 import { fromBase } from "../../utils/units";
-import { BN, BN_ONE, BN_ZERO } from "@polkadot/util";
 import BigNumber from "bignumber.js";
+import { extractUnbondingData } from "@/utils/staking";
 
 export const useGetNativeBalances = async () => {
   try {
@@ -112,25 +111,12 @@ const buildBalanceFromResults = (
       : prev;
   }, 0);
   const timeToEnd = (vestingEndBlock - lastBlockNumber) * expectedBlockTime;
-  // Calculate unbonding amount
-  const unbondingCalc =
-    !stakingResult.unlocking || !unbondProgress
-      ? BN_ZERO
-      : (stakingResult.unlocking as DeriveUnlocking[])
-          .filter(
-            ({ remainingEras, value }) =>
-              value.gt(BN_ZERO) && remainingEras.gt(BN_ZERO)
-          )
-          .map((unlock): [any, BN, BN] => [
-            unlock,
-            unlock.remainingEras,
-            unlock.remainingEras
-              .sub(BN_ONE)
-              .imul(unbondProgress.eraLength)
-              .iadd(unbondProgress.eraLength)
-              .isub(unbondProgress.eraProgress),
-          ])
-          .reduce((total, [{ value }]) => total.iadd(value), new BN(0));
+
+  const [unbondList, unbondTotal] = extractUnbondingData(
+    stakingResult.unlocking,
+    unbondProgress,
+    expectedBlockTime
+  );
 
   return {
     free: new BigNumber(
@@ -169,12 +155,10 @@ const buildBalanceFromResults = (
     redeemable: new BigNumber(
       fromBase(stakingResult.redeemable?.toString() || "0", decimals)
     ),
-    unbonding: new BigNumber(fromBase(unbondingCalc.toString(), decimals)),
-    bonded: new BigNumber(
-      fromBase(
-        unbondingCalc.add(stakingResult.redeemable || BN_ZERO).toString(),
-        decimals
-      )
+    unbonding: unbondTotal,
+    unbondingList: unbondList,
+    bonded: unbondTotal.plus(
+      fromBase(stakingResult?.redeemable?.toString() || "0", decimals)
     ),
   };
 };
