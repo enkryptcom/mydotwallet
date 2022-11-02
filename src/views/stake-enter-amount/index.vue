@@ -27,9 +27,11 @@
 
     <amount-input
       :has-enough-balance="hasEnough"
+      :is-error="!!minValueErrorMessage"
       :token="nativeToken"
       :value="String(amount)"
       :max-value="nativeBalances[fromAccount?.address]?.available"
+      :inner-error-message="minValueErrorMessage"
       @update:amount="inputAmount"
     />
 
@@ -76,6 +78,7 @@ import { toBN } from "web3-utils";
 import { stakeExtrinsic } from "@/utils/extrinsic";
 import { GasFeeInfo } from "@/types/transaction";
 import { getGasFeeInfo } from "@/utils/fee";
+import { queryHasStash, queryMinNominatorBond } from "@/utils/staking";
 
 const router = useRouter();
 
@@ -83,20 +86,36 @@ const rewardsInfo =
   "If you choose not to lock your rewards, then your newly minted rewards will be transferrable by default. However, this would mean lower earnings over longer period of time.";
 
 const fromAccount = ref<Account>(accounts.value[0]);
+const hasStash = ref(false);
+const minNominatorBond = ref(0);
 const amount = ref<number>(0);
 const fee = ref<GasFeeInfo>();
-const isCompounding = ref<boolean>(true);
+const isCompounding = ref(true);
 const hasEnough = ref(true);
 
 onMounted(() => {
   useGetNativeBalances();
   useGetNativePrice();
+  updateMinNominatorBond();
+  updateHasStash();
   loadPreviousStakingOptions();
 });
 
-watch([accounts, selectedNetwork], () => {
+watch([accounts], () => {
   useGetNativeBalances();
   useGetNativePrice();
+  updateMinNominatorBond();
+  fromAccount.value = accounts.value[0];
+});
+
+watch([selectedNetwork], () => {
+  useGetNativeBalances();
+  useGetNativePrice();
+  updateMinNominatorBond();
+});
+
+watch(fromAccount, async () => {
+  updateHasStash();
 });
 
 watch(
@@ -143,6 +162,31 @@ watch(
   { deep: true }
 );
 
+const minValueErrorMessage = computed(() => {
+  if (hasStash.value) {
+    return "";
+  }
+
+  if (minNominatorBond.value > amount.value) {
+    return `Minimum staking amount is ${
+      minNominatorBond.value
+    } ${nativeToken.value.symbol.toLocaleUpperCase()}`;
+  }
+
+  return "";
+});
+
+const updateHasStash = async () => {
+  hasStash.value = false;
+  const api = await apiPromise.value;
+  hasStash.value = await queryHasStash(api, fromAccount.value.address);
+};
+
+const updateMinNominatorBond = async () => {
+  const api = await apiPromise.value;
+  minNominatorBond.value = await queryMinNominatorBond(api);
+};
+
 const loadPreviousStakingOptions = () => {
   isCompounding.value = stakingWizardOptions.value.isCompounding;
   if (stakingWizardOptions.value.amount) {
@@ -151,7 +195,12 @@ const loadPreviousStakingOptions = () => {
 };
 
 const isValid = computed<boolean>(() => {
-  return !!fromAccount.value && Number(amount.value) > 0 && hasEnough.value;
+  return (
+    !!fromAccount.value &&
+    Number(amount.value) > 0 &&
+    hasEnough.value &&
+    !minValueErrorMessage.value
+  );
 });
 
 const availableBalance = computed(() => {

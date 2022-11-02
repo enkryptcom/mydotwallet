@@ -320,3 +320,8 @@ export const queryHasStash = async (api: ApiPromise, address: string) => {
   const result = await api.query.staking.ledger<Option<StakingLedger>>(address);
   return result.isSome;
 };
+
+export const queryMinNominatorBond = async (api: ApiPromise) => {
+  const result = await api.query.staking.minNominatorBond();
+  return Number(fromBase(result.toString(), nativeToken.value.decimals));
+};

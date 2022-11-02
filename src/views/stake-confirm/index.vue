@@ -53,7 +53,7 @@
     </buttons-block>
   </white-wrapper>
   <white-wrapper v-else class="stake-confirm__wrap">
-    <stake-confirm-process :is-done="isSendDone" />
+    <stake-confirm-process :is-done="isSendDone" :is-error="isError" />
   </white-wrapper>
 </template>
 
@@ -109,6 +109,7 @@ const isLoading = ref<boolean>(false);
 const hasStash = ref<boolean>(false);
 const isSend = ref<boolean>(false);
 const isSendDone = ref<boolean>(false);
+const isError = ref<boolean>(false);
 const isCompounding = ref<boolean>(true);
 
 const fee = ref<GasFeeInfo>();
@@ -183,6 +184,7 @@ const nextAction = async () => {
           .forEach(({ event: { method } }): void => {
             if (method === "ExtrinsicFailed") {
               // Handle error
+              isError.value = true;
             } else if (method === "ExtrinsicSuccess") {
               // Handle succes
               isSendDone.value = true;
@@ -190,6 +192,7 @@ const nextAction = async () => {
           });
       } else if (result.isError) {
         // Handle error
+        isError.value = true;
       }
 
       if (result.isCompleted) {
