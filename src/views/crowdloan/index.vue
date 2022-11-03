@@ -31,6 +31,14 @@
 import WhiteWrapper from "@/components/white-wrapper/index.vue";
 import CrowdloanItem from "./components/crowdloan-item.vue";
 import { ongoing, completed } from "@/types/mock";
+import { onMounted } from "vue";
+import { getCampaignsInfo } from "@/utils/crowdloan";
+import { apiPromise } from "@/stores";
+
+onMounted(async () => {
+  const api = await apiPromise.value;
+  getCampaignsInfo(api);
+});
 </script>
 
 <style lang="less" scoped>
