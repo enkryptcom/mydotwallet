@@ -6,7 +6,9 @@
 
     <div class="crowdloan__header">
       <div class="crowdloan__header-item">Parachain</div>
-      <div class="crowdloan__header-item">Raised DOT</div>
+      <div class="crowdloan__header-item">
+        Raised {{ nativeToken.symbol.toLocaleUpperCase() }}
+      </div>
       <div class="crowdloan__header-item">Liquidity Tokens</div>
       <div class="crowdloan__header-item">My contribution</div>
     </div>
@@ -32,12 +34,12 @@ import WhiteWrapper from "@/components/white-wrapper/index.vue";
 import CrowdloanItem from "./components/crowdloan-item.vue";
 import { ongoing, completed } from "@/types/mock";
 import { onMounted } from "vue";
-import { getCampaignsInfo } from "@/utils/crowdloan";
-import { apiPromise } from "@/stores";
+import { getCrowdloanItems } from "@/utils/crowdloan";
+import { apiPromise, nativeToken } from "@/stores";
 
 onMounted(async () => {
   const api = await apiPromise.value;
-  getCampaignsInfo(api);
+  getCrowdloanItems(api);
 });
 </script>
 

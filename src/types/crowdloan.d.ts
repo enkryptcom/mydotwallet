@@ -50,3 +50,10 @@ export interface Winning {
   total: number;
   winners: WinnerData[];
 }
+
+export interface LeasePeriod {
+  currentPeriod: number;
+  length: number;
+  progress: number;
+  remainder: number;
+}

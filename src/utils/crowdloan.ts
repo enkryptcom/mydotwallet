@@ -1,6 +1,20 @@
-import { nativeToken } from "@/stores";
-import { AuctionInfo, Campaign, Campaigns } from "@/types/crowdloan";
+import { nativeToken, selectedNetwork } from "@/stores";
+import {
+  AuctionInfo,
+  Campaign,
+  Campaigns,
+  CrowdloanItem,
+  LeasePeriod,
+} from "@/types/crowdloan";
 import { ApiPromise } from "@polkadot/api";
+import {
+  prodParasKusama,
+  prodParasKusamaCommon,
+  prodParasPolkadot,
+  prodParasPolkadotCommon,
+  testParasWestend,
+  testParasWestendCommon,
+} from "@polkadot/apps-config";
 import { encodeAddress } from "@polkadot/keyring";
 import { Option, StorageKey, Vec } from "@polkadot/types";
 import {
@@ -14,10 +28,28 @@ import {
 } from "@polkadot/types/interfaces";
 import type { PolkadotRuntimeCommonCrowdloanFundInfo } from "@polkadot/types/lookup";
 import { ITuple } from "@polkadot/types/types";
-import { BN, stringToU8a, u8aConcat, u8aEq } from "@polkadot/util";
+import { BN, BN_ZERO, stringToU8a, u8aConcat, u8aEq } from "@polkadot/util";
 import { fromBase } from "./units";
+import { Network } from "@/types/network";
+import { EndpointOption } from "@polkadot/apps-config/endpoints/types";
 
 export const CROWD_PREFIX = stringToU8a("modlpy/cfund");
+
+export const getCrowdloanItems = async (
+  api: ApiPromise
+): Promise<[CrowdloanItem[], CrowdloanItem[]]> => {
+  const bestNumber = await api.derive.chain.bestNumber();
+  const bestHash = await api.rpc.chain.getBlockHash(bestNumber);
+  const { funds: campaignFunds } = await getCampaignsInfo(api, bestNumber);
+  const leasePeriod = await getLeasePeriod(api, bestNumber);
+
+  const [active, ended, allIds] = separateCampaigns(campaignFunds, leasePeriod);
+
+  getNetworksMap();
+  console.log(active, ended, allIds);
+
+  return [[], []];
+};
 
 export const getAuctionInfo = async (api: ApiPromise): Promise<AuctionInfo> => {
   const [numAuctions, optInfo]: [
@@ -37,8 +69,10 @@ export const getAuctionInfo = async (api: ApiPromise): Promise<AuctionInfo> => {
   };
 };
 
-export const getCampaignsInfo = async (api: ApiPromise): Promise<Campaigns> => {
-  const bestNumber = await api.derive.chain.bestNumber();
+export const getCampaignsInfo = async (
+  api: ApiPromise,
+  bestNumber: BlockNumber
+): Promise<Campaigns> => {
   const eventRecords = await api.query.system.events<Vec<EventRecord>>();
   const blockHash = eventRecords.createdAtHash?.toHex() || "";
   const funds: StorageKey<[ParaId]>[] = await (blockHash
@@ -65,13 +99,15 @@ export const getCampaignsInfo = async (api: ApiPromise): Promise<Campaigns> => {
             32
           )
         ),
-        firstSlot: info.firstPeriod,
+        firstSlot: info.firstPeriod.toNumber(),
         info,
         isCrowdloan: true,
         key: paraId.toString(),
-        lastSlot: info.lastPeriod,
+        lastSlot: info.lastPeriod.toNumber(),
         paraId,
-        value: info.raised,
+        value: Number(
+          fromBase(info.raised.toString(), nativeToken.value.decimals)
+        ),
       })
     )
     .sort(
@@ -92,17 +128,6 @@ export const getCampaignsInfo = async (api: ApiPromise): Promise<Campaigns> => {
         .filter(([accountId]) =>
           u8aEq(accountId.slice(0, CROWD_PREFIX.length), CROWD_PREFIX)
         ).length !== 0
-  );
-
-  console.log(
-    JSON.stringify(
-      createCampaigns(
-        bestNumber,
-        api.consts.crowdloan.minContribution as BlockNumber,
-        campaigns,
-        leases
-      )
-    )
   );
 
   return createCampaigns(
@@ -173,4 +198,67 @@ const sortCampaigns = (a: Campaign, b: Campaign): number => {
       ? 1
       : -1
     : 0;
+};
+
+export const getLeasePeriod = async (
+  api: ApiPromise,
+  bestNumber: BlockNumber
+) => {
+  const length = api.consts.slots.leasePeriod as BlockNumber;
+  const startNumber = bestNumber.sub(
+    (api.consts.slots.leaseOffset as BlockNumber) || BN_ZERO
+  );
+  const progress = startNumber.mod(length);
+
+  return {
+    currentPeriod: startNumber.div(length).toNumber(),
+    length: length.toNumber(),
+    progress: progress.toNumber(),
+    remainder: length.sub(progress).toNumber(),
+  };
+};
+
+const separateCampaigns = (
+  value: Campaign[] | null,
+  leasePeriod?: LeasePeriod
+): [Campaign[] | null, Campaign[] | null, ParaId[] | null] => {
+  const currentPeriod = leasePeriod?.currentPeriod;
+  let active: Campaign[] | null = null;
+  let ended: Campaign[] | null = null;
+  let allIds: ParaId[] | null = null;
+
+  if (value && currentPeriod) {
+    active = value.filter(
+      ({ firstSlot, isCapped, isEnded, isWinner }) =>
+        !(isCapped || isEnded || isWinner) && currentPeriod <= firstSlot
+    );
+    ended = value.filter(
+      ({ firstSlot, isCapped, isEnded, isWinner }) =>
+        isCapped || isEnded || isWinner || currentPeriod > firstSlot
+    );
+    allIds = value.map(({ paraId }) => paraId);
+  }
+
+  return [active, ended, allIds];
+};
+
+const getNetworksMap = () => {
+  let parachains: EndpointOption[] = [];
+
+  switch (selectedNetwork.value) {
+    case Network.Polkadot:
+      parachains = prodParasPolkadotCommon.concat(prodParasPolkadot);
+      break;
+    case Network.Kusama:
+      parachains = prodParasKusamaCommon.concat(prodParasKusama);
+      break;
+    case Network.Westend:
+      parachains = testParasWestendCommon.concat(testParasWestend);
+      break;
+    default:
+      break;
+  }
+  // for (const auxParachain of parachains) {
+
+  // }
 };
