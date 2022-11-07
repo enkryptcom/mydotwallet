@@ -1,16 +1,38 @@
 import number from "number.js";
 import type { PolkadotRuntimeCommonCrowdloanFundInfo } from "@polkadot/types/lookup";
 
-export interface CrowdloanItem {
-  id: number;
-  name: string;
-  link: string;
-  image: string;
+export interface CrowdloanInfo extends ParachainInfo {
   percent: number;
   amount: number;
+  cap: number;
   contributions: number;
   tokens: string;
   isContribute: boolean;
+}
+
+export interface ParachainInfo {
+  key: string;
+  paraId: number;
+  name: string;
+  link?: string;
+  image?: string;
+}
+
+export interface EndpointOption {
+  dnslink?: string;
+  genesisHash?: string;
+  homepage?: string;
+  isChild?: boolean;
+  isDevelopment?: boolean;
+  isDisabled?: boolean;
+  isUnreachable?: boolean;
+  linked?: EndpointOption[];
+  info?: string;
+  paraId?: number;
+  providers: Record<string, string>;
+  summary?: string;
+  teleport?: number[];
+  text: string;
 }
 
 export interface AuctionInfo {

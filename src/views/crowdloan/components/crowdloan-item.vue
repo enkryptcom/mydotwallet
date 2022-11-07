@@ -14,9 +14,12 @@
     <div class="crowdloan-item__block">
       <div class="crowdloan-item__block-info">
         <p class="crowdloan-item__block-info-amount">
-          <b>17,8%</b> 79.579K of 5M
+          <b>{{ item.percent.toFixed(2) }} %</b> {{ item.amount }} of
+          {{ item.cap }}
         </p>
-        <p class="crowdloan-item__block-info-count">46,788 contributions</p>
+        <p class="crowdloan-item__block-info-count">
+          {{ item.contributions }} contributions
+        </p>
       </div>
     </div>
     <div class="crowdloan-item__block">
@@ -38,7 +41,7 @@
 
 <script setup lang="ts">
 import { PropType } from "vue";
-import { CrowdloanItem } from "@/types/crowdloan";
+import { CrowdloanInfo } from "@/types/crowdloan";
 import BaseButton from "@/components/base-button/index.vue";
 import LinkIcon from "@/icons/common/link-icon.vue";
 import { useRouter } from "vue-router";
@@ -47,7 +50,7 @@ const router = useRouter();
 
 defineProps({
   item: {
-    type: Object as PropType<CrowdloanItem>,
+    type: Object as PropType<CrowdloanInfo>,
     default: null,
   },
 });

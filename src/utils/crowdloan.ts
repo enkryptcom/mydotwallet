@@ -3,18 +3,24 @@ import {
   AuctionInfo,
   Campaign,
   Campaigns,
-  CrowdloanItem,
+  CrowdloanInfo,
   LeasePeriod,
+  ParachainInfo,
 } from "@/types/crowdloan";
 import { ApiPromise } from "@polkadot/api";
 import {
-  prodParasKusama,
-  prodParasKusamaCommon,
-  prodParasPolkadot,
-  prodParasPolkadotCommon,
-  testParasWestend,
-  testParasWestendCommon,
-} from "@polkadot/apps-config";
+  copyProdParasKusama,
+  copyProdParasKusamaCommon,
+} from "@/libs/parachains/productionRelayKusama";
+
+import {
+  copyProdParasPolkadot,
+  copyProdParasPolkadotCommon,
+} from "@/libs/parachains/productionRelayPolkadot";
+import {
+  copyTestParasWestend,
+  copyTestParasWestendCommon,
+} from "@/libs/parachains/testingRelayWestend";
 import { encodeAddress } from "@polkadot/keyring";
 import { Option, StorageKey, Vec } from "@polkadot/types";
 import {
@@ -32,23 +38,27 @@ import { BN, BN_ZERO, stringToU8a, u8aConcat, u8aEq } from "@polkadot/util";
 import { fromBase } from "./units";
 import { Network } from "@/types/network";
 import { EndpointOption } from "@polkadot/apps-config/endpoints/types";
+import { chainLogosMap } from "@/libs/parachains/chainLogos";
+import {
+  prodParasKusama,
+  prodParasKusamaCommon,
+  prodParasPolkadot,
+  prodParasPolkadotCommon,
+  testParasWestend,
+  testParasWestendCommon,
+} from "@polkadot/apps-config";
 
 export const CROWD_PREFIX = stringToU8a("modlpy/cfund");
 
 export const getCrowdloanItems = async (
   api: ApiPromise
-): Promise<[CrowdloanItem[], CrowdloanItem[]]> => {
+): Promise<[CrowdloanInfo[], CrowdloanInfo[]]> => {
   const bestNumber = await api.derive.chain.bestNumber();
   const bestHash = await api.rpc.chain.getBlockHash(bestNumber);
   const { funds: campaignFunds } = await getCampaignsInfo(api, bestNumber);
   const leasePeriod = await getLeasePeriod(api, bestNumber);
 
-  const [active, ended, allIds] = separateCampaigns(campaignFunds, leasePeriod);
-
-  getNetworksMap();
-  console.log(active, ended, allIds);
-
-  return [[], []];
+  return separateCampaigns(campaignFunds, leasePeriod);
 };
 
 export const getAuctionInfo = async (api: ApiPromise): Promise<AuctionInfo> => {
@@ -221,11 +231,10 @@ export const getLeasePeriod = async (
 const separateCampaigns = (
   value: Campaign[] | null,
   leasePeriod?: LeasePeriod
-): [Campaign[] | null, Campaign[] | null, ParaId[] | null] => {
+): [CrowdloanInfo[], CrowdloanInfo[]] => {
   const currentPeriod = leasePeriod?.currentPeriod;
-  let active: Campaign[] | null = null;
-  let ended: Campaign[] | null = null;
-  let allIds: ParaId[] | null = null;
+  let active: Campaign[] = [];
+  let ended: Campaign[] = [];
 
   if (value && currentPeriod) {
     active = value.filter(
@@ -236,29 +245,81 @@ const separateCampaigns = (
       ({ firstSlot, isCapped, isEnded, isWinner }) =>
         isCapped || isEnded || isWinner || currentPeriod > firstSlot
     );
-    allIds = value.map(({ paraId }) => paraId);
   }
 
-  return [active, ended, allIds];
+  const networksMap = getNetworksMap();
+
+  return [
+    convertCampaignsToCrowdloanInfo(active, networksMap),
+    convertCampaignsToCrowdloanInfo(ended, networksMap),
+  ];
 };
 
-const getNetworksMap = () => {
+const getNetworksMap = (): Record<number, ParachainInfo> => {
   let parachains: EndpointOption[] = [];
 
   switch (selectedNetwork.value) {
     case Network.Polkadot:
-      parachains = prodParasPolkadotCommon.concat(prodParasPolkadot);
+      parachains = prodParasPolkadot.concat(
+        prodParasPolkadotCommon.concat(
+          copyProdParasPolkadotCommon.concat(copyProdParasPolkadot)
+        )
+      );
       break;
     case Network.Kusama:
-      parachains = prodParasKusamaCommon.concat(prodParasKusama);
+      parachains = prodParasKusama.concat(
+        prodParasKusamaCommon.concat(
+          copyProdParasKusamaCommon.concat(copyProdParasKusama)
+        )
+      );
       break;
     case Network.Westend:
-      parachains = testParasWestendCommon.concat(testParasWestend);
+      parachains = testParasWestend.concat(
+        testParasWestendCommon.concat(
+          copyTestParasWestend.concat(copyTestParasWestendCommon)
+        )
+      );
       break;
     default:
       break;
   }
-  // for (const auxParachain of parachains) {
 
-  // }
+  const networksMap: Record<number, ParachainInfo> = {};
+
+  for (const auxParachain of parachains) {
+    if (auxParachain.paraId && auxParachain.info) {
+      networksMap[auxParachain.paraId] = {
+        key: auxParachain.info,
+        paraId: auxParachain.paraId,
+        name: auxParachain.text,
+        link: auxParachain.homepage,
+        image: auxParachain.info ? chainLogosMap[auxParachain.info] : undefined,
+      };
+    }
+  }
+
+  return networksMap;
+};
+
+const convertCampaignsToCrowdloanInfo = (
+  campaigns: Campaign[],
+  networksMap: Record<number, ParachainInfo>
+): CrowdloanInfo[] => {
+  return campaigns.map((item) => {
+    const raised = Number(
+      fromBase(item.info.raised.toString(), nativeToken.value.decimals)
+    );
+    const cap = Number(
+      fromBase(item.info.cap.toString(), nativeToken.value.decimals)
+    );
+    return {
+      ...networksMap[item.paraId.toNumber()],
+      percent: cap === 0 ? 100 : (raised * 100) / cap,
+      amount: raised,
+      cap: cap,
+      contributions: raised,
+      tokens: nativeToken.value.symbol.toLocaleUpperCase(),
+      isContribute: false,
+    };
+  });
 };

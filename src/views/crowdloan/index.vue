@@ -32,14 +32,19 @@
 <script setup lang="ts">
 import WhiteWrapper from "@/components/white-wrapper/index.vue";
 import CrowdloanItem from "./components/crowdloan-item.vue";
-import { ongoing, completed } from "@/types/mock";
-import { onMounted } from "vue";
+import { onMounted, ref } from "vue";
 import { getCrowdloanItems } from "@/utils/crowdloan";
 import { apiPromise, nativeToken } from "@/stores";
+import { CrowdloanInfo } from "@/types/crowdloan";
+
+const ongoing = ref<Array<CrowdloanInfo>>([]);
+const completed = ref<Array<CrowdloanInfo>>([]);
 
 onMounted(async () => {
   const api = await apiPromise.value;
-  getCrowdloanItems(api);
+  const [active, ended] = await getCrowdloanItems(api);
+  ongoing.value = active;
+  completed.value = ended;
 });
 </script>
 
