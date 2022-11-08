@@ -148,6 +148,60 @@ export const getCampaignsInfo = async (
   );
 };
 
+export const getSingleCampaignsInfo = async (
+  api: ApiPromise,
+  bestNumber: BlockNumber,
+  paraId: number
+): Promise<Campaigns | undefined> => {
+  const optFund = await api.query.crowdloan?.funds<
+    Option<PolkadotRuntimeCommonCrowdloanFundInfo>
+  >(paraId);
+  const unwrappedOptFunds: PolkadotRuntimeCommonCrowdloanFundInfo =
+    optFund.unwrapOr(null);
+
+  if (!unwrappedOptFunds) {
+    return undefined;
+  }
+
+  const paraIdFormatted = api.createType<ParaId>("ParaId", paraId);
+  const campaign: Campaign = {
+    accountId: encodeAddress(
+      u8aConcat(
+        CROWD_PREFIX,
+        paraIdFormatted.toU8a(),
+        new Uint8Array(32)
+      ).subarray(0, 32)
+    ),
+    firstSlot: unwrappedOptFunds.firstPeriod.toNumber(),
+    info: unwrappedOptFunds,
+    isCrowdloan: true,
+    key: paraId.toString(),
+    lastSlot: unwrappedOptFunds.lastPeriod.toNumber(),
+    paraId: paraIdFormatted,
+    value: Number(
+      fromBase(unwrappedOptFunds.raised.toString(), nativeToken.value.decimals)
+    ),
+  };
+
+  const optLeases = await api.query.slots.leases<
+    Vec<Option<ITuple<[AccountId, BalanceOf]>>>
+  >(paraId);
+  const isLeaseValid =
+    optLeases
+      .map((o) => o.unwrapOr(null))
+      .filter((v): v is ITuple<[AccountId, BalanceOf]> => !!v)
+      .filter(([accountId]) =>
+        u8aEq(accountId.slice(0, CROWD_PREFIX.length), CROWD_PREFIX)
+      ).length !== 0;
+
+  return createCampaigns(
+    bestNumber,
+    api.consts.crowdloan.minContribution as BlockNumber,
+    [campaign],
+    isLeaseValid ? [paraIdFormatted] : []
+  );
+};
+
 const createCampaigns = (
   bestNumber: BlockNumber,
   minContribution: BN,
@@ -250,8 +304,8 @@ const separateCampaigns = (
   const networksMap = getNetworksMap();
 
   return [
-    convertCampaignsToCrowdloanInfo(active, networksMap),
-    convertCampaignsToCrowdloanInfo(ended, networksMap),
+    convertCampaignsToCrowdloanInfo(active, networksMap, true),
+    convertCampaignsToCrowdloanInfo(ended, networksMap, false),
   ];
 };
 
@@ -303,7 +357,8 @@ const getNetworksMap = (): Record<number, ParachainInfo> => {
 
 const convertCampaignsToCrowdloanInfo = (
   campaigns: Campaign[],
-  networksMap: Record<number, ParachainInfo>
+  networksMap: Record<number, ParachainInfo>,
+  isContribute: boolean
 ): CrowdloanInfo[] => {
   return campaigns.map((item) => {
     const raised = Number(
@@ -319,7 +374,32 @@ const convertCampaignsToCrowdloanInfo = (
       cap: cap,
       contributions: raised,
       tokens: nativeToken.value.symbol.toLocaleUpperCase(),
-      isContribute: false,
+      isContribute,
     };
   });
+};
+
+export const getSingleCrowdloanItem = async (
+  api: ApiPromise,
+  paraId: number
+): Promise<CrowdloanInfo | undefined> => {
+  const bestNumber = await api.derive.chain.bestNumber();
+  const bestHash = await api.rpc.chain.getBlockHash(bestNumber);
+  const campaigns = await getSingleCampaignsInfo(api, bestNumber, paraId);
+  const leasePeriod = await getLeasePeriod(api, bestNumber);
+
+  if (!campaigns?.funds?.[0]) {
+    return undefined;
+  }
+
+  const result = convertCampaignsToCrowdloanInfo(
+    campaigns.funds,
+    getNetworksMap(),
+    campaigns.funds[0].isCapped ||
+      campaigns.funds[0].isEnded ||
+      campaigns.funds[0].isWinner ||
+      leasePeriod?.currentPeriod > campaigns.funds[0].firstSlot
+  );
+
+  return result[0];
 };

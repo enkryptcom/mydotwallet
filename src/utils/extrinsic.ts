@@ -1,6 +1,7 @@
 import { TransferType } from "@/types/transfer";
 import { ApiPromise } from "@polkadot/api";
 import { SubmittableExtrinsic } from "@polkadot/api/types";
+import { ParaId } from "@polkadot/types/interfaces";
 import { ISubmittableResult } from "@polkadot/types/types";
 
 export const sendExtrinsic = async (
@@ -78,4 +79,13 @@ export const withdrawExtrinsic = async (
   numberOfSpans = 0
 ): Promise<SubmittableExtrinsic<"promise", ISubmittableResult>> => {
   return api.tx.staking.withdrawUnbonded(numberOfSpans);
+};
+
+export const crowdloanContributeExtrinsic = async (
+  api: any,
+  paraId: ParaId,
+  amount: string,
+  multiSignature?: string
+): Promise<SubmittableExtrinsic<"promise", ISubmittableResult>> => {
+  return api.tx.crowdloan.contribute(paraId, amount, multiSignature);
 };

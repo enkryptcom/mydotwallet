@@ -14,8 +14,9 @@
     <div class="crowdloan-item__block">
       <div class="crowdloan-item__block-info">
         <p class="crowdloan-item__block-info-amount">
-          <b>{{ item.percent.toFixed(2) }} %</b> {{ item.amount }} of
-          {{ item.cap }}
+          <b>{{ item.percent.toFixed(2) }} %</b>
+          {{ $filters.formatCompactNumber(item.amount) }} of
+          {{ $filters.formatCompactNumber(item.cap) }}
         </p>
         <p class="crowdloan-item__block-info-count">
           {{ item.contributions }} contributions
@@ -45,10 +46,11 @@ import { CrowdloanInfo } from "@/types/crowdloan";
 import BaseButton from "@/components/base-button/index.vue";
 import LinkIcon from "@/icons/common/link-icon.vue";
 import { useRouter } from "vue-router";
+import { selectedCrowdloan } from "@/stores";
 
 const router = useRouter();
 
-defineProps({
+const props = defineProps({
   item: {
     type: Object as PropType<CrowdloanInfo>,
     default: null,
@@ -56,6 +58,7 @@ defineProps({
 });
 
 const contributeAction = () => {
+  selectedCrowdloan.value = props.item;
   router.push({ name: "crowdloan-contribute" });
 };
 </script>

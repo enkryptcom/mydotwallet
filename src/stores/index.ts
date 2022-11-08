@@ -9,6 +9,7 @@ import { Balance } from "@/types/balance";
 import { WalletItem } from "@/types/wallet-list";
 import { walletConnect } from "@/types/wallets";
 import { StakingOptions } from "@/types/staking";
+import { CrowdloanInfo } from "@/types/crowdloan";
 
 const POLKADOT_ENDPOINTS = [
   "wss://rpc.polkadot.io",
@@ -125,3 +126,5 @@ export const stakingWizardOptions = ref<StakingOptions>({
   isCompounding: true,
   period: 0,
 });
+
+export const selectedCrowdloan = ref<CrowdloanInfo>();

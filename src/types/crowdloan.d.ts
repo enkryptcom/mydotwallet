@@ -18,23 +18,6 @@ export interface ParachainInfo {
   image?: string;
 }
 
-export interface EndpointOption {
-  dnslink?: string;
-  genesisHash?: string;
-  homepage?: string;
-  isChild?: boolean;
-  isDevelopment?: boolean;
-  isDisabled?: boolean;
-  isUnreachable?: boolean;
-  linked?: EndpointOption[];
-  info?: string;
-  paraId?: number;
-  providers: Record<string, string>;
-  summary?: string;
-  teleport?: number[];
-  text: string;
-}
-
 export interface AuctionInfo {
   endBlock?: number;
   leasePeriod?: number;

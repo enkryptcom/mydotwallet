@@ -64,3 +64,9 @@ export const formatDuration = (
 export const formatAddress = (address: string, ss58?: number): string => {
   return encodeAddress(address, ss58 || ss58Format.value || 0);
 };
+export const formatCompactNumber = (value: number): string => {
+  return new Intl.NumberFormat("en-US", {
+    notation: "compact",
+    compactDisplay: "short",
+  }).format(value);
+};
