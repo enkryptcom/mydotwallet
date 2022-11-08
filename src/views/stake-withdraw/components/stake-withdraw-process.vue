@@ -41,7 +41,7 @@ const detailsAction = () => {
 };
 
 const errorAction = () => {
-  router.push("stake");
+  router.push({ name: "stake" });
 };
 </script>
 

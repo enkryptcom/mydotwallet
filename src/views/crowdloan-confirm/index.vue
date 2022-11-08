@@ -10,13 +10,17 @@
 
     <div class="crowdloan-confirm__block">
       <div class="crowdloan-confirm__block-item">
-        <stake-confirm-account :account="fromAccount" title="From" />
+        <stake-confirm-account
+          :account="fromAccount"
+          :amount="availableBalance"
+          title="From"
+        />
       </div>
       <div class="crowdloan-confirm__block-item">
-        <stake-confirm-amount :token="token" :amount="amount" />
+        <stake-confirm-amount :token="nativeToken" :amount="amount" />
       </div>
       <div class="crowdloan-confirm__block-item">
-        <stake-confirm-fee />
+        <stake-confirm-fee :fee="fee" />
       </div>
     </div>
 
@@ -29,7 +33,7 @@
     </buttons-block>
   </white-wrapper>
   <white-wrapper v-else class="crowdloan-confirm__wrap">
-    <crowdloan-confirm-process :is-done="isSendDone" />
+    <crowdloan-confirm-process :is-done="isSendDone" :is-error="isError" />
   </white-wrapper>
 </template>
 
@@ -42,30 +46,150 @@ import StakeConfirmAmount from "../stake-confirm/components/stake-confirm-amount
 import StakeConfirmAccount from "../stake-confirm/components/stake-confirm-account.vue";
 import StakeConfirmFee from "../stake-confirm/components/stake-confirm-fee.vue";
 import { Account } from "@/types/account";
-import { Token } from "@/types/token";
-import { ref } from "vue";
-import { useRouter } from "vue-router";
-import { accounts } from "@/types/mock";
+import { computed, onMounted, ref, watch } from "vue";
+import { useRoute, useRouter } from "vue-router";
 import CrowdloanConfirmProcess from "./components/crowdloan-confirm-process.vue";
-import { dot } from "@/types/tokens";
+import { GasFeeInfo } from "@/types/transaction";
+import {
+  accounts,
+  apiPromise,
+  nativeBalances,
+  nativeToken,
+  selectedCrowdloan,
+  selectedNetwork,
+  signer,
+} from "@/stores";
+import { toBN } from "web3-utils";
+import { toBase } from "@/utils/units";
+import { getGasFeeInfo } from "@/utils/fee";
+import { ParaId } from "@polkadot/types/interfaces";
+import { crowdloanContributeExtrinsic } from "@/utils/extrinsic";
+import { ISubmittableResult } from "@polkadot/types/types";
 
 const router = useRouter();
-const fromAccount = ref<Account>(accounts[0]);
-const amount = ref<number>(1000);
-const token = ref<Token>(dot);
+const route = useRoute();
+
+const fromAccount = ref<Account>();
+const amount = ref<number>(0);
 const isSend = ref<boolean>(false);
 const isSendDone = ref<boolean>(false);
+const isError = ref<boolean>(false);
 
-const nextAction = () => {
+const fee = ref<GasFeeInfo>();
+
+onMounted(() => {
+  if (!selectedCrowdloan.value || !route.query.address || !route.query.amount) {
+    router.push({ name: "crowdloan" });
+    return;
+  }
+
+  const found = accounts.value.find(
+    (item) => item.address === route.query.address
+  );
+
+  const convertedAmount = Number(route.query.amount);
+
+  if (found && convertedAmount) {
+    fromAccount.value = found;
+    amount.value = Number(convertedAmount.toString());
+  } else {
+    router.push({ name: "crowdloan" });
+  }
+});
+
+const nextAction = async () => {
+  if (!fromAccount.value) {
+    return;
+  }
+
   isSend.value = true;
-  setTimeout(() => {
-    isSendDone.value = true;
-  }, 3000);
+
+  const api = await apiPromise.value;
+  const rawAmount = toBN(
+    toBase(amount.value?.toString() || "0", nativeToken.value.decimals)
+  );
+
+  const tx = await crowdloanContributeExtrinsic(
+    api,
+    api.createType<ParaId>("ParaId", selectedCrowdloan.value?.paraId),
+    rawAmount.toString()
+  );
+
+  try {
+    const unsubscribe = await tx.signAndSend(
+      fromAccount.value.address,
+      {
+        signer: signer.value,
+        nonce: -1,
+      },
+      async (result: ISubmittableResult) => {
+        if (!result || !result.status) {
+          return;
+        }
+
+        if (result.status.isFinalized || result.status.isInBlock) {
+          result.events
+            .filter(({ event: { section } }) => section === "system")
+            .forEach(({ event: { method } }): void => {
+              if (method === "ExtrinsicFailed") {
+                // Handle error
+                isError.value = true;
+              } else if (method === "ExtrinsicSuccess") {
+                // Handle succes
+                isSendDone.value = true;
+              }
+            });
+        } else if (result.isError) {
+          // Handle error
+          isError.value = true;
+        }
+
+        if (result.isCompleted) {
+          unsubscribe();
+        }
+      }
+    );
+  } catch (error) {
+    console.error("Unexpected error when sending transaction", error);
+    isError.value = true;
+  }
 };
 
 const back = () => {
   router.go(-1);
 };
+
+const availableBalance = computed(() => {
+  if (!nativeBalances || !fromAccount.value) {
+    return 0;
+  }
+
+  return nativeBalances[fromAccount.value.address]?.available.toNumber() || 0;
+});
+
+watch([selectedNetwork, accounts], () => {
+  router.push({ name: "crowdloan" });
+});
+
+watch([amount, nativeBalances], async () => {
+  if (!amount.value || !fromAccount.value) {
+    return;
+  }
+
+  const api = await apiPromise.value;
+
+  const rawAmount = toBN(
+    toBase(amount.value?.toString() || "0", nativeToken.value.decimals)
+  );
+
+  const tx = await crowdloanContributeExtrinsic(
+    api,
+    api.createType<ParaId>("ParaId", selectedCrowdloan.value?.paraId),
+    rawAmount.toString()
+  );
+
+  fee.value = await getGasFeeInfo(tx, fromAccount.value?.address || "");
+});
 </script>
 
 <style lang="less" scoped>

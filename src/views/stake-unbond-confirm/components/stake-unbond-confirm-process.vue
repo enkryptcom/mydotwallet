@@ -37,11 +37,11 @@ defineProps({
 });
 
 const detailsAction = () => {
-  router.push("stake");
+  router.push({ name: "stake" });
 };
 
 const errorAction = () => {
-  router.push("stake");
+  router.push({ name: "stake" });
 };
 </script>
 

@@ -85,7 +85,6 @@ import {
 import { GasFeeInfo } from "@/types/transaction";
 import { useGetNativeBalances } from "@/libs/balances";
 import { useGetNativePrice } from "@/libs/prices";
-import { async } from "rxjs";
 import { getSingleCrowdloanItem } from "@/utils/crowdloan";
 import { fromBase, isValidDecimals, toBase } from "@/utils/units";
 import { toBN } from "web3-utils";
@@ -219,7 +218,13 @@ const availableBalance = computed(() => {
 
 const nextAction = () => {
   selectedCrowdloan.value = crowdloan.value;
-  router.push({ name: "crowdloan-confirm" });
+  router.push({
+    name: "crowdloan-confirm",
+    query: {
+      address: fromAccount.value.address,
+      amount: amount.value.toString(),
+    },
+  });
 };
 
 const back = () => {
