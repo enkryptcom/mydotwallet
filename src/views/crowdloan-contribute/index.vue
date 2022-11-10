@@ -29,11 +29,7 @@
       <div class="crowdloan-contribute__info-item">
         <p>Remaining till cap</p>
         <h5>
-          {{
-            $filters.formatCompactNumber(
-              (crowdloan?.cap || 0) - (crowdloan?.amount || 0)
-            )
-          }}
+          {{ $filters.formatCompactNumber(crowdloan?.remaining || 0) }}
           <span>{{ nativeToken.symbol.toLocaleUpperCase() }}</span>
         </h5>
       </div>
@@ -71,7 +67,7 @@ import AmountInput from "@/components/amount-input/index.vue";
 import FeeInfo from "@/components/fee-info/index.vue";
 import SelectAccountInput from "@/components/select-account-input/index.vue";
 import { computed, onMounted, ref, watch } from "vue";
-import { useRouter } from "vue-router";
+import { useRoute, useRouter } from "vue-router";
 import { Account } from "@/types/account";
 import { CrowdloanInfo } from "@/types/crowdloan";
 import {
@@ -93,6 +89,7 @@ import { ParaId } from "@polkadot/types/interfaces";
 import { crowdloanContributeExtrinsic } from "@/utils/extrinsic";
 
 const router = useRouter();
+const route = useRoute();
 
 const fromAccount = ref<Account>(accounts.value[0]);
 const amount = ref<number>(0);
@@ -104,6 +101,16 @@ const hasEnough = ref(true);
 onMounted(() => {
   if (!selectedCrowdloan.value) {
     router.replace({ name: "crowdloan" });
+  }
+
+  if (route.query.address) {
+    const found = accounts.value.find(
+      (item) => item.address === route.query.address
+    );
+
+    if (found) {
+      fromAccount.value = found;
+    }
   }
 
   crowdloan.value = selectedCrowdloan.value;

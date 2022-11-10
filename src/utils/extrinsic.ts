@@ -89,3 +89,10 @@ export const crowdloanContributeExtrinsic = async (
 ): Promise<SubmittableExtrinsic<"promise", ISubmittableResult>> => {
   return api.tx.crowdloan.contribute(paraId, amount, multiSignature);
 };
+
+export const crowdloanRefundExtrinsic = async (
+  api: any,
+  paraId: ParaId
+): Promise<SubmittableExtrinsic<"promise", ISubmittableResult>> => {
+  return api.tx.crowdloan.refund(paraId);
+};

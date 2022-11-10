@@ -1,13 +1,16 @@
 import number from "number.js";
 import type { PolkadotRuntimeCommonCrowdloanFundInfo } from "@polkadot/types/lookup";
+import type { DeriveContributions } from "@polkadot/api-derive/types";
 
 export interface CrowdloanInfo extends ParachainInfo {
   percent: number;
   amount: number;
   cap: number;
-  contributions: number;
+  remaining: number;
   tokens: string;
   isContribute: boolean;
+  endBlock: number;
+  endMillisecondsLeft: number;
 }
 
 export interface ParachainInfo {
@@ -61,4 +64,11 @@ export interface LeasePeriod {
   length: number;
   progress: number;
   remainder: number;
+}
+
+export interface ContributionInfo extends DeriveContributions {
+  hasLoaded: boolean;
+  account: string;
+  accountHex: string;
+  amount: number;
 }

@@ -3,6 +3,7 @@ import {
   AuctionInfo,
   Campaign,
   Campaigns,
+  ContributionInfo,
   CrowdloanInfo,
   LeasePeriod,
   ParachainInfo,
@@ -21,7 +22,7 @@ import {
   copyTestParasWestend,
   copyTestParasWestendCommon,
 } from "@/libs/parachains/testingRelayWestend";
-import { encodeAddress } from "@polkadot/keyring";
+import { decodeAddress, encodeAddress } from "@polkadot/keyring";
 import { Option, StorageKey, Vec } from "@polkadot/types";
 import {
   AccountId,
@@ -47,6 +48,7 @@ import {
   testParasWestend,
   testParasWestendCommon,
 } from "@polkadot/apps-config";
+import { Buffer } from "buffer";
 
 export const CROWD_PREFIX = stringToU8a("modlpy/cfund");
 
@@ -54,11 +56,18 @@ export const getCrowdloanItems = async (
   api: ApiPromise
 ): Promise<[CrowdloanInfo[], CrowdloanInfo[]]> => {
   const bestNumber = await api.derive.chain.bestNumber();
-  const bestHash = await api.rpc.chain.getBlockHash(bestNumber);
   const { funds: campaignFunds } = await getCampaignsInfo(api, bestNumber);
   const leasePeriod = await getLeasePeriod(api, bestNumber);
+  const expectedBlockTime = Number(
+    api.consts?.babe?.expectedBlockTime?.toString() || 6000
+  );
 
-  return separateCampaigns(campaignFunds, leasePeriod);
+  return separateCampaigns(
+    campaignFunds,
+    bestNumber,
+    expectedBlockTime,
+    leasePeriod
+  );
 };
 
 export const getAuctionInfo = async (api: ApiPromise): Promise<AuctionInfo> => {
@@ -284,6 +293,8 @@ export const getLeasePeriod = async (
 
 const separateCampaigns = (
   value: Campaign[] | null,
+  bestNumber: BlockNumber,
+  expectedBlockTime: number,
   leasePeriod?: LeasePeriod
 ): [CrowdloanInfo[], CrowdloanInfo[]] => {
   const currentPeriod = leasePeriod?.currentPeriod;
@@ -304,8 +315,20 @@ const separateCampaigns = (
   const networksMap = getNetworksMap();
 
   return [
-    convertCampaignsToCrowdloanInfo(active, networksMap, true),
-    convertCampaignsToCrowdloanInfo(ended, networksMap, false),
+    convertCampaignsToCrowdloanInfo(
+      active,
+      networksMap,
+      bestNumber,
+      expectedBlockTime,
+      true
+    ),
+    convertCampaignsToCrowdloanInfo(
+      ended,
+      networksMap,
+      bestNumber,
+      expectedBlockTime,
+      false
+    ),
   ];
 };
 
@@ -358,6 +381,8 @@ const getNetworksMap = (): Record<number, ParachainInfo> => {
 const convertCampaignsToCrowdloanInfo = (
   campaigns: Campaign[],
   networksMap: Record<number, ParachainInfo>,
+  bestNumber: BlockNumber,
+  expectedBlockTime: number,
   isContribute: boolean
 ): CrowdloanInfo[] => {
   return campaigns.map((item) => {
@@ -367,14 +392,26 @@ const convertCampaignsToCrowdloanInfo = (
     const cap = Number(
       fromBase(item.info.cap.toString(), nativeToken.value.decimals)
     );
+    const remaining = Number(
+      fromBase(
+        item.info.cap.sub(item.info.raised).toString(),
+        nativeToken.value.decimals
+      )
+    );
+
+    const endBlock = item.info.end.toNumber();
+    const endMillisecondsLeft =
+      (endBlock - bestNumber.toNumber()) * expectedBlockTime;
     return {
       ...networksMap[item.paraId.toNumber()],
       percent: cap === 0 ? 100 : (raised * 100) / cap,
       amount: raised,
-      cap: cap,
-      contributions: raised,
+      cap,
+      remaining,
       tokens: nativeToken.value.symbol.toLocaleUpperCase(),
       isContribute,
+      endBlock,
+      endMillisecondsLeft,
     };
   });
 };
@@ -384,9 +421,11 @@ export const getSingleCrowdloanItem = async (
   paraId: number
 ): Promise<CrowdloanInfo | undefined> => {
   const bestNumber = await api.derive.chain.bestNumber();
-  const bestHash = await api.rpc.chain.getBlockHash(bestNumber);
   const campaigns = await getSingleCampaignsInfo(api, bestNumber, paraId);
   const leasePeriod = await getLeasePeriod(api, bestNumber);
+  const expectedBlockTime = Number(
+    api.consts?.babe?.expectedBlockTime?.toString() || 6000
+  );
 
   if (!campaigns?.funds?.[0]) {
     return undefined;
@@ -395,6 +434,8 @@ export const getSingleCrowdloanItem = async (
   const result = convertCampaignsToCrowdloanInfo(
     campaigns.funds,
     getNetworksMap(),
+    bestNumber,
+    expectedBlockTime,
     campaigns.funds[0].isCapped ||
       campaigns.funds[0].isEnded ||
       campaigns.funds[0].isWinner ||
@@ -402,4 +443,32 @@ export const getSingleCrowdloanItem = async (
   );
 
   return result[0];
+};
+
+export const getContributions = async (
+  api: ApiPromise,
+  paraId: number,
+  account: string
+): Promise<ContributionInfo> => {
+  const paraIdFormatted = api.createType<ParaId>("ParaId", paraId);
+
+  const hexAccount = "0x" + Buffer.from(decodeAddress(account)).toString("hex");
+
+  const [derive, myContributions] = await Promise.all([
+    api.derive.crowdloan.contributions(paraIdFormatted),
+    api.derive.crowdloan.ownContributions(paraIdFormatted, [hexAccount]),
+  ]);
+
+  return {
+    ...derive,
+    hasLoaded: true,
+    account: account,
+    accountHex: hexAccount,
+    amount: Number(
+      fromBase(
+        myContributions[hexAccount]?.toString() || "0",
+        nativeToken.value.decimals
+      )
+    ),
+  };
 };
