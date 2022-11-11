@@ -10,7 +10,7 @@
       <enkrypt-banner v-if="showLeftBanner" :is-left="true" />
     </div>
 
-    <a href="#" class="app-menu__more">More</a>
+    <!-- <a href="#" class="app-menu__more">More</a> -->
   </div>
 </template>
 

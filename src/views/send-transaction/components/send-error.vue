@@ -9,7 +9,12 @@
       <span>{{ token?.symbol || "dot" }}</span
       >.
     </p>
-    <p><a href="#">What is Existential Limit?</a></p>
+    <p>
+      <a
+        href="https://support.polkadot.network/support/solutions/articles/65000168651-what-is-the-existential-deposit-#:~:text=Print&text=On%20the%20Polkadot%20network%2C%20an,the%20Existential%20Deposit%20(ED)."
+        >What is Existential Limit?</a
+      >
+    </p>
   </div>
 </template>
 

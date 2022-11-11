@@ -13,7 +13,10 @@
         popular ones, like Ethereum and Polkadot with its Parachains are already
         built in.
       </p>
-      <base-button title="Get on Chrome web store" :action="action" />
+      <base-button
+        :title="`Get on ${browserName} web store`"
+        :action="action"
+      />
       <img
         class="claim-enkrypt-banner__image"
         src="@/assets/pic/enkrypt.png"
@@ -27,6 +30,7 @@
 import BaseButton from "@/components/base-button/index.vue";
 import Expand from "@/icons/common/expand.vue";
 import { ref } from "vue";
+import { getBrowserName, extensionUrl } from "@/utils/browser";
 
 const isOpen = ref<boolean>(false);
 
@@ -35,8 +39,10 @@ const toggle = () => {
 };
 
 const action = () => {
-  console.log("Get on Chrome web store");
+  window.open(extensionUrl[browserName], "_blank");
 };
+
+const browserName = getBrowserName();
 </script>
 
 <style lang="less" scoped>
