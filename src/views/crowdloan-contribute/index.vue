@@ -114,6 +114,7 @@ onMounted(() => {
   }
 
   crowdloan.value = selectedCrowdloan.value;
+  loadFeeInfo();
   useGetNativeBalances();
   useGetNativePrice();
   updateMinContribution();
@@ -175,17 +176,25 @@ watch(
     } else {
       hasEnough.value = true;
     }
-
-    const tx = await crowdloanContributeExtrinsic(
-      api,
-      api.createType<ParaId>("ParaId", crowdloan.value?.paraId),
-      rawAmount.toString()
-    );
-
-    fee.value = await getGasFeeInfo(tx, fromAccount.value.address);
   },
   { deep: true }
 );
+
+const loadFeeInfo = async () => {
+  // Load fee info for transaction with mock values
+  const api = await apiPromise.value;
+
+  const tx = await crowdloanContributeExtrinsic(
+    api,
+    api.createType<ParaId>("ParaId", 1),
+    "1"
+  );
+
+  fee.value = await getGasFeeInfo(tx, fromAccount.value.address);
+  console.log(fee.value)
+};
+
+watch([selectedNetwork, accounts], loadFeeInfo);
 
 const minValueErrorMessage = computed(() => {
   if (minContribution.value > amount.value) {

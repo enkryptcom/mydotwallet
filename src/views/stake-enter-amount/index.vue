@@ -94,6 +94,7 @@ const isCompounding = ref(true);
 const hasEnough = ref(true);
 
 onMounted(() => {
+  loadFeeInfo();
   useGetNativeBalances();
   useGetNativePrice();
   updateMinNominatorBond();
@@ -130,8 +131,6 @@ watch(
       return;
     }
 
-    const api = await apiPromise.value;
-
     const rawAmount = toBN(
       toBase(amount.value?.toString() || "0", nativeToken.value.decimals)
     );
@@ -148,19 +147,26 @@ watch(
     } else {
       hasEnough.value = true;
     }
-
-    const tx = await stakeExtrinsic(
-      api,
-      fromAccount.value.address,
-      rawAmount.toString(),
-      [fromAccount.value.address],
-      isCompounding.value
-    );
-
-    fee.value = await getGasFeeInfo(tx, fromAccount.value.address);
   },
   { deep: true }
 );
+
+const loadFeeInfo = async () => {
+  // Load fee info for transaction with mock values
+  const api = await apiPromise.value;
+
+  const tx = await stakeExtrinsic(
+    api,
+    accounts.value[0].address,
+    "1",
+    [accounts.value[0].address],
+    true
+  );
+
+  fee.value = await getGasFeeInfo(tx, accounts.value[0].address);
+};
+
+watch([selectedNetwork, accounts], loadFeeInfo);
 
 const minValueErrorMessage = computed(() => {
   if (hasStash.value) {
