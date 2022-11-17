@@ -6,7 +6,7 @@
     </div>
     <p class="stake-confirm__description">
       You will be locking your funds for staking. Double check the information
-      and confirm transaction.
+      and confirm transaction.
     </p>
 
     <div v-if="isLoading" class="stake-confirm__loading">

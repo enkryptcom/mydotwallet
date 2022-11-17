@@ -1,5 +1,3 @@
-import number from "number.js";
-import type { PolkadotRuntimeCommonCrowdloanFundInfo } from "@polkadot/types/lookup";
 import type { DeriveContributions } from "@polkadot/api-derive/types";
 
 export interface CrowdloanInfo extends ParachainInfo {

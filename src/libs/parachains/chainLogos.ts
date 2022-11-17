@@ -392,7 +392,7 @@ export const chainLogosMap: Record<string, string> = {
   edgeware: require("@/assets/pic/logos/nodes/edgeware-white.png"),
   efinity: require("@/assets/pic/logos/nodes/efinity.svg"),
   Eggnet: require("@/assets/pic/logos/chains/webb.png"),
-  empty: require("@/assets/pic/logos/empty.svg"),
+  empty: require("@/assets/pic/logos/nodes/polkadot-circle.svg"),
   encointer: require("@/assets/pic/logos/nodes/encointer-blue.svg"),
   equilibrium: require("@/assets/pic/logos/chains/equilibrium.svg"),
   fantour: require("@/assets/pic/logos/nodes/fantour.png"),
