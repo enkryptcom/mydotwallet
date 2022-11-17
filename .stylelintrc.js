@@ -1,3 +1,3 @@
 module.exports = {
-  extends: ["stylelint-config-recommended-vue", "stylelint-config-prettier"], 
-}
+  extends: ["stylelint-config-recommended-vue", "stylelint-config-prettier"],
+};

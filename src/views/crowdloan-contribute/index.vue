@@ -158,7 +158,7 @@ watch(
       return;
     }
 
-    const api = await apiPromise.value;
+    await apiPromise.value;
 
     const rawAmount = toBN(
       toBase(amount.value?.toString() || "0", nativeToken.value.decimals)
@@ -191,7 +191,7 @@ const loadFeeInfo = async () => {
   );
 
   fee.value = await getGasFeeInfo(tx, fromAccount.value.address);
-  console.log(fee.value)
+  console.log(fee.value);
 };
 
 watch([selectedNetwork, accounts], loadFeeInfo);

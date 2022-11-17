@@ -1,7 +1,7 @@
 <template>
   <white-wrapper class="claim__wrap">
     <h2 class="claim__title">
-      Claim {{ tokenSymbol }} tokens for Ethereum presale address
+      Claim {{ tokenSymbol }} tokens for Ethereum presale address
     </h2>
     <p class="claim__text">
       This claims process only applies to {{ tokenSymbol }} (old) that were

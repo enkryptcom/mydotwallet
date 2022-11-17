@@ -33,7 +33,6 @@ import {
   LeasePeriodOf,
   ParaId,
 } from "@polkadot/types/interfaces";
-import type { PolkadotRuntimeCommonCrowdloanFundInfo } from "@polkadot/types/lookup";
 import { ITuple } from "@polkadot/types/types";
 import { BN, BN_ZERO, stringToU8a, u8aConcat, u8aEq } from "@polkadot/util";
 import { fromBase } from "./units";
@@ -98,18 +97,15 @@ export const getCampaignsInfo = async (
     ? api.query.crowdloan.funds.keysAt(blockHash)
     : api.query.crowdloan.funds.keys());
   const paraIds = funds.map(({ args: [paraId] }) => paraId);
-  const optFunds: Option<PolkadotRuntimeCommonCrowdloanFundInfo>[] =
-    await api.query.crowdloan?.funds.multi(paraIds);
+  const optFunds: Option<any>[] = await api.query.crowdloan?.funds.multi(
+    paraIds
+  );
   const campaigns: Campaign[] = paraIds
-    .map(
-      (paraId, i): [ParaId, PolkadotRuntimeCommonCrowdloanFundInfo | null] => [
-        paraId,
-        optFunds[i].unwrapOr(null),
-      ]
-    )
-    .filter(
-      (v): v is [ParaId, PolkadotRuntimeCommonCrowdloanFundInfo] => !!v[1]
-    )
+    .map((paraId, i): [ParaId, any | null] => [
+      paraId,
+      optFunds[i].unwrapOr(null),
+    ])
+    .filter((v): v is [ParaId, any] => !!v[1])
     .map(
       ([paraId, info]): Campaign => ({
         accountId: encodeAddress(
@@ -162,11 +158,8 @@ export const getSingleCampaignsInfo = async (
   bestNumber: BlockNumber,
   paraId: number
 ): Promise<Campaigns | undefined> => {
-  const optFund = await api.query.crowdloan?.funds<
-    Option<PolkadotRuntimeCommonCrowdloanFundInfo>
-  >(paraId);
-  const unwrappedOptFunds: PolkadotRuntimeCommonCrowdloanFundInfo =
-    optFund.unwrapOr(null);
+  const optFund = await api.query.crowdloan?.funds<Option<any>>(paraId);
+  const unwrappedOptFunds: any = optFund.unwrapOr(null);
 
   if (!unwrappedOptFunds) {
     return undefined;
