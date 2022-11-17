@@ -1,30 +1,47 @@
 <template>
-  <div class="stake-withdraw-process">
-    <done-animation v-if="isDone" />
-    <spinner-animation v-else />
-
-    <h3 v-if="isDone">You have successfully<br />whithdew your assets</h3>
-    <h3 v-else>Your transaction is<br />on the way</h3>
-    <p v-if="!isDone">Awaiting confirmation...</p>
-
-    <base-button v-if="isDone" title="View details" :action="detailsAction" />
+  <div v-if="isDone" class="stake-withdraw-process">
+    <done-animation />
+    <h3>You have successfully<br />withdrawn your assets</h3>
+    <base-button title="View details" :action="detailsAction" />
+  </div>
+  <div v-else-if="isError" class="stake-withdraw-process">
+    <error-animation />
+    <h3>Something went wrong with your transaction</h3>
+    <base-button title="Try again" :action="errorAction" />
+  </div>
+  <div v-else class="stake-withdraw-process">
+    <spinner-animation />
+    <h3>Your transaction is<br />on the way</h3>
+    <p>Awaiting confirmation...</p>
   </div>
 </template>
 
 <script setup lang="ts">
 import DoneAnimation from "@/icons/animation/done.vue";
+import ErrorAnimation from "@/icons/animation/error.vue";
 import SpinnerAnimation from "@/icons/animation/spinner.vue";
 import BaseButton from "@/components/base-button/index.vue";
+import { useRouter } from "vue-router";
+
+const router = useRouter();
 
 defineProps({
   isDone: {
     type: Boolean,
     default: false,
   },
+  isError: {
+    type: Boolean,
+    default: false,
+  },
 });
 
 const detailsAction = () => {
-  console.log("detailsAction");
+  router.push({ name: "stake" });
+};
+
+const errorAction = () => {
+  router.push({ name: "stake" });
 };
 </script>
 

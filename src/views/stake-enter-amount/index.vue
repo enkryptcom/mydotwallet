@@ -27,9 +27,11 @@
 
     <amount-input
       :has-enough-balance="hasEnough"
+      :is-error="!!minValueErrorMessage"
       :token="nativeToken"
       :value="String(amount)"
       :max-value="nativeBalances[fromAccount?.address]?.available"
+      :inner-error-message="minValueErrorMessage"
       @update:amount="inputAmount"
     />
 
@@ -66,6 +68,7 @@ import {
   apiPromise,
   nativeBalances,
   nativeToken,
+  selectedNetwork,
   stakingWizardOptions,
 } from "@/stores";
 import { useGetNativeBalances } from "@/libs/balances";
@@ -75,6 +78,7 @@ import { toBN } from "web3-utils";
 import { stakeExtrinsic } from "@/utils/extrinsic";
 import { GasFeeInfo } from "@/types/transaction";
 import { getGasFeeInfo } from "@/utils/fee";
+import { queryHasStash, queryMinNominatorBond } from "@/utils/staking";
 
 const router = useRouter();
 
@@ -82,15 +86,37 @@ const rewardsInfo =
   "If you choose not to lock your rewards, then your newly minted rewards will be transferrable by default. However, this would mean lower earnings over longer period of time.";
 
 const fromAccount = ref<Account>(accounts.value[0]);
+const hasStash = ref(false);
+const minNominatorBond = ref(0);
 const amount = ref<number>(0);
 const fee = ref<GasFeeInfo>();
-const isCompounding = ref<boolean>(true);
+const isCompounding = ref(true);
 const hasEnough = ref(true);
 
 onMounted(() => {
+  loadFeeInfo();
   useGetNativeBalances();
   useGetNativePrice();
+  updateMinNominatorBond();
+  updateHasStash();
   loadPreviousStakingOptions();
+});
+
+watch([accounts], () => {
+  useGetNativeBalances();
+  useGetNativePrice();
+  updateMinNominatorBond();
+  fromAccount.value = accounts.value[0];
+});
+
+watch([selectedNetwork], () => {
+  useGetNativeBalances();
+  useGetNativePrice();
+  updateMinNominatorBond();
+});
+
+watch(fromAccount, async () => {
+  updateHasStash();
 });
 
 watch(
@@ -104,8 +130,6 @@ watch(
       hasEnough.value = false;
       return;
     }
-
-    const api = await apiPromise.value;
 
     const rawAmount = toBN(
       toBase(amount.value?.toString() || "0", nativeToken.value.decimals)
@@ -123,19 +147,51 @@ watch(
     } else {
       hasEnough.value = true;
     }
-
-    const tx = await stakeExtrinsic(
-      api,
-      fromAccount.value.address,
-      rawAmount.toString(),
-      [fromAccount.value.address],
-      isCompounding.value
-    );
-
-    fee.value = await getGasFeeInfo(tx, fromAccount.value.address);
   },
   { deep: true }
 );
+
+const loadFeeInfo = async () => {
+  // Load fee info for transaction with mock values
+  const api = await apiPromise.value;
+
+  const tx = await stakeExtrinsic(
+    api,
+    accounts.value[0].address,
+    "1",
+    [accounts.value[0].address],
+    true
+  );
+
+  fee.value = await getGasFeeInfo(tx, accounts.value[0].address);
+};
+
+watch([selectedNetwork, accounts], loadFeeInfo);
+
+const minValueErrorMessage = computed(() => {
+  if (hasStash.value) {
+    return "";
+  }
+
+  if (minNominatorBond.value > amount.value) {
+    return `Minimum staking amount is ${
+      minNominatorBond.value
+    } ${nativeToken.value.symbol.toLocaleUpperCase()}`;
+  }
+
+  return "";
+});
+
+const updateHasStash = async () => {
+  hasStash.value = false;
+  const api = await apiPromise.value;
+  hasStash.value = await queryHasStash(api, fromAccount.value.address);
+};
+
+const updateMinNominatorBond = async () => {
+  const api = await apiPromise.value;
+  minNominatorBond.value = await queryMinNominatorBond(api);
+};
 
 const loadPreviousStakingOptions = () => {
   isCompounding.value = stakingWizardOptions.value.isCompounding;
@@ -145,7 +201,12 @@ const loadPreviousStakingOptions = () => {
 };
 
 const isValid = computed<boolean>(() => {
-  return !!fromAccount.value && Number(amount.value) > 0 && hasEnough.value;
+  return (
+    !!fromAccount.value &&
+    Number(amount.value) > 0 &&
+    hasEnough.value &&
+    !minValueErrorMessage.value
+  );
 });
 
 const availableBalance = computed(() => {

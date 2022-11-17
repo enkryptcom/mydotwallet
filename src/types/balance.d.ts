@@ -1,4 +1,5 @@
 import BigNumber from "bignumber.js";
+import { UnbondEntry } from "./staking";
 
 export interface Balance {
   free: BigNumber;
@@ -11,6 +12,7 @@ export interface Balance {
   total: BigNumber;
   staked: BigNumber;
   redeemable: BigNumber;
-  unbounding: BigNumber;
+  unbonding: BigNumber;
+  unbondingList: UnbondEntry[];
   bonded: BigNumber;
 }

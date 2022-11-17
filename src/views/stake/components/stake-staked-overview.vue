@@ -2,13 +2,30 @@
   <div class="stake-staked-overview">
     <div class="stake-staked-overview__block">
       <p>Total staked</p>
-      <h5>{{ $filters.cryptoCurrencyFormat(totat) }} <span>dot</span></h5>
-      <h6>{{ $filters.currencyFormat(7945.24, "USD") }}</h6>
+      <h5>
+        {{ $filters.cryptoCurrencyFormat(total) }}
+        <span>{{ nativeToken.symbol }}</span>
+      </h5>
+      <h6>
+        {{
+          $filters.currencyFormat(total * nativeToken.price?.toNumber(), "USD")
+        }}
+      </h6>
     </div>
     <div class="stake-staked-overview__block">
       <p>Overall earnings</p>
-      <h5>{{ $filters.cryptoCurrencyFormat(overall) }} <span>dot</span></h5>
-      <h6>{{ $filters.currencyFormat(8.24, "USD") }}</h6>
+      <h5>
+        {{ $filters.cryptoCurrencyFormat(earnings) }}
+        <span>{{ nativeToken.symbol }}</span>
+      </h5>
+      <h6>
+        {{
+          $filters.currencyFormat(
+            earnings * nativeToken.price?.toNumber(),
+            "USD"
+          )
+        }}
+      </h6>
     </div>
     <div class="stake-staked-overview__block">
       <p>Overall yield</p>
@@ -18,12 +35,14 @@
 </template>
 
 <script setup lang="ts">
+import { nativeToken } from "@/stores";
+
 defineProps({
-  totat: {
+  total: {
     type: Number,
     default: 0,
   },
-  overall: {
+  earnings: {
     type: Number,
     default: 0,
   },

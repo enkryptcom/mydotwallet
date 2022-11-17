@@ -1,31 +1,41 @@
+import createIcon from "@/libs/identicon/polkadot";
 import { nativeToken } from "@/stores";
 import {
   NominatedByMap,
   StakerState,
+  UnbondEntry,
   Validator,
   ValidatorInfo,
 } from "@/types/staking";
 import { ApiPromise } from "@polkadot/api";
 import {
+  DeriveSessionProgress,
   DeriveStakingAccount,
   DeriveStakingElected,
+  DeriveStakingQuery,
+  DeriveStakingValidators,
   DeriveStakingWaiting,
+  DeriveUnlocking,
 } from "@polkadot/api-derive/types";
 import { Option, StorageKey } from "@polkadot/types";
 import {
   AccountId,
   IndividualExposure,
   Nominations,
+  StakingLedger,
 } from "@polkadot/types/interfaces";
-import { BN, BN_ZERO, u8aConcat, u8aToHex } from "@polkadot/util";
+import { BN, BN_ONE, BN_ZERO, u8aConcat, u8aToHex } from "@polkadot/util";
+import BigNumber from "bignumber.js";
 import { fromBase } from "./units";
 
 export const getLastEraReward = async (api: ApiPromise): Promise<number> => {
   const currentEra = await api.query.staking.currentEra();
   const lastEra = Number(currentEra.toString()) - 1;
 
-  const lastRewardQuery = await api.query.staking.erasValidatorReward(lastEra);
-  const lastStakeTotalQuery = await api.query.staking.erasTotalStake(lastEra);
+  const [lastRewardQuery, lastStakeTotalQuery] = await api.queryMulti([
+    [api.query.staking.erasValidatorReward, lastEra],
+    [api.query.staking.erasTotalStake, lastEra],
+  ]);
   const lastReward = Number(
     fromBase(lastRewardQuery.toString(), nativeToken.value.decimals)
   );
@@ -41,7 +51,7 @@ const isWaitingDerive = (
   return !(derive as DeriveStakingElected).nextElected;
 };
 
-export const extractNominatorList = async (api: ApiPromise) => {
+export const extractNominators = async (api: ApiPromise) => {
   const result: [StorageKey, Option<Nominations>][] =
     await api.query.staking.nominators.entries();
 
@@ -117,6 +127,7 @@ export const extractValidatorData = async (
 
     list[i] = {
       address: key,
+      image: createIcon(key),
       bonded: bondOwn,
       total,
       commission: validatorPrefs.commission.unwrap().toNumber() / 10_000_000,
@@ -165,19 +176,19 @@ export const extractValidatorData = async (
 };
 
 export const loadValidatorData = async (api: ApiPromise) => {
-  const electedInfo: DeriveStakingElected =
-    await api.derive.staking.electedInfo({
+  const [electedInfo, waitingInfo] = await Promise.all([
+    api.derive.staking.electedInfo({
       withController: true,
       withExposure: true,
       withPrefs: true,
-    });
-  const waitingInfo: DeriveStakingWaiting =
-    await api.derive.staking.waitingInfo({
+    }),
+    api.derive.staking.waitingInfo({
       withController: true,
       withPrefs: true,
-    });
+    }),
+  ]);
 
-  const nominatorList = await extractNominatorList(api);
+  const nominatorList = await extractNominators(api);
   const [elected] = await extractValidatorData(
     api,
     [],
@@ -194,6 +205,36 @@ export const loadValidatorData = async (api: ApiPromise) => {
   return elected.concat(waiting);
 };
 
+export const loadValidatorDataFromList = async (
+  api: ApiPromise,
+  addresses: string[]
+) => {
+  const elected: DeriveStakingValidators =
+    await api.derive.staking.validators();
+
+  const validators: DeriveStakingQuery[] = await api.derive.staking.queryMulti(
+    addresses,
+    {
+      withController: true,
+      withExposure: true,
+      withPrefs: true,
+    }
+  );
+  const nominatorList = await extractNominators(api);
+  const [result] = await extractValidatorData(
+    api,
+    [],
+    {
+      info: validators,
+      nextElected: elected.nextElected,
+      validators: elected.validators,
+    },
+    nominatorList
+  );
+
+  return result;
+};
+
 export const loadStakerState = async (api: ApiPromise, address: string) => {
   const resultBonded = await api.query.staking?.bonded<Option<AccountId>>(
     address
@@ -202,12 +243,11 @@ export const loadStakerState = async (api: ApiPromise, address: string) => {
   if (!resultBonded.isSome) {
     return undefined;
   }
-  const resAccounts: DeriveStakingAccount = await api.derive.staking.account(
-    address
-  );
-  const resValidator = await api.query.staking.validators<ValidatorInfo>(
-    address
-  );
+
+  const [resAccounts, resValidator] = await Promise.all([
+    api.derive.staking.account(address),
+    api.query.staking.validators<ValidatorInfo>(address),
+  ]);
 
   const stakerState = getStakerState(
     address,
@@ -232,6 +272,8 @@ export const getStakerState = (
       sessionIds: _sessionIds,
       stakingLedger,
       validatorPrefs,
+      redeemable,
+      unlocking,
     },
     validateInfo,
   ]: [boolean, DeriveStakingAccount, ValidatorInfo]
@@ -269,11 +311,62 @@ export const getStakerState = (
     isStashValidating,
     // we assume that all ids are non-null
     nominating: nominators?.map(toIdString) as string[],
+    redeemable: redeemable?.toString() || "0",
     sessionIds: (nextSessionIds.length ? nextSessionIds : sessionIds).map(
       toIdString
     ) as string[],
     stakingLedger,
     stashId,
+    unlocking,
     validatorPrefs,
   };
+};
+
+export const queryHasStash = async (api: ApiPromise, address: string) => {
+  const result = await api.query.staking.ledger<Option<StakingLedger>>(address);
+  return result.isSome;
+};
+
+export const queryMinNominatorBond = async (api: ApiPromise) => {
+  const result = await api.query.staking.minNominatorBond();
+  return Number(fromBase(result.toString(), nativeToken.value.decimals));
+};
+
+export const extractUnbondingData = (
+  unlockingInfo?: DeriveUnlocking[],
+  progress?: DeriveSessionProgress,
+  expectedBlockTime = 6000
+): [UnbondEntry[], BigNumber] => {
+  if (!unlockingInfo || !progress) {
+    return [[], new BigNumber(0)];
+  }
+
+  const list = unlockingInfo
+    .filter(
+      ({ remainingEras, value }) =>
+        value.gt(BN_ZERO) && remainingEras.gt(BN_ZERO)
+    )
+    .map((unlock) => {
+      const numBlocks = unlock.remainingEras
+        .sub(BN_ONE)
+        .imul(progress.eraLength)
+        .iadd(progress.eraLength)
+        .isub(progress.eraProgress)
+        .toNumber();
+
+      return {
+        value: new BigNumber(
+          fromBase(unlock.value.toString(), nativeToken.value.decimals)
+        ),
+        eras: unlock.remainingEras.toNumber(),
+        blocks: numBlocks,
+        timeInMs: numBlocks * expectedBlockTime,
+      };
+    });
+  const total = list.reduce(
+    (total, { value }) => total.plus(value),
+    new BigNumber(0)
+  );
+
+  return [list, total];
 };

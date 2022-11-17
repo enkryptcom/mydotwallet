@@ -1,5 +1,8 @@
 import { Token } from "@/types/token";
-import { DeriveStakingAccount } from "@polkadot/api-derive/types";
+import {
+  DeriveStakingAccount,
+  DeriveUnlocking,
+} from "@polkadot/api-derive/types";
 import {
   Exposure,
   RewardDestination,
@@ -93,9 +96,11 @@ export interface StakerState {
   isStashNominating: boolean;
   isStashValidating: boolean;
   nominating?: string[];
+  redeemable: string;
   sessionIds: string[];
   stakingLedger?: StakingLedger;
   stashId: string;
+  unlocking?: DeriveUnlocking[];
   validatorPrefs?: ValidatorPrefs;
 }
 
@@ -109,8 +114,18 @@ export interface StakedTotalState {
 
 export interface StakingAccountWithValidators extends Account {
   totalStaked: BigNumber;
+  activeStaked: BigNumber;
   earnings: BigNumber;
   withdrawable: BigNumber;
   unbonding: BigNumber;
+  unbondingList: UnbondEntry[];
+  isLoading: boolean;
   validators: Validator[];
+}
+
+export interface UnbondEntry {
+  value: BigNumber;
+  eras: number;
+  blocks: number;
+  timeInMs: number;
 }

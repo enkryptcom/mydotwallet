@@ -9,6 +9,7 @@ import { Balance } from "@/types/balance";
 import { WalletItem } from "@/types/wallet-list";
 import { walletConnect } from "@/types/wallets";
 import { StakingOptions } from "@/types/staking";
+import { CrowdloanInfo } from "@/types/crowdloan";
 
 const POLKADOT_ENDPOINTS = [
   "wss://rpc.polkadot.io",
@@ -41,6 +42,7 @@ export const apiPromise = computed(async () => {
       break;
     default:
       endpoints = POLKADOT_ENDPOINTS;
+      break;
   }
 
   const provider = new WsProvider(endpoints);
@@ -88,6 +90,19 @@ export const nativeToken = computed(() => {
   }
 });
 
+export const unbondDuration = computed(() => {
+  switch (selectedNetwork.value) {
+    case Network.Polkadot:
+      return "28 days";
+    case Network.Kusama:
+      return "7 days";
+    case Network.Westend:
+      return "12 hours";
+    default:
+      return "28 days";
+  }
+});
+
 export const subsquidExplorerUrl = computed(() => {
   switch (selectedNetwork.value) {
     case Network.Polkadot:
@@ -111,3 +126,5 @@ export const stakingWizardOptions = ref<StakingOptions>({
   isCompounding: true,
   period: 0,
 });
+
+export const selectedCrowdloan = ref<CrowdloanInfo>();

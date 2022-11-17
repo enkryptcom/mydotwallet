@@ -100,34 +100,80 @@
               <span>{{ token?.symbol || "dot" }}</span>
             </h3>
           </div>
-          <div class="col-3 row justify-content-end"></div>
+          <div class="col-3 row justify-content-end">
+            <base-button
+              title="Unbond"
+              :stroke="true"
+              :small="true"
+              :action="navigateToUnbond"
+            />
+          </div>
         </div>
       </div>
       <div
-        v-if="valuesBreakdown.bonded.balance"
+        v-if="valuesBreakdown.unbonding.balance"
         class="accounts-item__detail-info"
       >
         <div class="row justify-content-beetwen align-items-center">
           <div class="col-3 row justify-content-start">
-            <h4>Bonded</h4>
+            <h4>Unbonding</h4>
           </div>
           <div class="col-3 row justify-content-end">
             <p>
               {{
-                $filters.currencyFormat(valuesBreakdown.bonded.usdValue, "USD")
+                $filters.currencyFormat(
+                  valuesBreakdown.unbonding.usdValue,
+                  "USD"
+                )
               }}
             </p>
           </div>
           <div class="col-3 row justify-content-end">
             <h3>
               {{
-                $filters.cryptoCurrencyFormat(valuesBreakdown.bonded.balance)
+                $filters.cryptoCurrencyFormat(valuesBreakdown.unbonding.balance)
+              }}
+              <span>{{ token?.symbol || "dot" }}</span>
+            </h3>
+          </div>
+          <div class="col-3 row justify-content-end"></div>
+        </div>
+      </div>
+      <div
+        v-if="valuesBreakdown.redeemable.balance"
+        class="accounts-item__detail-info"
+      >
+        <div class="row justify-content-beetwen align-items-center">
+          <div class="col-3 row justify-content-start">
+            <h4>Redeemable</h4>
+          </div>
+          <div class="col-3 row justify-content-end">
+            <p>
+              {{
+                $filters.currencyFormat(
+                  valuesBreakdown.redeemable.usdValue,
+                  "USD"
+                )
+              }}
+            </p>
+          </div>
+          <div class="col-3 row justify-content-end">
+            <h3>
+              {{
+                $filters.cryptoCurrencyFormat(
+                  valuesBreakdown.redeemable.balance
+                )
               }}
               <span>{{ token?.symbol || "dot" }}</span>
             </h3>
           </div>
           <div class="col-3 row justify-content-end">
-            <base-button title="Unbond" :stroke="true" :small="true" />
+            <base-button
+              title="Withdraw"
+              :stroke="true"
+              :small="true"
+              :action="navigateToWithdraw"
+            />
           </div>
         </div>
       </div>
@@ -218,7 +264,8 @@ const toggle = () => {
 const valuesBreakdown = computed(() => {
   const numAvailable = props.balance?.available?.toNumber() || 0;
   const numStaked = props.balance?.staked?.toNumber() || 0;
-  const numBonded = props.balance?.bonded?.toNumber() || 0;
+  const numUnbonding = props.balance?.unbonding?.toNumber() || 0;
+  const numRedeemable = props.balance?.redeemable?.toNumber() || 0;
   const numVested = props.balance?.vested?.toNumber() || 0;
 
   return {
@@ -230,9 +277,13 @@ const valuesBreakdown = computed(() => {
       balance: numStaked,
       usdValue: numStaked * (props.token?.price?.toNumber() || 0),
     },
-    bonded: {
-      balance: numBonded,
-      usdValue: numBonded * (props.token?.price?.toNumber() || 0),
+    unbonding: {
+      balance: numUnbonding,
+      usdValue: numUnbonding * (props.token?.price?.toNumber() || 0),
+    },
+    redeemable: {
+      balance: numRedeemable,
+      usdValue: numRedeemable * (props.token?.price?.toNumber() || 0),
     },
     vested: {
       balance: numVested,
@@ -246,6 +297,24 @@ const navigateToSend = () => {
     name: "send",
     query: {
       from: props.account.address,
+    },
+  });
+};
+
+const navigateToUnbond = () => {
+  router.push({
+    name: "stake-unbond",
+    query: {
+      address: props.account.address,
+    },
+  });
+};
+
+const navigateToWithdraw = () => {
+  router.push({
+    name: "stake-withdraw",
+    query: {
+      address: props.account.address,
     },
   });
 };

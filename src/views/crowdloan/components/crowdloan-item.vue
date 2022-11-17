@@ -14,9 +14,19 @@
     <div class="crowdloan-item__block">
       <div class="crowdloan-item__block-info">
         <p class="crowdloan-item__block-info-amount">
-          <b>17,8%</b> 79.579K of 5M
+          <b>{{ item.percent.toFixed(2) }} %</b>
+          {{ $filters.formatCompactNumber(item.amount) }} of
+          {{ $filters.formatCompactNumber(item.cap) }}
         </p>
-        <p class="crowdloan-item__block-info-count">46,788 contributions</p>
+        <p
+          v-if="contribution.contributorsHex.length"
+          class="crowdloan-item__block-info-count"
+        >
+          {{
+            $filters.cryptoCurrencyFormat(contribution.contributorsHex.length)
+          }}
+          contributions
+        </p>
       </div>
     </div>
     <div class="crowdloan-item__block">
@@ -24,36 +34,134 @@
     </div>
     <div class="crowdloan-item__block">
       <div v-if="item.isContribute" class="crowdloan-item__block-action">
-        <p class="crowdloan-item__block-action-timer">Ending in<b>3d 11h</b></p>
+        <p class="crowdloan-item__block-action-timer">
+          Ending in<b>
+            <vue-countdown
+              v-slot="{ days, hours, minutes }"
+              :interval="60000"
+              :time="item.endMillisecondsLeft"
+            >
+              {{
+                `${days ? ` ${days}d` : ""}${
+                  hours ? ` ${hours}h` : ""
+                } ${minutes}m`
+              }}
+            </vue-countdown></b
+          >
+        </p>
+        <div v-if="contribution.amount">
+          <base-button
+            class="crowdloan-item__block-action-contribute-button"
+            :title="isHover ? 'Contribute' : contributedLabel"
+            :small="true"
+            :action="contributeAction"
+            @mouseover="isHover = true"
+            @mouseleave="isHover = false"
+          />
+        </div>
         <base-button
+          v-else
           title="Contribute"
           :small="true"
           :action="contributeAction"
         />
       </div>
-      <span v-else>—</span>
+      <span v-else>
+        <div v-if="contribution.hasLoaded">
+          <div v-if="contribution.amount">
+            <base-button
+              class="crowdloan-item__block-action-existing-contribution"
+              :title="contributedLabel"
+              :small="true"
+              :action="contributeAction"
+            />
+          </div>
+          <div v-else>-</div>
+        </div>
+        <div v-else>Loading contribution...</div>
+      </span>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { PropType } from "vue";
-import { CrowdloanItem } from "@/types/crowdloan";
+import { computed, onMounted, PropType, ref, toRef, watch } from "vue";
+import { ContributionInfo, CrowdloanInfo } from "@/types/crowdloan";
 import BaseButton from "@/components/base-button/index.vue";
 import LinkIcon from "@/icons/common/link-icon.vue";
 import { useRouter } from "vue-router";
+import {
+  accounts,
+  apiPromise,
+  nativeToken,
+  selectedCrowdloan,
+  selectedNetwork,
+} from "@/stores";
+import { getContributions } from "@/utils/crowdloan";
+import VueCountdown from "@chenfengyuan/vue-countdown";
+import { cryptoCurrencyFormat } from "@/utils/filters";
 
 const router = useRouter();
 
-defineProps({
+const contribution = ref<ContributionInfo>({
+  blockHash: "-",
+  contributorsHex: [],
+  hasLoaded: false,
+  account: "",
+  accountHex: "",
+  amount: 0,
+});
+
+const props = defineProps({
   item: {
-    type: Object as PropType<CrowdloanItem>,
+    type: Object as PropType<CrowdloanInfo>,
+    default: null,
+  },
+  address: {
+    type: String,
     default: null,
   },
 });
 
+const address = toRef(props, "address");
+const isHover = ref(false);
+
+onMounted(() => {
+  loadContributionData();
+});
+
+watch(
+  [selectedNetwork, accounts, address],
+  () => {
+    loadContributionData();
+  },
+  { deep: true }
+);
+
+const loadContributionData = async () => {
+  if (props.address) {
+    const api = await apiPromise.value;
+    contribution.value.hasLoaded = false;
+    contribution.value = await getContributions(
+      api,
+      props.item.paraId,
+      props.address
+    );
+  }
+};
+
+const contributedLabel = computed(() => {
+  return `${cryptoCurrencyFormat(
+    contribution.value.amount
+  )} ${nativeToken.value.symbol.toLocaleUpperCase()}`;
+});
+
 const contributeAction = () => {
-  router.push({ name: "crowdloan-contribute" });
+  selectedCrowdloan.value = props.item;
+  router.push({
+    name: "crowdloan-contribute",
+    query: { address: props.address },
+  });
 };
 </script>
 
@@ -119,12 +227,33 @@ const contributeAction = () => {
         .caption__Regular();
         color: @primaryLabel;
 
-        b {
+        b,
+        b > span {
           display: block;
           .caption__Bold();
           color: @accent;
           margin: 3px 0 0 0;
         }
+      }
+
+      &-contribute-button {
+        background: white;
+        color: @accent;
+        border: @gray016 solid 1px;
+        &:hover {
+          color: @white;
+        }
+      }
+
+      &-existing-contribution {
+        background: white;
+        color: @accent;
+        border: @gray016 solid 1px;
+        &:hover {
+          background: white;
+          color: @accent;
+        }
+        cursor: default;
       }
     }
   }

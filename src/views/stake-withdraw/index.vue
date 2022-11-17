@@ -9,28 +9,39 @@
     </p>
     <h4 class="stake-withdraw__label">Amount to withdraw</h4>
 
-    <amount-input
-      :token="token"
-      :value="String(amount)"
-      @update:amount="inputAmount"
-    />
+    <div class="stake-withdraw__block">
+      <div class="stake-withdraw__block-item">
+        <stake-confirm-amount
+          :token="nativeToken"
+          :amount="withdrawableBalance.toNumber()"
+        />
+      </div>
+    </div>
 
     <div class="stake-withdraw__fee">
       <p class="stake-withdraw__fee-title">Network fee:</p>
       <p class="stake-withdraw__fee-fiat">
-        {{ $filters.currencyFormat(0.34, "USD") }}
+        {{
+          $filters.currencyFormat(fee?.fiatValue || 0, fee?.fiatSymbol || "USD")
+        }}
       </p>
       <p class="stake-withdraw__fee-amount">
-        {{ $filters.cryptoCurrencyFormat(0.037) }} <span>dot</span>
+        {{ $filters.cryptoCurrencyFormat(fee?.nativeValue || 0) }}
+        <span>{{ nativeToken.symbol.toLocaleUpperCase() }}</span>
       </p>
     </div>
 
     <buttons-block>
-      <base-button title="Continue" :action="nextAction" :send="true" />
+      <base-button
+        :disabled="withdrawableBalance.lte(0)"
+        title="Continue"
+        :action="nextAction"
+        :send="true"
+      />
     </buttons-block>
   </white-wrapper>
   <white-wrapper v-else class="stake-withdraw__wrap">
-    <stake-withdraw-process :is-done="isSendDone" />
+    <stake-withdraw-process :is-done="isSendDone" :is-error="isError" />
   </white-wrapper>
 </template>
 
@@ -39,33 +50,147 @@ import WhiteWrapper from "@/components/white-wrapper/index.vue";
 import ButtonsBlock from "@/components/buttons-block/index.vue";
 import BaseButton from "@/components/base-button/index.vue";
 import BackButton from "@/components/back-button/index.vue";
-import AmountInput from "@/components/amount-input/index.vue";
+import stakeConfirmAmount from "../stake-confirm/components/stake-confirm-amount.vue";
 import StakeWithdrawProcess from "./components/stake-withdraw-process.vue";
-import { Token } from "@/types/token";
-import { ref } from "vue";
-import { useRouter } from "vue-router";
-import { dot } from "@/types/tokens";
+import { onMounted, ref, watch } from "vue";
+import { useRoute, useRouter } from "vue-router";
+import {
+  accounts,
+  apiPromise,
+  nativeToken,
+  selectedNetwork,
+  signer,
+} from "@/stores";
+import { GasFeeInfo } from "@/types/transaction";
+import { Account } from "@/types/account";
+import { useGetNativeBalances } from "@/libs/balances";
+import { useGetNativePrice } from "@/libs/prices";
+import { loadStakerState } from "@/utils/staking";
+import BigNumber from "bignumber.js";
+import { fromBase } from "@/utils/units";
+import { getGasFeeInfo } from "@/utils/fee";
+import { withdrawExtrinsic } from "@/utils/extrinsic";
 
 const router = useRouter();
+const route = useRoute();
 
-const amount = ref<number>(1000);
-const token = ref<Token>(dot);
+const fee = ref<GasFeeInfo>();
+const fromAccount = ref<Account>();
+const withdrawableBalance = ref<BigNumber>(new BigNumber(0));
 const isSend = ref<boolean>(false);
 const isSendDone = ref<boolean>(false);
+const isError = ref<boolean>(false);
 
-const nextAction = () => {
+onMounted(() => {
+  if (!route.query.address) {
+    router.push({ name: "stake" });
+    return;
+  }
+  const found = accounts.value.find(
+    (item) => item.address === route.query.address
+  );
+  if (found) {
+    fromAccount.value = found;
+  } else {
+    router.push({ name: "stake" });
+  }
+  updateStakedAmount();
+  useGetNativeBalances();
+  useGetNativePrice();
+});
+
+const updateStakedAmount = async () => {
+  if (!fromAccount.value) {
+    return;
+  }
+
+  const api = await apiPromise.value;
+  const stakerState = await loadStakerState(api, fromAccount.value.address);
+
+  if (!stakerState?.stakingLedger) {
+    return;
+  }
+
+  withdrawableBalance.value = new BigNumber(
+    fromBase(stakerState.redeemable.toString(), nativeToken.value.decimals)
+  );
+};
+
+watch(selectedNetwork, () => {
+  updateStakedAmount();
+  useGetNativeBalances();
+  useGetNativePrice();
+});
+
+watch(accounts, () => {
+  router.push({
+    name: "stake",
+  });
+});
+
+watch(
+  [withdrawableBalance],
+  async () => {
+    if (!withdrawableBalance.value || !fromAccount.value?.address) {
+      return;
+    }
+
+    const api = await apiPromise.value;
+
+    const tx = await withdrawExtrinsic(api);
+
+    fee.value = await getGasFeeInfo(tx, fromAccount.value?.address || "");
+  },
+  { deep: true }
+);
+
+const nextAction = async () => {
+  if (!fromAccount.value) {
+    return;
+  }
   isSend.value = true;
-  setTimeout(() => {
-    isSendDone.value = true;
-  }, 3000);
+
+  const api = await apiPromise.value;
+
+  const tx = await withdrawExtrinsic(api);
+
+  const unsubscribe = await tx.signAndSend(
+    fromAccount.value.address,
+    {
+      signer: signer.value,
+      nonce: -1,
+    },
+    async (result) => {
+      if (!result || !result.status) {
+        return;
+      }
+
+      if (result.status.isFinalized || result.status.isInBlock) {
+        result.events
+          .filter(({ event: { section } }) => section === "system")
+          .forEach(({ event: { method } }): void => {
+            if (method === "ExtrinsicFailed") {
+              // Handle error
+              isError.value = true;
+            } else if (method === "ExtrinsicSuccess") {
+              // Handle succes
+              isSendDone.value = true;
+            }
+          });
+      } else if (result.isError) {
+        // Handle error
+        isError.value = true;
+      }
+
+      if (result.isCompleted) {
+        unsubscribe();
+      }
+    }
+  );
 };
 
 const back = () => {
   router.go(-1);
-};
-
-const inputAmount = (newVal: string) => {
-  amount.value = Number(newVal);
 };
 </script>
 
@@ -139,6 +264,31 @@ const inputAmount = (newVal: string) => {
 
       span {
         text-transform: uppercase;
+      }
+    }
+  }
+  &__block {
+    background: @gray002;
+    border-radius: 16px;
+    .sizing();
+
+    &-item {
+      position: relative;
+
+      &::after {
+        content: "";
+        width: calc(~"100% - 60px");
+        height: 1px;
+        background-color: @gray01;
+        position: absolute;
+        right: 0;
+        bottom: 0;
+      }
+
+      &:last-child {
+        &::after {
+          display: none;
+        }
       }
     }
   }

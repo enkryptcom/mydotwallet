@@ -24,6 +24,9 @@
 
     <p v-if="props.value !== '0'" class="amount-input__fiat">
       ~{{ $filters.currencyFormat(amountInFiat, "USD") }}
+      <span v-if="innerErrorMessage" class="amount-input__inner-error">{{
+        innerErrorMessage
+      }}</span>
     </p>
     <p v-else class="amount-input__fiat">
       {{ $filters.currencyFormat(0, "USD") }}
@@ -61,6 +64,10 @@ const props = defineProps({
   maxValue: {
     type: Object as PropType<BigNumber>,
     default: new BigNumber(0),
+  },
+  innerErrorMessage: {
+    type: String,
+    default: "",
   },
 });
 
@@ -144,6 +151,10 @@ const focus = () => {
     &::placeholder {
       color: @tertiaryLabel;
     }
+  }
+
+  &__inner-error {
+    color: @error;
   }
 
   &__icon {

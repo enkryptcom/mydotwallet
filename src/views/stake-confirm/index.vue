@@ -9,7 +9,10 @@
       and confirm transaction.
     </p>
 
-    <div class="stake-confirm__block">
+    <div v-if="isLoading" class="stake-confirm__loading">
+      <spinner-animation />
+    </div>
+    <div v-else class="stake-confirm__block">
       <div class="stake-confirm__block-item">
         <stake-confirm-account
           :account="fromAccount"
@@ -44,12 +47,13 @@
           amount
         )} ${nativeToken.symbol.toLocaleUpperCase()}`"
         :action="nextAction"
+        :disabled="isLoading"
         :send="true"
       />
     </buttons-block>
   </white-wrapper>
   <white-wrapper v-else class="stake-confirm__wrap">
-    <stake-confirm-process :is-done="isSendDone" />
+    <stake-confirm-process :is-done="isSendDone" :is-error="isError" />
   </white-wrapper>
 </template>
 
@@ -71,12 +75,15 @@ import {
   onMounted,
   onUnmounted,
   computed,
+  watch,
 } from "vue";
 import { useRouter } from "vue-router";
 import {
+  accounts,
   apiPromise,
   nativeBalances,
   nativeToken,
+  selectedNetwork,
   signer,
   stakingWizardOptions,
 } from "@/stores";
@@ -84,9 +91,10 @@ import { Validator } from "@/types/staking";
 import { GasFeeInfo } from "@/types/transaction";
 import { toBN } from "web3-utils";
 import { toBase } from "@/utils/units";
-import { stakeExtrinsic } from "@/utils/extrinsic";
+import { stakeExtraExtrinsic, stakeExtrinsic } from "@/utils/extrinsic";
 import { getGasFeeInfo } from "@/utils/fee";
 import { ISubmittableResult } from "@polkadot/types/types";
+import { queryHasStash } from "@/utils/staking";
 
 const router = useRouter();
 
@@ -97,8 +105,11 @@ const height = ref<number>(0);
 const fromAccount = ref<Account>();
 const amount = ref<number>(0);
 const validators = ref<Array<Validator>>([]);
+const isLoading = ref<boolean>(false);
+const hasStash = ref<boolean>(false);
 const isSend = ref<boolean>(false);
 const isSendDone = ref<boolean>(false);
+const isError = ref<boolean>(false);
 const isCompounding = ref<boolean>(true);
 
 const fee = ref<GasFeeInfo>();
@@ -141,13 +152,20 @@ const nextAction = async () => {
     toBase(amount.value?.toString() || "0", nativeToken.value.decimals)
   );
 
-  const tx = await stakeExtrinsic(
-    api,
-    fromAccount.value.address || "",
-    rawAmount.toString(),
-    validators.value.map((item) => item.address),
-    isCompounding.value
-  );
+  const tx = await (hasStash.value
+    ? stakeExtraExtrinsic(
+        api,
+        rawAmount.toString(),
+        validators.value.map((item) => item.address),
+        isCompounding.value
+      )
+    : stakeExtrinsic(
+        api,
+        fromAccount.value.address || "",
+        rawAmount.toString(),
+        validators.value.map((item) => item.address),
+        isCompounding.value
+      ));
 
   const unsubscribe = await tx.signAndSend(
     fromAccount.value.address,
@@ -166,6 +184,7 @@ const nextAction = async () => {
           .forEach(({ event: { method } }): void => {
             if (method === "ExtrinsicFailed") {
               // Handle error
+              isError.value = true;
             } else if (method === "ExtrinsicSuccess") {
               // Handle succes
               isSendDone.value = true;
@@ -173,6 +192,7 @@ const nextAction = async () => {
           });
       } else if (result.isError) {
         // Handle error
+        isError.value = true;
       }
 
       if (result.isCompleted) {
@@ -186,7 +206,7 @@ const back = () => {
   router.go(-1);
 };
 
-const loadPreviousStakingOptions = () => {
+const loadPreviousStakingOptions = async () => {
   isCompounding.value = stakingWizardOptions.value.isCompounding;
   if (
     !stakingWizardOptions.value.amount ||
@@ -201,7 +221,10 @@ const loadPreviousStakingOptions = () => {
   amount.value = stakingWizardOptions.value.amount;
   fromAccount.value = stakingWizardOptions.value.fromAccount;
   validators.value = stakingWizardOptions.value.validators;
-  loadFeeInfo();
+  isLoading.value = true;
+  const api = await apiPromise.value;
+  hasStash.value = await queryHasStash(api, fromAccount.value.address);
+  isLoading.value = false;
 };
 
 const availableBalance = computed(() => {
@@ -212,7 +235,15 @@ const availableBalance = computed(() => {
   return nativeBalances[fromAccount.value.address]?.available.toNumber() || 0;
 });
 
-const loadFeeInfo = async () => {
+watch([selectedNetwork, accounts], () => {
+  router.push({ name: "stake-enter-amount" });
+});
+
+watch([amount, nativeBalances], async () => {
+  if (!amount.value || !fromAccount.value) {
+    return;
+  }
+
   const api = await apiPromise.value;
 
   const rawAmount = toBN(
@@ -228,7 +259,7 @@ const loadFeeInfo = async () => {
   );
 
   fee.value = await getGasFeeInfo(tx, fromAccount.value?.address || "");
-};
+});
 </script>
 
 <style lang="less" scoped>
@@ -279,6 +310,13 @@ const loadFeeInfo = async () => {
         }
       }
     }
+  }
+  &__loading {
+    padding: 48px 0 48px 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-direction: column;
   }
   &__scroll-area {
     position: relative;

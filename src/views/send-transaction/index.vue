@@ -124,6 +124,8 @@ onMounted(async () => {
   }
 
   recentAccounts.value = await accountsState.getRecentAccounts();
+  loadFeeInfo();
+  validateInputs();
 });
 
 const edWarn = computed(() => {
@@ -180,6 +182,53 @@ const nextAction = () => {
   });
 };
 
+const validateInputs = async () => {
+  if (
+    amount.value &&
+    selectedAsset.value &&
+    fromAccount.value &&
+    toAccount.value
+  ) {
+    if (
+      !isValidDecimals(amount.value.toString(), selectedAsset.value.decimals)
+    ) {
+      hasEnough.value = false;
+      return;
+    }
+
+    const rawAmount = toBN(
+      toBase(amount.value?.toString() || "0", selectedAsset.value.decimals)
+    );
+
+    const rawBalance = toBN(
+      toBase(
+        nativeBalances[fromAccount.value.address]?.available.toString() || "0",
+        selectedAsset.value.decimals
+      )
+    );
+
+    if (rawAmount.gt(rawBalance)) {
+      hasEnough.value = false;
+    } else {
+      hasEnough.value = true;
+    }
+  }
+};
+
+const loadFeeInfo = async () => {
+  // Load fee info for transaction with mock values
+  const api = await apiPromise.value;
+
+  const tx = await sendExtrinsic(
+    api,
+    accounts.value[0].address,
+    "1",
+    "transfer"
+  );
+
+  fee.value = await getGasFeeInfo(tx, fromAccount.value.address);
+};
+
 watch(
   [
     selectedAsset,
@@ -189,48 +238,10 @@ watch(
     toAccount,
     selectedNetwork,
   ],
-  async () => {
-    if (amount.value && selectedAsset.value && toAccount.value) {
-      if (
-        !isValidDecimals(amount.value.toString(), selectedAsset.value.decimals)
-      ) {
-        hasEnough.value = false;
-        return;
-      }
-
-      const api = await apiPromise.value;
-
-      const rawAmount = toBN(
-        toBase(amount.value?.toString() || "0", selectedAsset.value.decimals)
-      );
-
-      const rawBalance = toBN(
-        toBase(
-          nativeBalances[fromAccount.value.address]?.available.toString() ||
-            "0",
-          selectedAsset.value.decimals
-        )
-      );
-
-      if (rawAmount.gt(rawBalance)) {
-        hasEnough.value = false;
-      } else {
-        hasEnough.value = true;
-      }
-
-      const transferType = "transfer";
-
-      const tx = await sendExtrinsic(
-        api,
-        toAccount.value.address,
-        rawAmount.toString(),
-        transferType
-      );
-
-      fee.value = await getGasFeeInfo(tx, fromAccount.value.address);
-    }
-  }
+  validateInputs
 );
+
+watch([selectedNetwork, accounts], loadFeeInfo);
 </script>
 
 <style lang="less" scoped>

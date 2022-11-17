@@ -9,8 +9,8 @@ import Stake from "@/views/stake/index.vue";
 import StakeEnterAmount from "@/views/stake-enter-amount/index.vue";
 import StakeNominate from "@/views/stake-nominate/index.vue";
 import StakeConfirm from "@/views/stake-confirm/index.vue";
-import StakeUnbound from "@/views/stake-unbound/index.vue";
-import StakeUnboundConfirm from "@/views/stake-unbound-confirm/index.vue";
+import StakeUnbond from "@/views/stake-unbond/index.vue";
+import StakeUnbondConfirm from "@/views/stake-unbond-confirm/index.vue";
 import StakeWithdraw from "@/views/stake-withdraw/index.vue";
 import Crowdloan from "@/views/crowdloan/index.vue";
 import CrowdloanContribute from "@/views/crowdloan-contribute/index.vue";
@@ -90,21 +90,21 @@ const routes = {
         name: "stake-confirm",
       },
       {
-        path: "unbound",
+        path: "unbond",
         children: [
           {
             path: "",
             components: {
-              view: StakeUnbound,
+              view: StakeUnbond,
             },
-            name: "stake-unbound",
+            name: "stake-unbond",
           },
           {
             path: "confirm",
             components: {
-              view: StakeUnboundConfirm,
+              view: StakeUnbondConfirm,
             },
-            name: "stake-unbound-confirm",
+            name: "stake-unbond-confirm",
           },
         ],
       },

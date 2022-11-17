@@ -25,8 +25,11 @@
           :action="unbondAction"
         />
         <base-button
+          v-if="!account.withdrawable.isZero()"
           title="Withdraw"
-          subtitle="800 DOT"
+          :subtitle="`${$filters.cryptoCurrencyFormat(
+            account.withdrawable.toNumber()
+          )} ${nativeToken.symbol.toLocaleUpperCase()}`"
           :stroke="true"
           :small="true"
           :action="withdrawAction"
@@ -38,13 +41,45 @@
         <p>Total staked</p>
         <div class="stake-staked-account__stats-block-amount">
           <h5>
-            {{ $filters.cryptoCurrencyFormat(account.totalStaked.toNumber()) }}
+            {{ $filters.cryptoCurrencyFormat(account.activeStaked.toNumber()) }}
             <span>{{ nativeToken.symbol }}</span>
           </h5>
           <h6>
             {{
               $filters.currencyFormat(
-                account.totalStaked.toNumber() * nativeToken.price.toNumber(),
+                account.activeStaked.toNumber() * nativeToken.price.toNumber(),
+                "USD"
+              )
+            }}
+          </h6>
+        </div>
+      </div>
+      <div class="stake-staked-account__stats-block">
+        <p>
+          Unbonding
+          <span v-if="account.unbondingList.length > 0">
+            <vue-countdown
+              v-slot="{ days, hours, minutes }"
+              :interval="60000"
+              :time="account.unbondingList[0]?.timeInMs || 0"
+            >
+              {{
+                `(${days ? `${days}d ` : ""}${
+                  hours ? `${hours}h ` : ""
+                }${minutes}m left)`
+              }}
+            </vue-countdown>
+          </span>
+        </p>
+        <div class="stake-staked-account__stats-block-amount">
+          <h5>
+            {{ $filters.cryptoCurrencyFormat(account.unbonding.toNumber()) }}
+            <span>{{ nativeToken.symbol }}</span>
+          </h5>
+          <h6>
+            {{
+              $filters.currencyFormat(
+                account.unbonding.toNumber() * nativeToken.price.toNumber(),
                 "USD"
               )
             }}
@@ -55,15 +90,21 @@
         <p>Overall earnings</p>
         <div class="stake-staked-account__stats-block-amount">
           <h5>
-            {{ $filters.cryptoCurrencyFormat(account.earnings.toNumber()) }}
+            {{
+              account.isLoading
+                ? "--"
+                : $filters.cryptoCurrencyFormat(account.earnings.toNumber())
+            }}
             <span>{{ nativeToken.symbol }}</span>
           </h5>
           <h6>
             {{
-              $filters.currencyFormat(
-                account.earnings.toNumber() * nativeToken.price.toNumber(),
-                "USD"
-              )
+              account.isLoading
+                ? ""
+                : $filters.currencyFormat(
+                    account.earnings.toNumber() * nativeToken.price.toNumber(),
+                    "USD"
+                  )
             }}
           </h6>
         </div>
@@ -71,19 +112,33 @@
       <div class="stake-staked-account__stats-block">
         <p>Overall yield</p>
         <div class="stake-staked-account__stats-block-amount">
-          <h5>{{ $filters.cryptoCurrencyFormat(earningsPercent) }}%</h5>
+          <h5>
+            {{
+              account.isLoading
+                ? "--"
+                : $filters.cryptoCurrencyFormat(earningsPercent)
+            }}%
+          </h5>
         </div>
       </div>
     </div>
-    <div class="stake-staked-account__validators-toggle" @click="toggle">
-      Show {{ account.validators.length }} validator(s)
-      <expand :class="{ open: isOpen }" />
+    <div
+      v-if="account.isLoading"
+      class="stake-staked-account__validators-toggle"
+    >
+      Loading validator info...
     </div>
-    <div v-show="isOpen" class="stake-staked-account__validators-list">
-      <stake-staked-validators
-        :validators="account.validators"
-        :bonded-amount="account.totalStaked"
-      />
+    <div v-else>
+      <div class="stake-staked-account__validators-toggle" @click="toggle">
+        Show {{ account.validators.length }} validator(s)
+        <expand :class="{ open: isOpen }" />
+      </div>
+      <div v-show="isOpen" class="stake-staked-account__validators-list">
+        <stake-staked-validators
+          :validators="account.validators"
+          :bonded-amount="account.activeStaked"
+        />
+      </div>
     </div>
   </div>
 </template>
@@ -96,13 +151,13 @@ import StakeStakedValidators from "./stake-staked-validators.vue";
 import { ref, PropType, computed } from "vue";
 import { useRouter } from "vue-router";
 import { StakingAccountWithValidators } from "@/types/staking";
-import { nativeToken } from "@/stores";
+import VueCountdown from "@chenfengyuan/vue-countdown";
+import { nativeToken, unbondDuration } from "@/stores";
 
 const router = useRouter();
 
 const isOpen = ref<boolean>(false);
-const unbondInfo =
-  "Oversubscribed info will be credited to your bonded balance for compound earning.";
+const unbondInfo = `The unbonding period is approximately ${unbondDuration.value}.`;
 
 const props = defineProps({
   account: {
@@ -120,11 +175,21 @@ const toggle = () => {
 };
 
 const unbondAction = () => {
-  router.push({ name: "stake-unbound" });
+  router.push({
+    name: "stake-unbond",
+    query: {
+      address: props.account?.address,
+    },
+  });
 };
 
 const withdrawAction = () => {
-  router.push({ name: "stake-withdraw" });
+  router.push({
+    name: "stake-withdraw",
+    query: {
+      address: props.account?.address,
+    },
+  });
 };
 </script>
 
