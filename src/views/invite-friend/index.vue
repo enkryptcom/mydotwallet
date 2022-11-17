@@ -2,7 +2,7 @@
   <modal-wrapper title="Send invite to your friend">
     <div class="invite-friend__textarea">
       Hey! You should check out *Polkadapp*. It is an easy to use and secure
-      Polkadot dapp with the most useful features.<br />*polkadapp.com*
+      Polkadot dapp with the most useful features.<br /><br />www.mydotwallet.com
       <a class="invite-friend__copy" @click="copy"><copy-icon /></a>
     </div>
   </modal-wrapper>
@@ -13,9 +13,7 @@ import ModalWrapper from "@/components/modal-wrapper/index.vue";
 import CopyIcon from "@/icons/common/copy-icon.vue";
 
 const copy = () => {
-  navigator.clipboard.writeText(
-    "Hey! You should check out *Polkadapp*. It is an easy to use and secure Polkadot dapp with the most useful features. *polkadapp.com*"
-  );
+  navigator.clipboard.writeText("https://www.mydotwallet.com");
 };
 </script>
 

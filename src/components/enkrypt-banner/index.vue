@@ -1,5 +1,9 @@
 <template>
-  <div v-if="isLeft" class="enkrypt-banner left">
+  <div
+    v-show="extension?.name != 'enkrypt'"
+    v-if="isLeft"
+    class="enkrypt-banner left"
+  >
     <enkrypt-logo-white />
     <h3>Multi-chain web3 extension.</h3>
     <p>
@@ -7,20 +11,22 @@
     </p>
     <base-button title="Get extenion" :small="true" :action="action" />
   </div>
-  <div v-else class="enkrypt-banner">
+  <div v-show="extension?.name != 'enkrypt'" v-else class="enkrypt-banner">
     <h3>Enkrypt: multi-chain web3 extension.</h3>
     <p>
       Enkrypt is a wallet extension that allows you to use all networks. Most
       popular ones, like Ethereum and Polkadot with its Parachains are already
       built in.
     </p>
-    <base-button title="Get on Chrome web store" :action="action" />
+    <base-button :title="`Get on ${browserName} web store`" :action="action" />
   </div>
 </template>
 
 <script setup lang="ts">
 import BaseButton from "@/components/base-button/index.vue";
 import EnkryptLogoWhite from "@/icons/common/enkrypt-logo-white.vue";
+import { extension } from "@/stores";
+import { getBrowserName, extensionUrl } from "@/utils/browser";
 
 defineProps({
   isLeft: {
@@ -30,8 +36,10 @@ defineProps({
 });
 
 const action = () => {
-  console.log("Get on Chrome web store");
+  window.open(extensionUrl[browserName], "_blank");
 };
+
+const browserName = getBrowserName();
 </script>
 
 <style lang="less" scoped>

@@ -1,40 +1,107 @@
 <template>
   <select-list
+    ref="selectRef"
     :select="walletSelected"
-    :items="walletConnectItems"
+    :items="availableExtensions"
     :is-list-image="true"
     @update:select="selectItem"
   />
 </template>
 
 <script setup lang="ts">
-import { ref } from "vue";
-import { walletConnect, walletConnectItems } from "@/types/wallets";
+import {
+  walletConnect,
+  walletConnectItems,
+  walletDisconnect,
+  walletGetEnkrypt,
+  WalletId,
+} from "@/types/wallets";
 import SelectList from "@/components/select-list/index.vue";
-import { SelectItem } from "@/types/select-list";
-import { accounts, extension, signer } from "@/stores";
+import {
+  accounts,
+  extension,
+  shouldOpenWalletSelector,
+  signer,
+  walletSelected,
+} from "@/stores";
 import {
   InjectedExtension,
   InjectedWindow,
 } from "@polkadot/extension-inject/types";
-import { WalletItem } from "@/types/wallet-list";
-import createIcon from "@/libs/polkadot-identicon";
-import { encodeAddress } from "@polkadot/keyring";
+import createIcon from "@/libs/identicon/polkadot";
 import { formatAddress } from "@/utils/filters";
+import { ComponentPublicInstance, onMounted, ref, watch } from "vue";
+import LastExtensionState from "@/state/extension";
+import { WalletItem } from "@/types/wallet-list";
 
-const walletSelected = ref<SelectItem>(walletConnect);
+const lastExtensionState = new LastExtensionState();
 
-const selectItem = async (item: SelectItem) => {
+const selectRef = ref<ComponentPublicInstance<any>>();
+const availableExtensions = ref<WalletItem[]>([]);
+
+onMounted(async () => {
+  const lastExtension = await lastExtensionState.getLastExtensionName();
+  getAvailableWallets();
+
+  if (lastExtension) {
+    try {
+      await connectToWallet(lastExtension);
+      const walletItem = walletConnectItems.find(
+        (wallet) => wallet.extensionName === lastExtension
+      );
+
+      if (walletItem) {
+        walletSelected.value = walletItem;
+      }
+    } catch {
+      console.error("Could not connect to previous wallet");
+    }
+  }
+});
+
+watch(shouldOpenWalletSelector, () => {
+  if (shouldOpenWalletSelector && selectRef) {
+    selectRef.value.isOpen = true;
+    shouldOpenWalletSelector.value = false;
+  }
+});
+
+const getAvailableWallets = () => {
+  const injectedWindow = window as Window & InjectedWindow;
+  const injectedExtensions = injectedWindow?.injectedWeb3;
+
+  let extensions = [];
+
+  if (injectedExtensions) {
+    for (const extension of Object.keys(injectedExtensions)) {
+      const e = walletConnectItems.find(
+        (wallet) => wallet.extensionName === extension
+      );
+
+      if (e) {
+        extensions.push(e);
+      }
+    }
+
+    availableExtensions.value = [...extensions, walletDisconnect];
+  } else {
+    availableExtensions.value = [walletGetEnkrypt];
+  }
+};
+
+const selectItem = async (item: WalletItem) => {
   // If disconnecting
-  if (item.id === 1) {
+  if (item.id === WalletId.DISCONNECT) {
     walletSelected.value = walletConnect;
     signer.value = undefined;
     extension.value = undefined;
     accounts.value = [];
+  } else if (item.id === WalletId.GET_ENKRYPT) {
+    window.open("https://www.enkrypt.com", "_blank");
   } else {
     // If connecting
     try {
-      const accounts = await connectToWallet(item);
+      const accounts = await connectToWallet(item.extensionName);
       if (accounts) {
         walletSelected.value = item;
       } else {
@@ -46,24 +113,26 @@ const selectItem = async (item: SelectItem) => {
   }
 };
 
-const connectToWallet = async (wallet: WalletItem) => {
-  if (!wallet.extensionName) {
+const connectToWallet = async (wallet: string | undefined) => {
+  if (!wallet) {
     return;
   }
 
+  wallet = wallet.toLowerCase();
+
   const injectedWindow = window as Window & InjectedWindow;
-  const injectedExtension =
-    injectedWindow?.injectedWeb3?.[wallet.extensionName];
+  const injectedExtension = injectedWindow?.injectedWeb3?.[wallet];
   const rawExtension = await injectedExtension.enable("mydotwallet");
   const foundExtension: InjectedExtension = {
     ...rawExtension,
-    name: wallet.extensionName,
+    name: wallet,
     version: injectedExtension.version,
   };
   const foundAccounts = await foundExtension.accounts.get();
 
   signer.value = foundExtension.signer;
   extension.value = foundExtension;
+  await lastExtensionState.setLastExtension(foundExtension.name);
 
   accounts.value = foundAccounts
     .filter((item) => item.type !== "ethereum")
@@ -75,7 +144,7 @@ const connectToWallet = async (wallet: WalletItem) => {
       isLedger: false,
     }));
 
-  return accounts;
+  return accounts.value;
 };
 </script>
 

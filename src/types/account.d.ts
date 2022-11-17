@@ -1,7 +1,7 @@
 export interface Account {
-  id: number;
+  id?: number;
   name: string;
-  image: string;
+  image?: string;
   address: string;
   isLedger: boolean;
 }

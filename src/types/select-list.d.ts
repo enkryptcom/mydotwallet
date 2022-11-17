@@ -11,3 +11,7 @@ export interface NetworkSelectItem {
   name: string;
   image?: string;
 }
+
+export interface AccountSelectItem extends SelectItem {
+  address: string;
+}

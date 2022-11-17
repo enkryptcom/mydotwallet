@@ -1,3 +1,4 @@
+import BigNumber from "bignumber.js";
 import { Token } from "./token";
 
 export const dot: Token = {
@@ -5,7 +6,10 @@ export const dot: Token = {
   name: "Polkadot",
   image: require("@/assets/pic/polkadot.token.svg"),
   symbol: "dot",
-  price: 10.2,
+  price: new BigNumber(0),
+  decimals: 10,
+  existentialDeposit: new BigNumber(1),
+  coingeckoID: "polkadot",
 };
 
 export const ksm: Token = {
@@ -13,7 +17,21 @@ export const ksm: Token = {
   name: "Kusama",
   image: require("@/assets/pic/kusama.token.png"),
   symbol: "ksm",
-  price: 39.1,
+  price: new BigNumber(0),
+  decimals: 12,
+  existentialDeposit: new BigNumber(0.0000333333),
+  coingeckoID: "kusama",
+};
+
+export const wnd: Token = {
+  id: 3,
+  name: "Westend",
+  image: require("@/assets/pic/polkadot.token.svg"),
+  symbol: "wnd",
+  price: new BigNumber(0),
+  decimals: 12,
+  existentialDeposit: new BigNumber(0.01),
+  coingeckoID: "polkadot",
 };
 
 export const getToken = (nameOrSymbol: string) => {

@@ -2,15 +2,32 @@
   <div class="send-verify-fee">
     <p class="send-verify-fee__title">Network fee:</p>
     <p class="send-verify-fee__fiat">
-      {{ $filters.currencyFormat(0.34, "USD") }}
+      {{ $filters.currencyFormat(fee.fiatValue, fee.fiatSymbol) }}
     </p>
     <p class="send-verify-fee__amount">
-      {{ $filters.cryptoCurrencyFormat(0.037) }} <span>dot</span>
+      {{ $filters.cryptoCurrencyFormat(fee.nativeValue) }}
+      <span>{{ fee.nativeSymbol }}</span>
     </p>
   </div>
 </template>
 
-<script setup lang="ts"></script>
+<script setup lang="ts">
+import { GasFeeInfo } from "@/types/transaction";
+import BigNumber from "bignumber.js";
+import { PropType } from "vue";
+
+defineProps({
+  fee: {
+    type: Object as PropType<GasFeeInfo>,
+    default: () => ({
+      nativeValue: new BigNumber(0),
+      fiatValue: new BigNumber(0),
+      nativeSymbol: "dot",
+      fiatSymbol: "USD",
+    }),
+  },
+});
+</script>
 
 <style lang="less" scoped>
 @import "@/assets/styles/theme.less";

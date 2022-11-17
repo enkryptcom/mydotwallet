@@ -34,7 +34,10 @@ defineProps({
 
 .claim-valid-account {
   width: 100%;
-  padding: 16px 0 0 0;
+  padding: 20px;
+  border: 1px solid rgba(95, 99, 104, 0.2);
+  border-radius: 10px;
+  margin-bottom: 16px;
 
   h2 {
     .body1__Bold();

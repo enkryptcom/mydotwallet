@@ -9,7 +9,7 @@
     }"
     @click="action()"
   >
-    {{ title }}
+    {{ title }} <span v-if="subtitle">{{ subtitle }}</span>
   </a>
 </template>
 
@@ -18,6 +18,10 @@ defineProps({
   title: {
     type: String,
     default: "",
+  },
+  subtitle: {
+    type: String,
+    default: null,
   },
   action: {
     type: Function,
@@ -60,6 +64,10 @@ defineProps({
   color: @white;
   display: inline-block;
   .transition(background, 0.3s);
+
+  span {
+    color: @accent;
+  }
 
   &:hover {
     background: @accentHover;
