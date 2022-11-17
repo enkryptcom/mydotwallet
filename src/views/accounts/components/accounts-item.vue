@@ -83,7 +83,7 @@
         </div>
       </div>
       <div
-        v-if="valuesBreakdown.staked.balance"
+        v-if="valuesBreakdown.staked.balance ?? false"
         class="accounts-item__detail-info"
       >
         <div class="row justify-content-beetwen align-items-center">
@@ -268,7 +268,7 @@ const toggle = () => {
 
 const valuesBreakdown = computed(() => {
   const numAvailable = props.balance?.available?.toNumber() || 0;
-  const numStaked = props.balance?.staked?.toNumber() || 0;
+  const numStaked = props.balance?.reserved?.toNumber() || 0;
   const numUnbonding = props.balance?.unbonding?.toNumber() || 0;
   const numRedeemable = props.balance?.redeemable?.toNumber() || 0;
   const numVested = props.balance?.vested?.toNumber() || 0;
