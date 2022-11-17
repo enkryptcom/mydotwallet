@@ -1,4 +1,4 @@
-import { createRouter, createWebHistory } from "vue-router";
+import { createRouter, createWebHashHistory } from "vue-router";
 import Accounts from "@/views/accounts/index.vue";
 import SendTransaction from "@/views/send-transaction/index.vue";
 import SendTransactionVerify from "@/views/send-transaction-verify/index.vue";
@@ -165,7 +165,7 @@ const routes = {
 };
 
 export default createRouter({
-  history: createWebHistory(),
+  history: createWebHashHistory(),
   routes: Object.values(routes),
   scrollBehavior(to) {
     if (to.hash) {
