@@ -12,7 +12,12 @@
         </p>
       </div>
       <div class="col-4 row justify-content-end">
-        <base-button title="Stake" :stroke="true" :small="true" />
+        <base-button
+          title="Stake"
+          :stroke="true"
+          :small="true"
+          :action="navigateToStake"
+        />
         <base-button
           title="Send"
           :stroke="true"
@@ -52,6 +57,12 @@ const totalUsdValue = computed(() => {
 const navigateToSend = () => {
   router.push({
     name: "send",
+  });
+};
+
+const navigateToStake = () => {
+  router.push({
+    name: "stake",
   });
 };
 </script>
