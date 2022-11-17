@@ -67,7 +67,12 @@
             </h3>
           </div>
           <div class="col-3 row justify-content-end">
-            <base-button title="Stake" :stroke="true" :small="true" />
+            <base-button
+              title="Stake"
+              :stroke="true"
+              :small="true"
+              :action="navigateToStake"
+            />
             <base-button
               title="Send"
               :stroke="true"
@@ -298,6 +303,12 @@ const navigateToSend = () => {
     query: {
       from: props.account.address,
     },
+  });
+};
+
+const navigateToStake = () => {
+  router.push({
+    name: "stake",
   });
 };
 
