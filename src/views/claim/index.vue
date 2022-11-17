@@ -145,6 +145,7 @@ const tokenSymbol = computed(() =>
 
 .claim {
   &__wrap {
+    margin-top: 32px !important;
     padding: 16px 32px;
 
     &--second {

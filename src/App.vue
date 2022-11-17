@@ -30,6 +30,8 @@ import AppMenu from "@/components/app-menu/index.vue";
   padding-top: 96px;
 
   &__main {
+    margin-top: 100px;
+
     .screen-sm({
       display: none;
     });
