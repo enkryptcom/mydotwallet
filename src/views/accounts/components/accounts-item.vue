@@ -83,7 +83,7 @@
         </div>
       </div>
       <div
-        v-if="valuesBreakdown.staked.balance ?? false"
+        v-if="valuesBreakdown.staked.balance"
         class="accounts-item__detail-info"
       >
         <div class="row justify-content-beetwen align-items-center">
@@ -225,6 +225,35 @@
           </div>
         </div>
       </div>
+      <div
+        v-if="valuesBreakdown.reserved.balance"
+        class="accounts-item__detail-info"
+      >
+        <div class="row justify-content-beetwen align-items-center">
+          <div class="col-3 row justify-content-start">
+            <h4>Reserved</h4>
+          </div>
+          <div class="col-3 row justify-content-end">
+            <p>
+              {{
+                $filters.currencyFormat(
+                  valuesBreakdown.reserved.usdValue,
+                  "USD"
+                )
+              }}
+            </p>
+          </div>
+          <div class="col-3 row justify-content-end">
+            <h3>
+              {{
+                $filters.cryptoCurrencyFormat(valuesBreakdown.reserved.balance)
+              }}
+              <span>{{ token?.symbol || "dot" }}</span>
+            </h3>
+          </div>
+          <div class="col-3 row justify-content-end"></div>
+        </div>
+      </div>
     </div>
   </Transition>
 </template>
@@ -268,10 +297,11 @@ const toggle = () => {
 
 const valuesBreakdown = computed(() => {
   const numAvailable = props.balance?.available?.toNumber() || 0;
-  const numStaked = props.balance?.reserved?.toNumber() || 0;
+  const numStaked = props.balance?.staked?.toNumber() || 0;
   const numUnbonding = props.balance?.unbonding?.toNumber() || 0;
   const numRedeemable = props.balance?.redeemable?.toNumber() || 0;
   const numVested = props.balance?.vested?.toNumber() || 0;
+  const numReserved = props.balance?.reserved?.toNumber() || 0;
 
   return {
     available: {
@@ -293,6 +323,10 @@ const valuesBreakdown = computed(() => {
     vested: {
       balance: numVested,
       usdValue: numVested * (props.token?.price?.toNumber() || 0),
+    },
+    reserved: {
+      balance: numReserved,
+      usdValue: numReserved * (props.token?.price?.toNumber() || 0),
     },
   };
 });
