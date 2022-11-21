@@ -76,7 +76,7 @@ onMounted(async () => {
   await useGetNativeBalances();
   setBalancesOnly();
   useGetNativePrice();
-  stakingAccounts.value = await loadStakingAccounts();
+  loadStakingAccounts().then((value) => (stakingAccounts.value = value));
   isDataLoading.value = false;
 });
 
@@ -88,7 +88,7 @@ watch(
       useGetNativePrice();
       await useGetNativeBalances();
       setBalancesOnly();
-      stakingAccounts.value = await loadStakingAccounts();
+      loadStakingAccounts().then((value) => (stakingAccounts.value = value));
       isDataLoading.value = false;
     }
   },
@@ -295,7 +295,7 @@ const getAccountsRewardsMap = async (
       return `, OR: { id_eq: "${current}"${prevValue} }`;
     }, "");
 
-    const queryResult = await request(
+    return request(
       subsquidExplorerUrl.value,
       gql`
       query MyQuery {
@@ -318,17 +318,17 @@ const getAccountsRewardsMap = async (
         }
       }
     `
-    );
+    ).then((queryResult) => {
+      const resultMap: Record<string, BigNumber> = {};
 
-    const resultMap: Record<string, BigNumber> = {};
+      for (const auxStaker of queryResult.stakers) {
+        resultMap[auxStaker.id] = new BigNumber(
+          fromBase(auxStaker.totalReward, nativeToken.value.decimals)
+        );
+      }
 
-    for (const auxStaker of queryResult.stakers) {
-      resultMap[auxStaker.id] = new BigNumber(
-        fromBase(auxStaker.totalReward, nativeToken.value.decimals)
-      );
-    }
-
-    return resultMap;
+      return resultMap;
+    });
   } catch (err) {
     console.error(err);
     return {};

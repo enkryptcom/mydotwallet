@@ -209,18 +209,23 @@ export const loadValidatorDataFromList = async (
   api: ApiPromise,
   addresses: string[]
 ) => {
-  const elected: DeriveStakingValidators =
-    await api.derive.staking.validators();
+  const electedPromise: Promise<DeriveStakingValidators> =
+    api.derive.staking.validators();
 
-  const validators: DeriveStakingQuery[] = await api.derive.staking.queryMulti(
-    addresses,
-    {
+  const validatorsPromise: Promise<DeriveStakingQuery[]> =
+    api.derive.staking.queryMulti(addresses, {
       withController: true,
       withExposure: true,
       withPrefs: true,
-    }
-  );
-  const nominatorList = await extractNominators(api);
+    });
+  const nominatorListPromise = extractNominators(api);
+
+  const [elected, validators, nominatorList] = await Promise.all([
+    electedPromise,
+    validatorsPromise,
+    nominatorListPromise,
+  ]);
+
   const [result] = await extractValidatorData(
     api,
     [],

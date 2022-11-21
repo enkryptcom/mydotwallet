@@ -12,8 +12,8 @@
         transaction.
       </p>
       <p>
-        Assets will be available again 28 days after you decided to withdraw
-        them.
+        Assets will be available again {{ unbondDuration }} after you decided to
+        withdraw them.
       </p>
     </div>
     <select-account-input
@@ -79,6 +79,7 @@ import { stakeExtrinsic } from "@/utils/extrinsic";
 import { GasFeeInfo } from "@/types/transaction";
 import { getGasFeeInfo } from "@/utils/fee";
 import { queryHasStash, queryMinNominatorBond } from "@/utils/staking";
+import { unbondDuration } from "@/stores";
 
 const router = useRouter();
 
