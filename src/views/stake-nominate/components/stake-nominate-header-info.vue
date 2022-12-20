@@ -3,13 +3,20 @@
     <div class="stake-nominate__header-info-block">
       <p>Staking amount</p>
       <h5>
-        <img src="@/assets/pic/polkadot-white.png" />
-        <span>{{ $filters.cryptoCurrencyFormat(amount) }} DOT</span>
+        <img
+          v-if="currencySymbol === 'DOT'"
+          src="@/assets/pic/polkadot-white.png"
+        />
+        <img v-else src="@/assets/pic/kusama.token.png" />
+        <span
+          >{{ $filters.cryptoCurrencyFormat(amount) }}
+          {{ currencySymbol }}</span
+        >
       </h5>
     </div>
     <div class="stake-nominate__header-info-block">
       <p>Estimated Returns</p>
-      <h5>{{ $filters.cryptoCurrencyFormat(returns) }} DOT</h5>
+      <h5>{{ $filters.cryptoCurrencyFormat(returns) }} {{ currencySymbol }}</h5>
     </div>
     <div class="stake-nominate__header-info-block">
       <p>Estimated Yield</p>
@@ -19,6 +26,20 @@
 </template>
 
 <script setup lang="ts">
+import { selectedNetwork } from "@/stores";
+import { Network } from "@/types/network";
+import { computed } from "vue";
+
+const currencySymbol = computed(() => {
+  if (selectedNetwork.value === Network.Polkadot) {
+    return "DOT";
+  } else if (selectedNetwork.value === Network.Kusama) {
+    return "KSM";
+  } else {
+    return "WND";
+  }
+});
+
 defineProps({
   amount: {
     type: Number,
