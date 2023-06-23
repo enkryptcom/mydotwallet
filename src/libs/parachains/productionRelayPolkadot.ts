@@ -372,7 +372,9 @@ export const copyProdParasPolkadot: EndpointOption[] = [
       "Unique Europe": "wss://eu-ws.unique.network/",
     },
   },
-];
+].map((item) => {
+  return item as unknown as EndpointOption;
+});
 
 export const copyProdParasPolkadotCommon: EndpointOption[] = [
   {
@@ -388,4 +390,6 @@ export const copyProdParasPolkadotCommon: EndpointOption[] = [
       RadiumBlock: "wss://statemint.public.curie.radiumblock.xyz/ws",
     },
   },
-];
+].map((item) => {
+  return item as unknown as EndpointOption;
+});

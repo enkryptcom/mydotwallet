@@ -106,11 +106,11 @@ export const unbondDuration = computed(() => {
 export const subsquidExplorerUrl = computed(() => {
   switch (selectedNetwork.value) {
     case Network.Polkadot:
-      return "https://squid.subsquid.io/polkadot-explorer/v/v3/graphql";
+      return "https://polkadot.api.subscan.io/api/scan/account/reward_slash";
     case Network.Kusama:
-      return "https://squid.subsquid.io/kusama-explorer/v/v3/graphql";
+      return "https://kusama.api.subscan.io/api/scan/account/reward_slash";
     default:
-      return "https://squid.subsquid.io/polkadot-explorer/v/v3/graphql";
+      return "https://polkadot.api.subscan.io/api/scan/account/reward_slash";
   }
 });
 

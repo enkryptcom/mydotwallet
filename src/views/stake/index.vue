@@ -60,14 +60,14 @@ import {
   getStakerState,
   loadValidatorDataFromList,
 } from "@/utils/staking";
-import { gql, request } from "graphql-request";
 import { useGetNativePrice } from "@/libs/prices";
 import { useGetNativeBalances } from "@/libs/balances";
+import { toBN } from "web3-utils";
 
 const router = useRouter();
 
 const showStakeIntro = ref<boolean>(false);
-const stakingAccounts = ref<Array<StakingAccountWithValidators>>([]);
+const stakingAccounts = ref<StakingAccountWithValidators[]>([]);
 
 const isDataLoading = ref<boolean>(false);
 
@@ -291,44 +291,40 @@ const getAccountsRewardsMap = async (
   accounts: string[]
 ): Promise<Record<string, BigNumber>> => {
   try {
-    let addressesStringQuery = accounts.reduce((prevValue, current) => {
-      return `, OR: { id_eq: "${current}"${prevValue} }`;
-    }, "");
-
-    return request(
-      subsquidExplorerUrl.value,
-      gql`
-      query MyQuery {
-        stakers(
-          where: {
-            id_eq: ""
-            ${addressesStringQuery}
+    const totalRewards: string[] = [];
+    for (let i = 0; i < accounts.length; i++) {
+      await fetch(subsquidExplorerUrl.value, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          row: 100,
+          page: 0,
+          address: accounts[i],
+        }),
+      })
+        .then((res: any) => res.json())
+        .then((jsonres: any) => {
+          if (jsonres && jsonres.data && jsonres.data.list) {
+            let total = toBN(0);
+            jsonres.data.list.forEach((item: any) => {
+              total = total.add(toBN(item.amount));
+            });
+            totalRewards.push(total.toString());
           }
-        ) {
-          totalSlash
-          totalReward
-          stashId
-          role
-          payeeType
-          payeeId
-          id
-          controllerId
-          commission
-          activeBond
-        }
-      }
-    `
-    ).then((queryResult) => {
-      const resultMap: Record<string, BigNumber> = {};
-
-      for (const auxStaker of queryResult.stakers) {
-        resultMap[auxStaker.id] = new BigNumber(
-          fromBase(auxStaker.totalReward, nativeToken.value.decimals)
-        );
-      }
-
-      return resultMap;
+          totalRewards.push("0");
+        })
+        .catch(() => totalRewards.push("0"));
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+    }
+    const resultMap: Record<string, BigNumber> = {};
+    accounts.forEach((acc, idx) => {
+      resultMap[acc] = new BigNumber(
+        fromBase(totalRewards[idx], nativeToken.value.decimals)
+      );
     });
+    return resultMap;
   } catch (err) {
     console.error(err);
     return {};

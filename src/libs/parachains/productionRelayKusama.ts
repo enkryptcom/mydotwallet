@@ -505,7 +505,9 @@ export const copyProdParasKusama: EndpointOption[] = [
       OnFinality: "wss://zeitgeist.api.onfinality.io/public-ws",
     },
   },
-];
+].map((item) => {
+  return item as unknown as EndpointOption;
+});
 
 export const copyProdParasKusamaCommon: EndpointOption[] = [
   {
@@ -532,4 +534,6 @@ export const copyProdParasKusamaCommon: EndpointOption[] = [
     },
     teleport: [-1],
   },
-];
+].map((item) => {
+  return item as unknown as EndpointOption;
+});

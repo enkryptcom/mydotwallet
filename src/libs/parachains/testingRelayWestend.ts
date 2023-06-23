@@ -86,7 +86,9 @@ export const copyTestParasWestend: EndpointOption[] = [
       "KILT Protocol": "wss://westend.kilt.io:9977",
     },
   },
-];
+].map((item) => {
+  return item as unknown as EndpointOption;
+});
 
 export const copyTestParasWestendCommon: EndpointOption[] = [
   {
@@ -108,4 +110,6 @@ export const copyTestParasWestendCommon: EndpointOption[] = [
     },
     teleport: [-1],
   },
-];
+].map((item) => {
+  return item as unknown as EndpointOption;
+});
