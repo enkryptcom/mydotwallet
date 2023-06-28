@@ -17,11 +17,10 @@ import {
   DeriveStakingWaiting,
   DeriveUnlocking,
 } from "@polkadot/api-derive/types";
-import { Option, StorageKey } from "@polkadot/types";
+import { Option } from "@polkadot/types";
 import {
   AccountId,
   IndividualExposure,
-  Nominations,
   StakingLedger,
 } from "@polkadot/types/interfaces";
 import { BN, BN_ONE, BN_ZERO, u8aConcat, u8aToHex } from "@polkadot/util";
@@ -51,36 +50,17 @@ const isWaitingDerive = (
   return !(derive as DeriveStakingElected).nextElected;
 };
 
-export const extractNominators = async (api: ApiPromise) => {
-  const result: [StorageKey, Option<Nominations>][] =
-    await api.query.staking.nominators.entries();
+export const extractNominators = (): Promise<NominatedByMap> => {
+  const worker = new Worker(
+    new URL("./extractNominators.worker.ts", import.meta.url)
+  );
+  return new Promise((resolve) => {
+    worker.addEventListener("message", (message) => {
+      resolve(message.data);
+    });
 
-  const mapped: NominatedByMap = {};
-
-  for (let i = 0; i < result.length; i++) {
-    const [key, optNoms] = result[i];
-
-    if (optNoms.isSome && key.args.length) {
-      const nominatorId = key.args[0].toString();
-      const { submittedIn, targets } = optNoms.unwrap();
-
-      for (let j = 0; j < targets.length; j++) {
-        const validatorId = targets[j].toString();
-
-        if (!mapped[validatorId]) {
-          mapped[validatorId] = [];
-        }
-
-        mapped[validatorId].push({
-          index: j + 1,
-          nominatorId,
-          submittedIn: submittedIn.toNumber(),
-        });
-      }
-    }
-  }
-
-  return mapped;
+    worker.postMessage("");
+  });
 };
 
 export const extractValidatorData = async (
@@ -188,7 +168,7 @@ export const loadValidatorData = async (api: ApiPromise) => {
     }),
   ]);
 
-  const nominatorList = await extractNominators(api);
+  const nominatorList = await extractNominators();
   const [elected] = await extractValidatorData(
     api,
     [],
@@ -218,7 +198,7 @@ export const loadValidatorDataFromList = async (
       withExposure: true,
       withPrefs: true,
     });
-  const nominatorListPromise = extractNominators(api);
+  const nominatorListPromise = extractNominators();
 
   const [elected, validators, nominatorList] = await Promise.all([
     electedPromise,
